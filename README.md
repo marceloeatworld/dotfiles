@@ -18,5 +18,5 @@ sudo nix \
   --mode disko /tmp/disko-config.nix
 
 
-
+sudo nixos-generate-config --no-filesystems --root /mnt
 
