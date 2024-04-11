@@ -1,5 +1,5 @@
 # dotfiles
-
+https://github.com/Frost-Phoenix/nixos-config/tree/main
 https://github.com/nix-community/disko/blob/master/docs/quickstart.md
 
 https://bmcgee.ie/posts/2022/12/setting-up-my-new-laptop-nix-style/
