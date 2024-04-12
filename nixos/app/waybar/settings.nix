@@ -1,7 +1,7 @@
 { ... }:
 {
   programs.waybar.settings.mainBar = {
-    position= "bottom";
+    position= "top";
     layer= "top";
     height= 5;
     margin-top= 0;
@@ -57,13 +57,13 @@
         };
     };
     memory= {
-        format= "󰟜 {}%";
-        format-alt= "󰟜 {used} GiB"; # 
+        format-alt= "  {}%";
+        format= "  {used} GiB"; # 
         interval= 2;
     };
     cpu= {
-        format= "  {usage}%";
-        format-alt= "  {avg_frequency} GHz";
+        format-alt= "  {usage}%";
+        format= "  {avg_frequency} GHz";
         interval= 2;
     };
     disk = {
