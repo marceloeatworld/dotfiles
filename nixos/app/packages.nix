@@ -1,6 +1,7 @@
 { inputs, pkgs, ... }: 
 {
   home.packages = (with pkgs; [
+ android-studio
 vscode-fhs
 protonmail-desktop
     swaybg

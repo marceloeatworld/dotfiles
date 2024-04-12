@@ -6,8 +6,8 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     #oh-my-zsh = {
-    #  enable = true;
-    #  plugins = [ "git" "fzf" ];
+     # enable = true;
+     # plugins = [ "git" "fzf" ];
     #};
     initExtraFirst = ''
       DISABLE_MAGIC_FUNCTIONS=true

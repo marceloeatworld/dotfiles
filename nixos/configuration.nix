@@ -10,7 +10,7 @@
       ./hardware-configuration.nix
       ./disko-config.nix
     ];
-
+  services.flatpak.enable = true;
   # Use the systemd-boot EFI boot loader.
   #boot.loader.grub.enable = true;
   #boot.loader.grub.efiSupport = true;
