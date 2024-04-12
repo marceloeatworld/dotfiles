@@ -4,7 +4,7 @@
     enable = true;
     
     userName = "marceloeatworld";
-    userEmail = "marcelo.pereira@meucartao.pt";
+    userEmail = "20625497+marceloeatworld@users.noreply.github.com";
     
     extraConfig = { 
       init.defaultBranch = "main";

@@ -74,7 +74,7 @@
                   extraArgs = [ "-f" ];
                   subvolumes = {
                     "/storage" = {
-                      mountpoint = "/storage";
+                      mountpoint = "/mnt/storage";
                       mountOptions = [ "compress=zstd" "noatime" ];
                     };
                   };

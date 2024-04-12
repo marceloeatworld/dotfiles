@@ -27,6 +27,7 @@
     implicitPolicyTarget = "block";
 
   rules = ''
+	allow id 18a5:0237 # Verbatim HDD
         allow id 0951:1666 # USB kingstone
         allow id 1d6b:0002 # Linux Foundation 2.0 root hub
         allow id 045e:028e # Microsoft Corp. Xbox360 Controller

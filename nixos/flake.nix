@@ -57,6 +57,7 @@ in
         ./configuration.nix 
         disko.nixosModules.disko
 	./user.nix
+	./coding.nix
 	./hardware.nix
 	./services.nix
 	./network.nix
@@ -67,6 +68,7 @@ in
 	./system.nix
 	./security-services.nix
         ./virtualisation.nix
+  	./steam.nix
 	nur.nixosModules.nur
 	
         home-manager.nixosModules.home-manager

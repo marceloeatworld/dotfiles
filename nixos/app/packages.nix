@@ -2,7 +2,7 @@
 {
   home.packages = (with pkgs; [
 vscode-fhs
-
+protonmail-desktop
     swaybg
 hyprpicker
 grim

@@ -13,7 +13,7 @@
     networkmanager.dns = "none";
     firewall = {
       enable = true;
-      #allowedTCPPorts = [];
+      allowedTCPPorts = [8000 5173];
      # allowedUDPPorts = [ ];
       # allowedUDPPortRanges = [
         # { from = 4000; to = 4007; }
