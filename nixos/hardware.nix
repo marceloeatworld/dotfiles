@@ -6,7 +6,7 @@
   hardware.bluetooth.powerOnBoot = false;
   services.blueman.enable = true;
 
-
+  hardware.enableAllFirmware = true;
   hardware.opengl.enable = true;
   hardware.opengl.driSupport = true;
   hardware.opengl.driSupport32Bit = true;

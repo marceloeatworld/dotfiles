@@ -37,7 +37,7 @@
     };
     
   };
-  outputs = inputs@{ self, nixpkgs, disko, home-manager, nur,  ... }: 
+  outputs = inputs@{ self, nixpkgs, disko, home-manager, nur, ... }: 
 
 
 let
@@ -56,6 +56,7 @@ in
       modules = [ 
         ./configuration.nix 
         disko.nixosModules.disko
+        
 	./user.nix
 	./coding.nix
 	./hardware.nix
@@ -77,21 +78,7 @@ in
 	home-manager.useUserPackages = true;
 	home-manager.users.marcelo = import ./home.nix;
         }
-	#app
-	#./zsh.nix
-	#./kitty.nix
-	#./wayland.nix
-	#./wofi.nix
-	#./starship.nix
-	#./nvim.nix
-	#./vscodium.nix
-	#./discord.nix
-	#./btop.nix
-	#./bat.nix
-	#./mako.nix
-	#./micro.nix
-	#./swaylock.nix
-	#./packages.nix	
+	
       ];
     specialArgs = { inherit inputs; };
     };

@@ -23,21 +23,21 @@
   programs.firejail = {
     enable = true;
     wrappedBinaries = { 
-    #  mpv = {
-    #    executable = "${lib.getBin pkgs.mpv}/bin/mpv";
-    #    profile = "${pkgs.firejail}/etc/firejail/mpv.profile";
-     # };
-     # imv = {
-     #   executable = "${lib.getBin pkgs.imv}/bin/imv";
-     #   profile = "${pkgs.firejail}/etc/firejail/imv.profile";
-     # };
+      mpv = {
+        executable = "${lib.getBin pkgs.mpv}/bin/mpv";
+        profile = "${pkgs.firejail}/etc/firejail/mpv.profile";
+      };
+      imv = {
+        executable = "${lib.getBin pkgs.imv}/bin/imv";
+        profile = "${pkgs.firejail}/etc/firejail/imv.profile";
+      };
      # zathura = {
      #   executable = "${lib.getBin pkgs.zathura}/bin/zathura";
      #   profile = "${pkgs.firejail}/etc/firejail/zathura.profile";
      # };
-   #   discord = {
-      #  executable = "${lib.getBin pkgs.discord}/bin/discord";
-     # };
+      discord = {
+        executable = "${lib.getBin pkgs.discord}/bin/discord";
+      };
     };
   };
 

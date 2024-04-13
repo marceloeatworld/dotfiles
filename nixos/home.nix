@@ -48,13 +48,11 @@ imports = [
 	./app/micro.nix
 	./app/nvim.nix
 	./app/waybar
-	
 	./app/packages.nix
 	./app/swaylock.nix
 	./app/starship.nix
 	./app/scripts/scripts.nix
 	./app/mako.nix
-	#./app/hyprland
 	./app/wofi.nix
 	./app/vscodium.nix
 	./app/zsh.nix

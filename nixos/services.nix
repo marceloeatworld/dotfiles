@@ -3,9 +3,9 @@
 {
   services.xserver.videoDrivers = [ "amdgpu" ];
   # Systemd services setup
-  systemd.packages = with pkgs; [
+  #systemd.packages = with pkgs; [
     #auto-cpufreq
-  ];
+  #];
   services.gnome.gnome-keyring.enable = true;
   # Enable Services
 programs.gnupg.agent = {
@@ -20,7 +20,7 @@ programs.gnupg.agent = {
   services.dbus.enable = true;
   services.dbus.packages = with pkgs; [
   	#xfce.xfconf
-  	#gnome2.GConf
+  	gnome2.GConf
   ];
   #services.mpd.enable = true;
   #programs.thunar.enable = true;

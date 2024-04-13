@@ -4,7 +4,8 @@
     ## Utils
     # gamemode
     # gamescope
-    # winetricks
+    # 
+    winetricks
     # inputs.nix-gaming.packages.${pkgs.system}.wine-ge
 
     ## Cli games
