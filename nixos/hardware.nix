@@ -12,7 +12,9 @@
   hardware.opengl.driSupport32Bit = true;
   hardware.enableRedistributableFirmware = true;
   hardware.opengl.extraPackages = with pkgs; [
-    
+      rocm-opencl-icd
+      rocm-opencl-runtime
+      amdvlk
   ];
 
    # USB Automounting
@@ -25,34 +27,49 @@
     enable = true;
     dbus.enable = true;
     implicitPolicyTarget = "block";
-
-  rules = ''
-	allow id 18a5:0237 # Verbatim HDD
-        allow id 0951:1666 # USB kingstone
-        allow id 1d6b:0002 # Linux Foundation 2.0 root hub
-        allow id 045e:028e # Microsoft Corp. Xbox360 Controller
-        allow id 2f24:0135 # Mouse for Windows
-        allow id 1d6b:0003 # Linux Foundation 3.0 root hub
-        allow id 05e3:0610 # Genesys Logic, Inc. Hub
-        allow id 8087:0032 # Intel Corp. AX210 Bluetooth
-        allow id 05e3:0625 # Genesys Logic, Inc. USB3.2 Hub
-        allow id 058e:3864 # Tripath Technology, Inc. USB Camera
-        allow id 2c7c:0125 # Quectel Wireless Solutions Co., Ltd. EC25 LTE modem
-        allow id 2541:9711 # Chipsailing CS9711Fingprint
-        allow id 2109:2817 # VIA Labs, Inc. USB2.0 Hub
-        allow id 1a40:0101 # Terminus Technology Inc. Hub
-        allow id 1e7d:31ce # ROCCAT Ryos MK Glow Keyboard
-        allow id 2109:0102 # VIA Labs, Inc. USB 2.0 BILLBOARD
-        allow id 0d22:d300 # MSi Interceptor DS300 GAMING Mouse
-        allow id 05e3:0751 # Genesys Logic, Inc. microSD Card Reader
-        allow id 050d:008a # Belkin Components USB-C 6-in-1 Multiport Adapter
-        allow id 2109:0817 # VIA Labs, Inc. USB3.0 Hub
-        allow id 0bda:8153 # Realtek Semiconductor Corp. RTL8153 Gigabit Ethernet Adapter
-      '';    
+rules = builtins.readFile ./rules.conf;
+#  rules =''
+#<usbguard>
+#	allow id {18a5:0237}
+#        allow id {0951:1666}
+#        allow id {1d6b:0002}
+#        allow id {045e:028e}
+#        allow id {2f24:0135}
+#        allow id {1d6b:0003}
+ #       allow id {05e3:0610}
+ #       allow id {8087:0032}
+ ##       allow id {05e3:0625}
+ #       allow id {058e:3864}
+ #       allow id {2c7c:0125}
+ #       allow id {2541:9711}
+ #       allow id {2109:2817}
+ #       allow id {1a40:0101}
+  #      allow id {1e7d:31ce}
+  ##      allow id {2109:0102}
+  #      allow id {0d22:d300}
+  #      allow id {05e3:0751}
+  #      allow id {050d:008a}
+  #      allow id {2109:0817}
+  #      allow id {0bda:8153}
+#</usbguard>
+#'';
   };
 
   # Enable USB-specific packages
   environment.systemPackages = with pkgs; [
     usbutils
   ];
+
+services.udev.extraRules = ''
+    SUBSYSTEM=="usb", SYMLINK+="bitbox02_%n", GROUP="plugdev", MODE="0664", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2403"
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", SYMLINK+="bitbox02_%n", GROUP="plugdev", MODE="0664", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2403"
+    SUBSYSTEM=="usb", SYMLINK+="dbb%n", GROUP="plugdev", MODE="0664", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2402"
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", SYMLINK+="dbbf%n", GROUP="plugdev", MODE="0664", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2402"
+
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2581", ATTRS{idProduct}=="1b7c|2b7c|3b7c|4b7c", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", TAG+="uaccess", TAG+="udev-acl"
+KERNEL=="hidraw*", ATTRS{idVendor}=="2c97", MODE="0666"
+
+'';
+
 }

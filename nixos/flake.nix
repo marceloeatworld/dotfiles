@@ -15,7 +15,10 @@
     nur.url = "github:nix-community/NUR";
 
     hypr-contrib.url = "github:hyprwm/contrib";
-    hyprpicker.url = "github:hyprwm/hyprpicker";
+
+ 
+      
+hyprpicker.url = "github:hyprwm/hyprpicker";
   
     alejandra.url = "github:kamadorueda/alejandra/3.0.0";
   
@@ -77,6 +80,8 @@ in
         home-manager.useGlobalPkgs = true;
 	home-manager.useUserPackages = true;
 	home-manager.users.marcelo = import ./home.nix;
+
+
         }
 	
       ];

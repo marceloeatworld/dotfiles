@@ -36,6 +36,14 @@ nix = {
     helix
     dislocker
     ntfs3g
+rocmPackages.rocm-smi
+rocmPackages.rpp
+#rocmPackages.rdc
+rocmPackages.clr
+rocmPackages.rccl
+#cups-brother-hll2350dw
+oterm
+alejandra
   ];
   i18n.supportedLocales = [
     "en_US.UTF-8/UTF-8"

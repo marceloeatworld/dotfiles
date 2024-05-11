@@ -1,9 +1,19 @@
 { inputs, pkgs, ... }: 
 {
   home.packages = (with pkgs; [
+filezilla
+session-desktop-appimage
+threema-desktop
+keepassxc
+llama-cpp
+ollama
+hoppscotch
  android-studio
 vscode-fhs
 protonmail-desktop
+kubectl
+kubernetes-helm
+cliphist
     swaybg
 hyprpicker
 grim
