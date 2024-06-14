@@ -1,6 +1,8 @@
 { inputs, pkgs, ... }: 
 {
   home.packages = (with pkgs; [
+#ffmpeg-full
+gimp
 filezilla
 session-desktop-appimage
 threema-desktop
