@@ -24,6 +24,7 @@ wl-clipboard
 wf-recorder
 glib
 wayland
+
 direnv
     bitwise                           # cli tool for bit / hex manipulation
     eza                               # ls replacement

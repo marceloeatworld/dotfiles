@@ -3,7 +3,7 @@
 {
 home.username = "marcelo";
 home.homeDirectory = "/home/marcelo";
-home.stateVersion = "23.11";
+home.stateVersion = "24.11";
 
 home.packages = [
 
@@ -38,7 +38,7 @@ home.packages = [
   };
 programs.home-manager.enable = true;
 imports = [
-
+#        ./app/python.nix
 	./app/bat.nix
 	./app/btop.nix
 	./app/discord.nix
