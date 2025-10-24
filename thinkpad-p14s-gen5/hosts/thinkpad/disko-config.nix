@@ -111,12 +111,12 @@
                       ];
                     };
 
-                    # Swap subvolume (16GB for 1TB SSD)
+                    # Swap subvolume (2GB - sécurité minimale pour 32GB RAM)
                     "@swap" = {
                       mountpoint = "/swap";
                       mountOptions = [ "noatime" ];
                       swap.swapfile = {
-                        size = "16G";
+                        size = "2G";
                       };
                     };
                   };

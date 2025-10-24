@@ -6,7 +6,7 @@
   boot.loader = {
     systemd-boot = {
       enable = true;
-      configurationLimit = 10;  # Limit number of generations
+      configurationLimit = 5;  # 5 generations suffisent avec 512MB ESP
       editor = false;  # Disable editing boot parameters for security
     };
     efi = {

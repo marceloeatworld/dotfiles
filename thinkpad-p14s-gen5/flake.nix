@@ -46,8 +46,8 @@
       flake = false;
     };
 
-    # Omarchy - Hyprland themes from Arch-based distribution
-    omarchy = {
+    # Hyprland themes collection
+    themes = {
       url = "github:basecamp/omarchy";
       flake = false;
     };

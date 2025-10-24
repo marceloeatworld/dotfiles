@@ -9,12 +9,12 @@
     # Use the Hyprland package from the flake
     package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
 
-    # Import Omarchy theme (choose one from the list below)
+    # Hyprland theme (choose one from the list below)
     # Available themes: catppuccin, catppuccin-latte, everforest, flexoki-light,
     #                   gruvbox, kanagawa, matte-black, nord, osaka-jade,
     #                   ristretto, rose-pine, tokyo-night
     extraConfig = ''
-      source = ${inputs.omarchy}/themes/catppuccin/hyprland.conf
+      source = ${inputs.themes}/themes/ristretto/hyprland.conf
     '';
 
     settings = {
@@ -91,8 +91,8 @@
         gaps_in = 4;
         gaps_out = 8;
         border_size = 2;
-        "col.active_border" = "rgba(cba6f7ee) rgba(94e2d5ee) 45deg";
-        "col.inactive_border" = "rgba(585b70aa)";
+        # Colors defined by Ristretto theme (sourced above)
+        # "col.active_border" will be set to rgb(e6d9db) by theme
         layout = "dwindle";
         resize_on_border = true;
       };
