@@ -74,7 +74,6 @@
                         "noatime"
                         "space_cache=v2"
                         "discard=async"
-                        "nocow"  # Disable Copy-on-Write for /nix
                       ];
                     };
 
