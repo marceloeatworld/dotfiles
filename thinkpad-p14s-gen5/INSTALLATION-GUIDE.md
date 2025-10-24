@@ -1,231 +1,231 @@
-# 🚀 GUIDE D'INSTALLATION - ThinkPad P14s Gen 5
+# 🚀 INSTALLATION GUIDE - ThinkPad P14s Gen 5
 
-Installation complète de NixOS 25.05 avec Hyprland sur ThinkPad P14s Gen 5 (AMD).
+Complete NixOS 25.05 installation with Hyprland on ThinkPad P14s Gen 5 (AMD).
 
 ---
 
-## 📋 **PRÉ-REQUIS**
+## 📋 **PREREQUISITES**
 
-- ✅ Clé USB (minimum 4GB)
+- ✅ USB drive (minimum 4GB)
 - ✅ ThinkPad P14s Gen 5 (AMD)
-- ✅ Connexion Internet (WiFi ou Ethernet)
-- ✅ Sauvegarde de vos données (le disque sera effacé !)
+- ✅ Internet connection (WiFi or Ethernet)
+- ✅ Backup your data (disk will be wiped!)
 
 ---
 
-## 🔥 **ÉTAPE 1: CRÉER LA CLÉ USB BOOTABLE**
+## 🔥 **STEP 1: CREATE BOOTABLE USB**
 
-### **Sur Linux/WSL:**
+### **On Linux/WSL:**
 
 ```bash
-# Télécharger l'ISO NixOS 25.05 (Graphical)
+# Download NixOS 25.05 ISO (Graphical)
 wget https://channels.nixos.org/nixos-25.05/latest-nixos-gnome-x86_64-linux.iso
 
-# Identifier votre clé USB
+# Identify your USB drive
 lsblk
 
-# Écrire l'ISO (remplacez sdX par votre clé USB, ex: sdb)
+# Write ISO (replace sdX with your USB drive, e.g., sdb)
 sudo dd if=latest-nixos-gnome-x86_64-linux.iso of=/dev/sdX bs=4M status=progress
 sudo sync
 ```
 
-### **Sur Windows:**
+### **On Windows:**
 
-1. Télécharger: https://channels.nixos.org/nixos-25.05/latest-nixos-gnome-x86_64-linux.iso
-2. Utiliser **Rufus** ou **Balena Etcher**
-3. Sélectionner l'ISO et la clé USB
-4. Écrire en mode DD
-
----
-
-## 💻 **ÉTAPE 2: DÉMARRER SUR LA CLÉ USB**
-
-1. **Insérer la clé USB** dans le ThinkPad
-2. **Redémarrer** et appuyer sur **F12** (Boot Menu)
-3. **Sélectionner** la clé USB
-4. **Attendre** le démarrage du Live USB
+1. Download: https://channels.nixos.org/nixos-25.05/latest-nixos-gnome-x86_64-linux.iso
+2. Use **Rufus** or **Balena Etcher**
+3. Select ISO and USB drive
+4. Write in DD mode
 
 ---
 
-## 🌐 **ÉTAPE 3: CONNEXION INTERNET**
+## 💻 **STEP 2: BOOT FROM USB**
+
+1. **Insert USB drive** into ThinkPad
+2. **Reboot** and press **F12** (Boot Menu)
+3. **Select** USB drive
+4. **Wait** for Live USB to boot
+
+---
+
+## 🌐 **STEP 3: INTERNET CONNECTION**
 
 ### **WiFi:**
 
 ```bash
-# Interface graphique (plus simple)
+# Graphical interface (easier)
 nmtui
 
-# Ou en ligne de commande
+# Or command line
 sudo systemctl start wpa_supplicant
-nmcli device wifi connect "VOTRE_SSID" password "VOTRE_MOT_DE_PASSE"
+nmcli device wifi connect "YOUR_SSID" password "YOUR_PASSWORD"
 
-# Tester
+# Test connection
 ping -c 3 nixos.org
 ```
 
 ---
 
-## 📦 **ÉTAPE 4: CLONER VOTRE CONFIGURATION**
+## 📦 **STEP 4: CLONE YOUR CONFIGURATION**
 
 ```bash
-# Passer en root
+# Switch to root
 sudo su
 
-# Installer Git (si pas déjà présent)
+# Install Git (if not present)
 nix-shell -p git
 
-# Cloner votre repo dotfiles
+# Clone your dotfiles repo
 cd /mnt
-git clone https://github.com/VOTRE_USERNAME/dotfiles thinkpad-p14s-gen5
+git clone https://github.com/YOUR_USERNAME/dotfiles thinkpad-p14s-gen5
 cd thinkpad-p14s-gen5
 ```
 
 ---
 
-## 💾 **ÉTAPE 5: VÉRIFIER LA CONFIGURATION DISQUE**
+## 💾 **STEP 5: VERIFY DISK CONFIGURATION**
 
-**IMPORTANT:** Vérifiez le nom de votre SSD !
+**IMPORTANT:** Verify your SSD name!
 
 ```bash
-# Lister les disques
+# List disks
 lsblk
 
-# Votre SSD devrait être:
+# Your SSD should be:
 # nvme0n1 (1TB NVMe SSD)
 ```
 
-**Éditer si nécessaire:**
+**Edit if necessary:**
 
 ```bash
-# Si votre SSD n'est PAS nvme0n1, modifier:
+# If your SSD is NOT nvme0n1, modify:
 nano hosts/thinkpad/disko-config.nix
 
-# Ligne 10: Changer device = "/dev/nvme0n1";
-# Par le bon device (ex: /dev/nvme1n1 ou /dev/sda)
+# Line 10: Change device = "/dev/nvme0n1";
+# To correct device (e.g., /dev/nvme1n1 or /dev/sda)
 ```
 
 ---
 
-## 🔧 **ÉTAPE 6: DISKO - PARTITIONNEMENT AUTOMATIQUE**
+## 🔧 **STEP 6: DISKO - AUTOMATIC PARTITIONING**
 
-**⚠️ ATTENTION: Cette commande EFFACE TOUT LE DISQUE !**
+**⚠️ WARNING: This command WIPES THE ENTIRE DISK!**
 
 ```bash
-# Installer disko dans le shell
+# Install disko in shell
 nix --extra-experimental-features 'nix-command flakes' \
     run github:nix-community/disko -- \
     --mode disko \
     hosts/thinkpad/disko-config.nix
 
-# Disko va:
-# 1. Créer la partition EFI (1GB)
-# 2. Créer la partition LUKS chiffrée (reste)
-# 3. Formater en Btrfs
-# 4. Créer les 7 sous-volumes
-# 5. Monter tout dans /mnt
+# Disko will:
+# 1. Create EFI partition (512MB)
+# 2. Create encrypted LUKS partition (rest)
+# 3. Format with Btrfs
+# 4. Create 7 subvolumes
+# 5. Mount everything under /mnt
 
-# Vous devrez entrer:
-# - Mot de passe de chiffrement LUKS (⚠️ NE PAS OUBLIER!)
+# You will need to enter:
+# - LUKS encryption password (⚠️ DO NOT FORGET!)
 ```
 
 ---
 
-## 📝 **ÉTAPE 7: VÉRIFIER LE MONTAGE**
+## 📝 **STEP 7: VERIFY MOUNTS**
 
 ```bash
-# Vérifier que tout est monté
+# Verify everything is mounted
 mount | grep /mnt
 
-# Vous devriez voir:
+# You should see:
 # /dev/mapper/crypted on /mnt type btrfs (subvol=@root)
 # /dev/mapper/crypted on /mnt/home type btrfs (subvol=@home)
 # /dev/mapper/crypted on /mnt/nix type btrfs (subvol=@nix)
 # etc.
 
-# Vérifier l'espace
+# Check available space
 df -h /mnt
 ```
 
 ---
 
-## 🎯 **ÉTAPE 8: GÉNÉRER hardware-configuration.nix**
+## 🎯 **STEP 8: GENERATE hardware-configuration.nix**
 
 ```bash
-# Générer la config hardware
+# Generate hardware config
 nixos-generate-config --root /mnt
 
-# Copier hardware-configuration.nix dans votre config
+# Copy hardware-configuration.nix to your config
 cp /mnt/etc/nixos/hardware-configuration.nix \
    hosts/thinkpad/hardware-configuration.nix
 
-# IMPORTANT: Vérifier que le fichier contient:
+# IMPORTANT: Verify file contains:
 # - boot.initrd.luks.devices."crypted"
-# - Toutes les options de montage Btrfs
+# - All Btrfs mount options
 
 cat hosts/thinkpad/hardware-configuration.nix
 ```
 
 ---
 
-## 🚀 **ÉTAPE 9: INSTALLATION**
+## 🚀 **STEP 9: INSTALLATION**
 
 ```bash
-# Copier votre config dans /mnt
+# Copy config to /mnt
 cp -r /mnt/thinkpad-p14s-gen5 /mnt/home/marcelo/dotfiles
 
-# Installer NixOS avec votre flake
+# Install NixOS with your flake
 nixos-install --flake /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5#pop
 
-# ⏳ L'installation prend 20-40 minutes
-# NixOS va:
-# - Télécharger tous les paquets
-# - Compiler ce qui est nécessaire
-# - Configurer le système
-# - Installer Hyprland
-# - Configurer tous vos modules
+# ⏳ Installation takes 20-40 minutes
+# NixOS will:
+# - Download all packages
+# - Compile what's necessary
+# - Configure the system
+# - Install Hyprland
+# - Configure all modules
 ```
 
-### **Définir le mot de passe root:**
+### **Set root password:**
 
 ```bash
-# Quand demandé, définir le mot de passe root
-# Ou après installation:
+# When prompted, set root password
+# Or after installation:
 nixos-enter
 passwd root
-passwd marcelo  # ⚠️ IMPORTANT: Définir le mot de passe utilisateur
+passwd marcelo  # ⚠️ IMPORTANT: Set user password
 exit
 ```
 
 ---
 
-## 🔄 **ÉTAPE 10: REDÉMARRAGE**
+## 🔄 **STEP 10: REBOOT**
 
 ```bash
-# Démonter et redémarrer
+# Unmount and reboot
 umount -R /mnt
 reboot
 
-# ⚠️ Retirer la clé USB pendant le redémarrage
+# ⚠️ Remove USB drive during reboot
 ```
 
 ---
 
-## 🎉 **PREMIER DÉMARRAGE**
+## 🎉 **FIRST BOOT**
 
-### **1. Déchiffrement LUKS:**
-- Entrer le mot de passe LUKS
-- Le système démarre
+### **1. LUKS Decryption:**
+- Enter LUKS password
+- System boots
 
-### **2. Login TTY:**
+### **2. TTY Login:**
 ```bash
 # Login: marcelo
-# Password: (celui défini avec passwd)
+# Password: (set with passwd)
 ```
 
-### **3. Lancement Hyprland:**
+### **3. Launch Hyprland:**
 ```bash
-# Hyprland devrait se lancer automatiquement
-# Sinon:
+# Hyprland should launch automatically
+# If not:
 uwsm start -S hyprland-uwsm.desktop
 ```
 
@@ -233,14 +233,14 @@ uwsm start -S hyprland-uwsm.desktop
 
 ## ✅ **POST-INSTALLATION**
 
-### **1. Vérifier le système:**
+### **1. Verify system:**
 
 ```bash
-# Version NixOS
+# NixOS version
 nixos-version
 # → 25.05
 
-# Système graphique
+# Graphical session
 echo $XDG_SESSION_TYPE
 # → wayland
 
@@ -252,101 +252,103 @@ lspci | grep VGA
 nmcli device status
 ```
 
-### **2. Mettre à jour si nécessaire:**
+### **2. Update if necessary:**
 
 ```bash
-# Aller dans votre config
+# Navigate to config
 cd ~/dotfiles/thinkpad-p14s-gen5
 
-# Mettre à jour le flake
+# Update flake
 nix flake update
 
 # Rebuild
 sudo nixos-rebuild switch --flake .#pop
 ```
 
-### **3. Configurer Hyprland:**
+### **3. Configure Hyprland:**
 
 ```bash
-# Tester les raccourcis
-SUPER + D           # Wofi (launcher)
+# Test keybindings
+SUPER + D           # Walker (launcher)
 SUPER + Return      # Kitty (terminal)
 SUPER + B           # Brave
-SUPER + Q           # Fermer fenêtre
+SUPER + Q           # Close window
 SUPER + Escape      # Lock screen
 ```
 
-### **4. Lancer les web apps:**
+### **4. Launch web apps:**
 
 ```bash
-# Wofi → taper "whatsapp", "spotify", "discord", "claude"
+# Walker → type "whatsapp", "spotify", "discord", "claude"
 SUPER + D
 
-# Ou en terminal
+# Or in terminal
 gtk-launch whatsapp-web
 gtk-launch spotify-web
 gtk-launch discord-web
 gtk-launch claude-web
+gtk-launch protonmail-web
+gtk-launch protondrive-web
 ```
 
-### **5. Snapshots Btrfs:**
+### **5. Btrfs Snapshots:**
 
 ```bash
-# Lister les snapshots (automatiques toutes les 15min)
+# List snapshots (automatic every 15min)
 ls /.snapshots/home
 ls /.snapshots/root
 
-# Récupérer un fichier
-cp /.snapshots/home/2024-10-24_12-00/marcelo/Documents/fichier.txt ~/
+# Recover a file
+cp /.snapshots/home/2024-10-24_12-00/marcelo/Documents/file.txt ~/
 ```
 
 ---
 
-## 🔧 **DÉPANNAGE**
+## 🔧 **TROUBLESHOOTING**
 
-### **Problème: Installation échoue**
+### **Problem: Installation fails**
 
 ```bash
-# Vérifier les logs
+# Check logs
 journalctl -xe
 
-# Vérifier la syntaxe Nix
+# Verify Nix syntax
 cd /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5
 nix flake check
 ```
 
-### **Problème: Pas de réseau après installation**
+### **Problem: No network after installation**
 
 ```bash
-# Activer NetworkManager
+# Enable NetworkManager
 sudo systemctl start NetworkManager
 sudo systemctl enable NetworkManager
 
-# Connecter WiFi
+# Connect WiFi
 nmtui
 ```
 
-### **Problème: Hyprland ne démarre pas**
+### **Problem: Hyprland won't start**
 
 ```bash
-# Vérifier les logs
+# Check logs
 journalctl --user -u hyprland
 
-# Lancer manuellement
+# Launch manually
 uwsm start -S hyprland-uwsm.desktop
 ```
 
-### **Problème: Mot de passe LUKS oublié**
+### **Problem: LUKS password forgotten**
 
-❌ **Impossible de récupérer** - Le disque est perdu
-✅ **Solution:** Réinstaller (c'est pour ça qu'on fait des sauvegardes !)
+❌ **Cannot recover** - Disk data is lost
+✅ **Solution:** Reinstall (that's why we make backups!)
 
 ---
 
-## 📊 **RÉSUMÉ RAPIDE**
+## 📊 **QUICK SUMMARY**
 
 ```bash
-# 1. Créer USB
+# 1. Create USB
 dd if=nixos.iso of=/dev/sdX bs=4M
 
 # 2. Boot USB + Connect WiFi
@@ -357,7 +359,7 @@ sudo su
 git clone https://github.com/USER/dotfiles /mnt/thinkpad-p14s-gen5
 cd /mnt/thinkpad-p14s-gen5
 
-# 4. Disko (⚠️ EFFACE LE DISQUE)
+# 4. Disko (⚠️ WIPES DISK)
 nix run github:nix-community/disko -- --mode disko hosts/thinkpad/disko-config.nix
 
 # 5. Hardware config
@@ -381,23 +383,23 @@ reboot
 
 ## 🎯 **CHECKLIST**
 
-- [ ] Clé USB créée
-- [ ] Backup données fait
-- [ ] Boot sur USB
-- [ ] WiFi connecté
-- [ ] Repo cloné
-- [ ] Device disk vérifié (nvme0n1)
-- [ ] Disko executé
-- [ ] Mot de passe LUKS défini (⚠️ noté quelque part)
-- [ ] hardware-configuration.nix copié
-- [ ] Installation lancée
-- [ ] Mot de passe marcelo défini
-- [ ] Reboot réussi
-- [ ] Hyprland démarre
-- [ ] Web apps fonctionnent
+- [ ] USB drive created
+- [ ] Data backup done
+- [ ] Boot from USB
+- [ ] WiFi connected
+- [ ] Repo cloned
+- [ ] Disk device verified (nvme0n1)
+- [ ] Disko executed
+- [ ] LUKS password set (⚠️ written down somewhere)
+- [ ] hardware-configuration.nix copied
+- [ ] Installation launched
+- [ ] marcelo password set
+- [ ] Reboot successful
+- [ ] Hyprland starts
+- [ ] Web apps working
 
 ---
 
-**Bonne installation ! 🚀**
+**Happy installation! 🚀**
 
-*Simple, efficace, pas de chichi.* ✨
+*Simple, efficient, no frills.* ✨

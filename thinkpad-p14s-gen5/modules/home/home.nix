@@ -178,6 +178,12 @@
       "video/ogg" = "mpv.desktop";
       "video/3gpp" = "mpv.desktop";
       "video/3gpp2" = "mpv.desktop";
+
+      # Web app protocol handlers
+      "x-scheme-handler/whatsapp" = "whatsapp-web.desktop";
+      "x-scheme-handler/spotify" = "spotify-web.desktop";
+      "x-scheme-handler/discord" = "discord-web.desktop";
+      "x-scheme-handler/mailto" = "protonmail-web.desktop";
     };
   };
 }

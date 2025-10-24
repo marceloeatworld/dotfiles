@@ -1,13 +1,8 @@
-# Web applications using Brave (Omarchy-style)
+# Web applications using Brave
 # Creates "native-like" web apps using Brave's --app flag
 { pkgs, ... }:
 
 {
-  # Install icon theme with WhatsApp, Spotify, YouTube icons
-  home.packages = with pkgs; [
-    papirus-icon-theme  # Includes icons for most popular apps
-  ];
-
   # Desktop entries for web apps
   xdg.desktopEntries = {
     # WhatsApp Web
@@ -112,14 +107,6 @@
       terminal = false;
       categories = [ "Network" "FileTransfer" "Office" ];
     };
-  };
-
-  # MIME type associations for protocol handlers
-  xdg.mimeApps.defaultApplications = {
-    "x-scheme-handler/whatsapp" = "whatsapp-web.desktop";
-    "x-scheme-handler/spotify" = "spotify-web.desktop";
-    "x-scheme-handler/discord" = "discord-web.desktop";
-    "x-scheme-handler/mailto" = "protonmail-web.desktop";
   };
 }
 
