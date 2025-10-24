@@ -70,5 +70,9 @@
     nil           # Nix LSP (for editing NixOS configs)
     nix-tree      # Visualize dependencies
     nix-index     # Search files
+
+    # AI/ML tools - Ollama TUI clients
+    aichat        # Ultra lightweight CLI for Ollama (Rust) - Daily use
+    parllama      # Rich TUI for Ollama - Model testing & comparison
   ];
 }

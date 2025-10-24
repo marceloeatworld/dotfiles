@@ -98,4 +98,23 @@
     package = pkgs.plocate;
     localuser = null;
   };
+
+  # Ollama - Local LLM inference with AMD GPU acceleration
+  services.ollama = {
+    enable = true;
+    acceleration = "rocm";  # AMD GPU support via ROCm
+
+    # AMD Radeon 780M (gfx1103) requires override
+    environmentVariables = {
+      HSA_OVERRIDE_GFX_VERSION = "11.0.0";  # Fix for RDNA 3 iGPU
+      ROCR_VISIBLE_DEVICES = "0";           # Use first GPU
+      ROC_ENABLE_PRE_VEGA = "1";            # Compatibility
+    };
+
+    # Listen on all interfaces (for API access)
+    # Default: http://localhost:11434
+    listenAddress = "127.0.0.1:11434";
+
+    # Models will be stored in /var/lib/ollama
+  };
 }
