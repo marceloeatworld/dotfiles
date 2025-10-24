@@ -89,6 +89,18 @@
       terminal = false;
       categories = [ "Network" "Office" "Development" ];
     };
+
+    # Proton Mail
+    protonmail-web = {
+      name = "Proton Mail";
+      genericName = "Email Client";
+      comment = "Proton Mail Web Application";
+      exec = "brave --app=https://mail.proton.me/";
+      icon = "protonmail";  # From Papirus icon theme
+      terminal = false;
+      categories = [ "Network" "Email" "Office" ];
+      mimeType = [ "x-scheme-handler/mailto" ];
+    };
   };
 
   # MIME type associations for protocol handlers

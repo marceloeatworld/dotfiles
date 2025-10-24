@@ -104,6 +104,7 @@
     # Misc
     keepassxc
     jq                # JSON processor (essential for CLI work)
+    protonvpn-gui     # Proton VPN with GUI
 
     # Wayland specific
     wl-clipboard
