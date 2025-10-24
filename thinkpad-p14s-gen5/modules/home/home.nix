@@ -20,6 +20,7 @@
     ./programs/git.nix
     ./programs/nvim.nix
     ./programs/browsers.nix
+    ./programs/brave-flags.nix  # Brave Wayland flags
     ./programs/media.nix
     ./programs/development.nix
     ./programs/wofi.nix
