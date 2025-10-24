@@ -9,7 +9,7 @@
     # Your license will work with this
   };
 
-  # Docker (Omarchy-style configuration)
+  # Docker
   virtualisation.docker = {
     enable = true;
     enableOnBoot = true;

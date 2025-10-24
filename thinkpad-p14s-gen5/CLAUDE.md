@@ -210,8 +210,8 @@ ROCm acceleration configured for Radeon 780M
 - TRIM: async discard enabled
 
 ### Web Apps
-7 web apps configured as Brave PWAs in `modules/home/programs/webapps.nix`:
-- WhatsApp, Spotify, YouTube, ChatGPT, Claude, GitHub, Discord
+9 web apps configured as Brave PWAs in `modules/home/programs/webapps.nix`:
+- WhatsApp, Spotify, YouTube, ChatGPT, Claude, GitHub, Discord, Proton Mail, Proton Drive
 
 ### Screenshots & Recording
 - Screenshots: `~/Pictures/Screenshots/`

@@ -64,7 +64,7 @@
       single_instance = true;
     };
 
-    # Keyboard shortcuts (Omarchy-style clipboard bindings)
+    # Keyboard shortcuts
     keybindings = {
       "ctrl+insert" = "copy_to_clipboard";
       "shift+insert" = "paste_from_clipboard";

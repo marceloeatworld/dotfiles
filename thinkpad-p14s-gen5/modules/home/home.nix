@@ -141,7 +141,7 @@
     publicShare = "${config.home.homeDirectory}/Public";
   };
 
-  # XDG MIME types (Omarchy-style comprehensive associations)
+  # XDG MIME types
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {

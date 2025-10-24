@@ -50,10 +50,6 @@
 
       # Formatter (Nix only)
       nixpkgs-fmt
-
-      # Search tools
-      ripgrep
-      fd
     ];
 
     extraConfig = ''

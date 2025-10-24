@@ -61,9 +61,8 @@
     terraform
     ansible
 
-    # CLI utilities (Omarchy additions)
+    # CLI utilities
     gum           # Beautiful shell scripts
-    jq            # JSON processor (already in home.nix but critical)
 
     # Nix tools only
     nixpkgs-fmt   # Nix formatter

@@ -283,7 +283,7 @@
         # Suppress maximize events (tiling WM best practice)
         "suppressevent maximize, class:.*"
 
-        # Global opacity (Omarchy-inspired: 97% active, 90% inactive)
+        # Global opacity (97% active, 90% inactive)
         "opacity 0.97 0.90,class:.*"
 
         # Browser improvements
