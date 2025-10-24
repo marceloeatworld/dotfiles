@@ -101,6 +101,17 @@
       categories = [ "Network" "Email" "Office" ];
       mimeType = [ "x-scheme-handler/mailto" ];
     };
+
+    # Proton Drive
+    protondrive-web = {
+      name = "Proton Drive";
+      genericName = "Cloud Storage";
+      comment = "Proton Drive Web Application";
+      exec = "brave --app=https://drive.proton.me/";
+      icon = "drive-harddisk";  # Generic drive icon from system
+      terminal = false;
+      categories = [ "Network" "FileTransfer" "Office" ];
+    };
   };
 
   # MIME type associations for protocol handlers
@@ -108,6 +119,7 @@
     "x-scheme-handler/whatsapp" = "whatsapp-web.desktop";
     "x-scheme-handler/spotify" = "spotify-web.desktop";
     "x-scheme-handler/discord" = "discord-web.desktop";
+    "x-scheme-handler/mailto" = "protonmail-web.desktop";
   };
 }
 
