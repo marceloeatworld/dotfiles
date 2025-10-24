@@ -72,6 +72,7 @@
 
     # AI/ML tools - Ollama TUI clients
     aichat        # Ultra lightweight CLI for Ollama (Rust) - Daily use
-    parllama      # Rich TUI for Ollama - Model testing & comparison
+    # NOTE: parllama not available in nixpkgs, install via pip if needed:
+    # python3 -m pip install --user parllama
   ];
 }

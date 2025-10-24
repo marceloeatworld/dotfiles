@@ -4,8 +4,8 @@
 {
   # Font packages
   home.packages = with pkgs; [
-    liberation-fonts  # Liberation Sans, Liberation Serif
-    cascadia-code     # CaskaydiaMono Nerd Font (Cascadia Code Nerd Font)
+    liberation_ttf  # Liberation Sans, Serif, Mono
+    # Note: Nerd Fonts installed in terminal.nix
   ];
 
   # Fontconfig settings
@@ -28,7 +28,7 @@
           <string>serif</string>
         </test>
         <edit name="family" mode="assign" binding="strong">
-          <string>Liberation Serif</string>
+          <string>Noto Serif</string>
         </edit>
       </match>
 
@@ -37,7 +37,7 @@
           <string>monospace</string>
         </test>
         <edit name="family" mode="assign" binding="strong">
-          <string>CaskaydiaMono Nerd Font</string>
+          <string>JetBrainsMono Nerd Font</string>
         </edit>
       </match>
 
@@ -49,7 +49,7 @@
 
       <alias binding="strong">
         <family>ui-monospace</family>
-        <prefer><family>monospace</family></prefer>
+        <prefer><family>JetBrainsMono Nerd Font</family></prefer>
       </alias>
 
       <alias binding="strong">

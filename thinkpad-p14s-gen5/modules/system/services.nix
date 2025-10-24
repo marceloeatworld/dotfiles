@@ -74,8 +74,8 @@
     criticalPowerAction = "Hibernate";
   };
 
-  # Enable thermald for thermal management
-  services.thermald.enable = true;
+  # NOTE: thermald is INTEL-ONLY, do NOT enable on AMD systems
+  # services.thermald.enable = true;
 
   # Enable dconf for GTK applications
   programs.dconf.enable = true;
@@ -95,11 +95,11 @@
   # Flatpak support (optional)
   services.flatpak.enable = true;
 
-  # Locate database
+  # Locate database (plocate - fast file indexing)
   services.locate = {
     enable = true;
     package = pkgs.plocate;
-    localuser = null;
+    # Note: localuser option removed in modern NixOS (only for findutils)
   };
 
   # Ollama - Local LLM inference with AMD GPU acceleration
@@ -114,9 +114,8 @@
       ROC_ENABLE_PRE_VEGA = "1";            # Compatibility
     };
 
-    # Listen on all interfaces (for API access)
-    # Default: http://localhost:11434
-    listenAddress = "127.0.0.1:11434";
+    # Host address (default: 127.0.0.1:11434)
+    host = "127.0.0.1:11434";
 
     # Models will be stored in /var/lib/ollama
   };

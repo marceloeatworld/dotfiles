@@ -130,7 +130,7 @@ nix shell nixpkgs#<package-name>
 - **Ollama**: Local LLM with ROCm acceleration for AMD GPU
   - `HSA_OVERRIDE_GFX_VERSION=11.0.0` (RDNA 3 iGPU fix)
   - Service runs on `http://127.0.0.1:11434`
-- **AI Tools**: aichat (CLI), parllama (TUI)
+- **AI Tools**: aichat (CLI)
 - **Containers**: Docker with logging limits, VMware Workstation Pro, libvirtd/QEMU
 
 ## Hyprland Keybindings

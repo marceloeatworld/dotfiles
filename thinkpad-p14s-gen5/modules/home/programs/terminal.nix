@@ -93,8 +93,11 @@
     '';
   };
 
-  # Font packages
+  # Font packages - NixOS 25.05 uses individual nerd-fonts packages
   home.packages = with pkgs; [
-    (nerdfonts.override { fonts = [ "JetBrainsMono" "FiraCode" "Hack" ]; })
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.caskaydia-cove  # CascadiaCode Nerd Font
+    nerd-fonts.fira-code
+    nerd-fonts.hack
   ];
 }

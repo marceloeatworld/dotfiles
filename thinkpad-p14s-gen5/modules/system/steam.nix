@@ -15,11 +15,7 @@
     ];
   };
 
-  # Enable 32-bit graphics drivers (required for many games)
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;  # Support for 32-bit games
-  };
+  # Note: hardware.graphics configured in hardware-configuration.nix
 
   # Gaming performance optimizations
   programs.gamemode = {

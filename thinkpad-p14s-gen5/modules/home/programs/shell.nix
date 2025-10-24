@@ -44,7 +44,7 @@
       ignoreSpace = true;
     };
 
-    initExtra = ''
+    initContent = ''
       # Launch Hyprland on login to TTY1
       if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
         exec uwsm start -S hyprland-uwsm.desktop

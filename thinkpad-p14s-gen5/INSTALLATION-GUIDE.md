@@ -1,12 +1,12 @@
 # 🚀 INSTALLATION GUIDE - ThinkPad P14s Gen 5
 
-Complete NixOS 25.05 installation with Hyprland on ThinkPad P14s Gen 5 (AMD).
+Complete NixOS 25.05 **MINIMAL** installation with Hyprland on ThinkPad P14s Gen 5 (AMD).
 
 ---
 
 ## 📋 **PREREQUISITES**
 
-- ✅ USB drive (minimum 4GB)
+- ✅ USB drive (minimum 2GB)
 - ✅ ThinkPad P14s Gen 5 (AMD)
 - ✅ Internet connection (WiFi or Ethernet)
 - ✅ Backup your data (disk will be wiped!)
@@ -18,20 +18,19 @@ Complete NixOS 25.05 installation with Hyprland on ThinkPad P14s Gen 5 (AMD).
 ### **On Linux/WSL:**
 
 ```bash
-# Download NixOS 25.05 ISO (Graphical)
-wget https://channels.nixos.org/nixos-25.05/latest-nixos-gnome-x86_64-linux.iso
+# Download NixOS 25.05 ISO (MINIMAL - no GUI, smaller download)
+wget https://channels.nixos.org/nixos-25.05/latest-nixos-minimal-x86_64-linux.iso
 
-# Identify your USB drive
+# Identify your USB drive (find your USB, usually sdb or sdc)
 lsblk
 
-# Write ISO (replace sdX with your USB drive, e.g., sdb)
-sudo dd if=latest-nixos-gnome-x86_64-linux.iso of=/dev/sdX bs=4M status=progress
-sudo sync
+# Write ISO to USB (replace sdX with your USB drive)
+sudo dd if=latest-nixos-minimal-x86_64-linux.iso of=/dev/sdX bs=4M status=progress && sync
 ```
 
 ### **On Windows:**
 
-1. Download: https://channels.nixos.org/nixos-25.05/latest-nixos-gnome-x86_64-linux.iso
+1. Download: https://channels.nixos.org/nixos-25.05/latest-nixos-minimal-x86_64-linux.iso
 2. Use **Rufus** or **Balena Etcher**
 3. Select ISO and USB drive
 4. Write in DD mode

@@ -66,7 +66,7 @@
                       ];
                     };
 
-                    # Nix store (can disable COW for better database performance)
+                    # Nix store
                     "@nix" = {
                       mountpoint = "/nix";
                       mountOptions = [

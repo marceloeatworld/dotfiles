@@ -124,7 +124,7 @@
     noto-fonts
     noto-fonts-emoji
     font-awesome
-    jetbrains-mono  # Development font (Nerd Font variant)
+    # Note: JetBrainsMono Nerd Font installed in terminal.nix
   ];
 
   # XDG user directories

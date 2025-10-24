@@ -2,28 +2,25 @@
 { config, lib, pkgs, ... }:
 
 {
-  # CPU Governor - AMD P-State EPP (Energy Performance Preference)
-  # Zen 4 architecture supports advanced power management
-  powerManagement = {
-    enable = true;
-    cpuFreqGovernor = lib.mkDefault "schedutil"; # Better than "powersave" for Zen 4
-  };
+  # NOTE: CPU Governor is managed by TLP in services.nix
+  # TLP handles CPU_SCALING_GOVERNOR_ON_AC/BAT dynamically
+  # Do not set powerManagement.cpuFreqGovernor here to avoid conflicts
 
   # AMD CPU microcode updates
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  # Enable AMD SEV (Secure Encrypted Virtualization) support
-  boot.kernelModules = [ "kvm-amd" "ccp" ];
+  # Enable AMD SEV (Secure Encrypted Virtualization) + sensors
+  boot.kernelModules = [ "kvm-amd" "ccp" "k10temp" ];
 
-  # AMD GPU firmware
-  hardware.enableRedistributableFirmware = true;
+  # AMD GPU firmware (enableAllFirmware includes enableRedistributableFirmware)
   hardware.enableAllFirmware = true;
 
   # LACT - Linux AMDGPU Control Tool
   # GUI for overclock/undervolt/fan control for Radeon 780M
-  services.lact = {
-    enable = true;
-  };
+  services.lact.enable = true;
+
+  # Required for LACT to access AMD GPU overclocking features
+  hardware.amdgpu.overdrive.enable = true;
 
   # Vulkan layers and ROCm for AMD
   hardware.graphics.extraPackages = with pkgs; [
@@ -80,10 +77,9 @@
     "initcall_blacklist=acpi_cpufreq_init" # Disable old driver
   ];
 
-  # Enable CPU boost
-  systemd.tmpfiles.rules = [
-    "w /sys/devices/system/cpu/cpufreq/boost - - - - 1"
-  ];
+  # NOTE: CPU boost is managed by TLP in services.nix
+  # TLP handles CPU_BOOST_ON_AC and CPU_BOOST_ON_BAT dynamically
+  # Do not force boost settings here to avoid conflicts with TLP
 
   # AMD PSP (Platform Security Processor) firmware
   # Required for fTPM and SEV
@@ -106,19 +102,13 @@
     system-features = [ "gccarch-znver4" "avx512" "avx2" "sse4" ];
   };
 
-  # Thermald configuration in services.nix to avoid duplication
-  # services.thermald.enable = true;
-
-  # AMD Sensors monitoring
-  boot.kernelModules = [ "k10temp" ]; # CPU temperature sensor
+  # NOTE: thermald is Intel-only and NOT compatible with AMD CPUs
 
   environment.systemPackages = with pkgs; [
     # AMD monitoring tools
     lm_sensors   # Hardware monitoring (sensors command)
     radeontop    # GPU usage monitor
-
-    # LACT GUI (already enabled as service above)
-    lact
+    # NOTE: lact package is auto-installed by services.lact.enable above
 
     # Power monitoring
     powertop

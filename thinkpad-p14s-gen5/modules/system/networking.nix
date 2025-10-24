@@ -15,9 +15,6 @@
     allowedUDPPorts = [ ];
   };
 
-  # Enable WiFi 6E support
-  hardware.enableRedistributableFirmware = true;
-
   # TCP MTU probing (fixes SSH/network connectivity issues)
   boot.kernel.sysctl = {
     "net.ipv4.tcp_mtu_probing" = 1;
