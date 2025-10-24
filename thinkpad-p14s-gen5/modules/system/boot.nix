@@ -22,7 +22,7 @@
   # Kernel parameters optimized for Ryzen 7 PRO 8840HS
   boot.kernelParams = [
     "quiet"
-    "splash"
+    # "splash"  # Disabled (no Plymouth)
 
     # AMD P-State driver (EPP - Energy Performance Preference)
     # Mode "active" for Zen 4 = best performance + power efficiency
@@ -41,8 +41,8 @@
     "amd_iommu=on"
   ];
 
-  # Enable Plymouth for boot splash (optional)
-  boot.plymouth.enable = true;
+  # Plymouth boot splash disabled (faster boot, see boot messages)
+  boot.plymouth.enable = false;
 
   # Faster boot
   systemd.services.NetworkManager-wait-online.enable = false;

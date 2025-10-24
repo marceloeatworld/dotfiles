@@ -10,8 +10,8 @@
 
     shellAliases = {
       # NixOS
-      rebuild = "sudo nixos-rebuild switch --flake /home/marcelo/dotfiles/thinkpad-p14s-gen5#thinkpad";
-      update = "cd /home/marcelo/dotfiles/thinkpad-p14s-gen5 && nix flake update && sudo nixos-rebuild switch --flake .#thinkpad";
+      rebuild = "sudo nixos-rebuild switch --flake /home/marcelo/dotfiles/thinkpad-p14s-gen5#pop";
+      update = "cd /home/marcelo/dotfiles/thinkpad-p14s-gen5 && nix flake update && sudo nixos-rebuild switch --flake .#pop";
       clean = "sudo nix-collect-garbage -d && nix-collect-garbage -d";
 
       # Modern replacements

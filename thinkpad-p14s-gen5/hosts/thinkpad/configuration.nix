@@ -3,7 +3,7 @@
 
 {
   # System hostname
-  networking.hostName = "thinkpad-p14s";
+  networking.hostName = "pop";
 
   # Enable flakes and nix command
   nix.settings = {

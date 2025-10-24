@@ -21,6 +21,7 @@
     ./programs/nvim.nix
     ./programs/browsers.nix
     ./programs/brave-flags.nix  # Brave Wayland flags
+    ./programs/webapps.nix       # Web apps (WhatsApp, Spotify, etc.)
     ./programs/media.nix
     ./programs/development.nix
     ./programs/wofi.nix
@@ -84,9 +85,8 @@
     libreoffice-fresh
     zathura
 
-    # Productivity (Omarchy additions)
-    obsidian          # Note-taking (Markdown-based)
-    signal-desktop    # Encrypted messaging
+    # Productivity
+    joplin-desktop    # Note-taking (replaces Obsidian)
     gnome-calculator  # Calculator app
     xournalpp         # PDF annotation
 

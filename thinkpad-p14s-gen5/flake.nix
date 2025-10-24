@@ -77,7 +77,7 @@
     in
     {
       # NixOS configuration
-      nixosConfigurations.thinkpad = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.pop = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
 
         modules = [
