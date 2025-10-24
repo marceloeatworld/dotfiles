@@ -11,38 +11,44 @@
     };
 
     settings = {
-      # Theme - Catppuccin Mocha
-      foreground = "#CDD6F4";
-      background = "#1E1E2E";
-      selection_foreground = "#1E1E2E";
-      selection_background = "#F5E0DC";
+      # Theme - Ristretto
+      foreground = "#e6d9db";
+      background = "#2c2525";
+      selection_foreground = "#e6d9db";
+      selection_background = "#403e41";
 
       # Cursor (block style)
-      cursor = "#F5E0DC";
-      cursor_text_color = "#1E1E2E";
+      cursor = "#c3b7b8";
+      cursor_text_color = "#c3b7b8";
       cursor_shape = "block";
       cursor_blink_interval = 0;  # No blinking
 
       # URL underline color
-      url_color = "#F5E0DC";
+      url_color = "#e6d9db";
 
-      # Window (Omarchy-style padding)
-      window_padding_width = 14;  # Increased from 8 to 14 (Omarchy)
+      # Window
+      window_padding_width = 14;
       window_padding_height = 14;
       hide_window_decorations = true;
       confirm_os_window_close = 0;
       background_opacity = "0.95";
-      resize_draw_strategy = "static";  # No resize notifications
+      resize_draw_strategy = "static";
 
-      # Tab bar (positioned at bottom)
+      # Tab bar (Ristretto theme)
       tab_bar_style = "powerline";
       tab_powerline_style = "slanted";
       tab_bar_edge = "bottom";
+      tab_bar_background = "#404040";
       tab_title_template = "{fmt.fg.red}{bell_symbol}{activity_symbol}{fmt.fg.tab}{title}{' :{}:'.format(num_windows) if num_windows > 1 else ''}";
-      active_tab_foreground = "#11111B";
-      active_tab_background = "#CBA6F7";
-      inactive_tab_foreground = "#CDD6F4";
-      inactive_tab_background = "#181825";
+      active_tab_foreground = "#2c2525";
+      active_tab_background = "#f9cc6c";
+      inactive_tab_foreground = "#e6d9db";
+      inactive_tab_background = "#2c2525";
+
+      # Border colors (Ristretto)
+      active_border_color = "#e6d9db";
+      inactive_border_color = "#595959";
+      bell_border_color = "#595959";
 
       # Bell
       enable_audio_bell = false;
@@ -67,23 +73,23 @@
     };
 
     extraConfig = ''
-      # Catppuccin Mocha color scheme
-      color0 #45475A
-      color1 #F38BA8
-      color2 #A6E3A1
-      color3 #F9E2AF
-      color4 #89B4FA
-      color5 #F5C2E7
-      color6 #94E2D5
-      color7 #BAC2DE
-      color8 #585B70
-      color9 #F38BA8
-      color10 #A6E3A1
-      color11 #F9E2AF
-      color12 #89B4FA
-      color13 #F5C2E7
-      color14 #94E2D5
-      color15 #A6ADC8
+      # Ristretto color scheme
+      color0 #72696a
+      color1 #fd6883
+      color2 #adda78
+      color3 #f9cc6c
+      color4 #f38d70
+      color5 #a8a9eb
+      color6 #85dacc
+      color7 #e6d9db
+      color8 #948a8b
+      color9 #ff8297
+      color10 #c8e292
+      color11 #fcd675
+      color12 #f8a788
+      color13 #bebffd
+      color14 #9bf1e1
+      color15 #f1e5e7
     '';
   };
 

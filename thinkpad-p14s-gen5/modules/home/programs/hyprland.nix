@@ -180,8 +180,7 @@
         "$mod, Return, exec, kitty"
         "$mod, B, exec, brave"
         "$mod, E, exec, nemo"
-        "$mod, D, exec, walker"             # Modern launcher (primary)
-        "$mod SHIFT, D, exec, wofi --show drun"  # Wofi (fallback)
+        "$mod, D, exec, walker"             # Application launcher
 
         # Window management
         "$mod, Q, killactive"
@@ -243,6 +242,7 @@
         "$mod, Escape, exec, swaylock"
         "$mod SHIFT, Escape, exec, systemctl poweroff"
         "$mod, C, exec, hyprpicker -a"
+        "$mod, N, exec, pkill hyprsunset || hyprsunset -t 4500"  # Toggle blue light filter
         ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
         "$mod, Print, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"
       ];

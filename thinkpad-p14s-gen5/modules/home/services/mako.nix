@@ -5,11 +5,11 @@
   services.mako = {
     enable = true;
 
-    # Catppuccin Mocha theme
-    backgroundColor = "#1e1e2e";
-    textColor = "#cdd6f4";
-    borderColor = "#cba6f7";
-    progressColor = "over #313244";
+    # Ristretto theme
+    backgroundColor = "#2c2525";
+    textColor = "#e6d9db";
+    borderColor = "#e6d9db";
+    progressColor = "over #403e41";
 
     borderRadius = 8;
     borderSize = 2;
@@ -25,13 +25,13 @@
 
     extraConfig = ''
       [urgency=low]
-      border-color=#89b4fa
+      border-color=#85dacc
 
       [urgency=normal]
-      border-color=#cba6f7
+      border-color=#e6d9db
 
       [urgency=high]
-      border-color=#f38ba8
+      border-color=#fd6883
       default-timeout=0
     '';
   };

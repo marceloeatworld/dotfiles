@@ -14,7 +14,7 @@
     click_to_close = true              # Closes walker if clicking outside of main content area
     global_argument_delimiter = "#"    # Query: firefox#https://example.com => part after # ignored
     exact_search_prefix = "'"          # Disable fuzzy searching with ' prefix
-    theme = "catppuccin"               # Use Catppuccin theme
+    theme = "ristretto"                # Ristretto theme
     disable_mouse = false              # Enable mouse support
 
     [shell]
@@ -159,5 +159,15 @@
     show_actions = false
     only_search_title = true
     history = false
+  '';
+
+  # Ristretto theme CSS
+  xdg.configFile."walker/themes/ristretto.css".text = ''
+    @define-color selected-text #fabd2f;
+    @define-color text #e6d9db;
+    @define-color base #2c2525;
+    @define-color border #e6d9db;
+    @define-color foreground #e6d9db;
+    @define-color background #2c2525;
   '';
 }

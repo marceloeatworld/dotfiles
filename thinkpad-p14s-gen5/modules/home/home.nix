@@ -24,7 +24,6 @@
     ./programs/webapps.nix       # Web apps (WhatsApp, Spotify, etc.)
     ./programs/media.nix
     ./programs/development.nix
-    ./programs/wofi.nix
     ./programs/walker.nix
     ./programs/fastfetch.nix
     ./programs/xournalpp.nix

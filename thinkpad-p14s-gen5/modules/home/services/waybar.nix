@@ -125,6 +125,10 @@
     };
 
     style = ''
+      /* Ristretto theme */
+      @define-color foreground #e6d9db;
+      @define-color background #2c2525;
+
       * {
         border: none;
         border-radius: 0;
@@ -134,24 +138,24 @@
       }
 
       window#waybar {
-        background: rgba(30, 30, 46, 0.95);
-        color: #cdd6f4;
+        background: rgba(44, 37, 37, 0.95);
+        color: @foreground;
       }
 
       #workspaces button {
         padding: 0 8px;
-        color: #cdd6f4;
+        color: @foreground;
         background: transparent;
       }
 
       #workspaces button.active {
-        background: #cba6f7;
-        color: #1e1e2e;
+        background: #f9cc6c;
+        color: @background;
       }
 
       #workspaces button.urgent {
-        background: #f38ba8;
-        color: #1e1e2e;
+        background: #fd6883;
+        color: @background;
       }
 
       #clock,
@@ -165,28 +169,29 @@
       #tray {
         padding: 0 10px;
         margin: 0 2px;
-        background: rgba(49, 50, 68, 0.8);
+        background: rgba(64, 62, 65, 0.8);
         border-radius: 8px;
+        color: @foreground;
       }
 
       #battery.charging {
-        background: #a6e3a1;
-        color: #1e1e2e;
+        background: #adda78;
+        color: @background;
       }
 
       #battery.warning:not(.charging) {
-        background: #f9e2af;
-        color: #1e1e2e;
+        background: #f9cc6c;
+        color: @background;
       }
 
       #battery.critical:not(.charging) {
-        background: #f38ba8;
-        color: #1e1e2e;
+        background: #fd6883;
+        color: @background;
       }
 
       #temperature.critical {
-        background: #f38ba8;
-        color: #1e1e2e;
+        background: #fd6883;
+        color: @background;
       }
     '';
   };
