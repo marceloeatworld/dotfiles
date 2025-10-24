@@ -289,6 +289,7 @@ gtk-launch discord-web
 gtk-launch claude-web
 gtk-launch protonmail-web
 gtk-launch protondrive-web
+gtk-launch protonpass-web
 ```
 
 ### **5. Btrfs Snapshots:**

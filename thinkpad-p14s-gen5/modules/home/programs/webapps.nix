@@ -107,6 +107,17 @@
       terminal = false;
       categories = [ "Network" "FileTransfer" "Office" ];
     };
+
+    # Proton Pass
+    protonpass-web = {
+      name = "Proton Pass";
+      genericName = "Password Manager";
+      comment = "Proton Pass Web Application";
+      exec = "brave --app=https://pass.proton.me/";
+      icon = "dialog-password";  # Generic password icon from system
+      terminal = false;
+      categories = [ "Network" "Utility" "Security" ];
+    };
   };
 }
 
