@@ -11,9 +11,9 @@
         content = {
           type = "gpt";
           partitions = {
-            # EFI boot partition (1GB for multiple kernels)
+            # EFI boot partition (512MB - standard modern size)
             ESP = {
-              size = "1G";
+              size = "512M";
               type = "EF00";
               content = {
                 type = "filesystem";

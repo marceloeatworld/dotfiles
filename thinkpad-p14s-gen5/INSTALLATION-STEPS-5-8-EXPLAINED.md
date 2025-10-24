@@ -244,7 +244,7 @@ swapon /mnt/swap/swapfile
                           └─ @swap      → /swap (16GB swapfile)
 ```
 
----
+---o
 
 ## **Durée de l'étape 6:**
 
