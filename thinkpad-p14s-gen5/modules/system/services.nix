@@ -83,6 +83,9 @@
   # Enable D-Bus
   services.dbus.enable = true;
 
+  # Gnome Keyring (password management)
+  services.gnome.gnome-keyring.enable = true;
+
   # Enable udisks2 for automatic mounting
   services.udisks2.enable = true;
 

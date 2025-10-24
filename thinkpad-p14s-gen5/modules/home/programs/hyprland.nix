@@ -180,7 +180,8 @@
         "$mod, Return, exec, kitty"
         "$mod, B, exec, brave"
         "$mod, E, exec, nemo"
-        "$mod, D, exec, wofi --show drun"
+        "$mod, D, exec, walker"             # Modern launcher (primary)
+        "$mod SHIFT, D, exec, wofi --show drun"  # Wofi (fallback)
 
         # Window management
         "$mod, Q, killactive"

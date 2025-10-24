@@ -25,11 +25,17 @@
     ./programs/media.nix
     ./programs/development.nix
     ./programs/wofi.nix
+    ./programs/walker.nix
+    ./programs/fastfetch.nix
+    ./programs/xournalpp.nix
+    ./programs/uwsm.nix
     ./services/waybar.nix
     ./services/mako.nix
     ./services/swaylock.nix
+    ./services/swayosd.nix
     ./config/gtk.nix
     ./config/qt.nix
+    ./config/fontconfig.nix
   ];
 
   # Session variables
@@ -38,6 +44,12 @@
     VISUAL = "nvim";
     BROWSER = "brave";
     TERMINAL = "kitty";
+  };
+
+  # Gnome Keyring integration
+  services.gnome-keyring = {
+    enable = true;
+    components = [ "pkcs11" "secrets" "ssh" ];
   };
 
   # Basic user packages
@@ -106,11 +118,13 @@
     satty             # Screenshot annotation
     xdg-desktop-portal-hyprland  # Desktop integration
     xdg-desktop-portal-gtk       # GTK portal
+    blueman           # Bluetooth manager GUI
 
     # Fonts (better coverage)
     noto-fonts
     noto-fonts-emoji
     font-awesome
+    jetbrains-mono  # Development font (Nerd Font variant)
   ];
 
   # XDG user directories
@@ -127,19 +141,43 @@
     publicShare = "${config.home.homeDirectory}/Public";
   };
 
-  # XDG MIME types
+  # XDG MIME types (Omarchy-style comprehensive associations)
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
+      # Web browser
       "text/html" = "brave-browser.desktop";
       "x-scheme-handler/http" = "brave-browser.desktop";
       "x-scheme-handler/https" = "brave-browser.desktop";
       "x-scheme-handler/about" = "brave-browser.desktop";
       "x-scheme-handler/unknown" = "brave-browser.desktop";
+
+      # PDF viewer
       "application/pdf" = "zathura.desktop";
+
+      # Images (imv)
       "image/png" = "imv.desktop";
       "image/jpeg" = "imv.desktop";
+      "image/jpg" = "imv.desktop";
+      "image/gif" = "imv.desktop";
+      "image/webp" = "imv.desktop";
+      "image/bmp" = "imv.desktop";
+      "image/tiff" = "imv.desktop";
+      "image/svg+xml" = "imv.desktop";
+
+      # Videos (mpv)
       "video/mp4" = "mpv.desktop";
+      "video/x-matroska" = "mpv.desktop";
+      "video/webm" = "mpv.desktop";
+      "video/avi" = "mpv.desktop";
+      "video/x-msvideo" = "mpv.desktop";
+      "video/quicktime" = "mpv.desktop";
+      "video/mpeg" = "mpv.desktop";
+      "video/x-flv" = "mpv.desktop";
+      "video/x-ms-wmv" = "mpv.desktop";
+      "video/ogg" = "mpv.desktop";
+      "video/3gpp" = "mpv.desktop";
+      "video/3gpp2" = "mpv.desktop";
     };
   };
 }

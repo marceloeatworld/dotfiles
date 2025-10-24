@@ -46,4 +46,9 @@
 
   # Faster boot
   systemd.services.NetworkManager-wait-online.enable = false;
+
+  # Faster shutdown (Omarchy-style: 5s timeout instead of default 90s)
+  systemd.extraConfig = ''
+    DefaultTimeoutStopSec=5s
+  '';
 }

@@ -9,13 +9,24 @@
     # Your license will work with this
   };
 
-  # Docker
+  # Docker (Omarchy-style configuration)
   virtualisation.docker = {
     enable = true;
     enableOnBoot = true;
     autoPrune = {
       enable = true;
       dates = "weekly";
+    };
+
+    # Logging configuration (prevent disk exhaustion)
+    daemon.settings = {
+      log-driver = "json-file";
+      log-opts = {
+        max-size = "10m";
+        max-file = "5";
+      };
+      # Docker bridge network
+      bip = "172.17.0.1/16";
     };
   };
 
