@@ -111,7 +111,7 @@
                       ];
                     };
 
-                    # Swap subvolume (2GB - sécurité minimale pour 32GB RAM)
+                    # Swap subvolume (2GB - minimal safety margin for 32GB RAM)
                     "@swap" = {
                       mountpoint = "/swap";
                       mountOptions = [ "noatime" ];
