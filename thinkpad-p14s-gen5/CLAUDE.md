@@ -42,6 +42,7 @@ The flake defines `nixosConfigurations.pop` and imports:
 - `virtualisation.nix` - Docker, VMware, libvirtd/QEMU
 - `btrfs.nix` - Btrfs maintenance (scrub, snapshots)
 - `amd-optimizations.nix` - AMD-specific optimizations (P-State EPP, GPU settings)
+- `steam.nix` - Steam with Proton GE, GameMode performance optimizations
 
 **Home-manager configuration** (`modules/home/home.nix`):
 

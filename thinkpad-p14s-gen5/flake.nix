@@ -106,6 +106,7 @@
           ./modules/system/virtualisation.nix
           ./modules/system/btrfs.nix
           ./modules/system/amd-optimizations.nix  # AMD Ryzen 7 PRO 8840HS + Radeon 780M
+          ./modules/system/steam.nix
 
           # Home Manager
           home-manager.nixosModules.home-manager
