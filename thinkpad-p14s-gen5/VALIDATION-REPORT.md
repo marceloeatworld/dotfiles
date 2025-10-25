@@ -40,7 +40,7 @@ virtualisation.nix      61 lines  ✅ Docker + VMware + QEMU
 ```
 brave-flags.nix         25 lines  ✅ Brave Wayland flags
 browsers.nix            23 lines  ✅ Brave browser
-development.nix         78 lines  ✅ VS Code + dev tools
+development.nix         74 lines  ✅ VS Code + dev tools (VSCode sync enabled)
 fastfetch.nix          138 lines  ✅ System info display
 git.nix                 31 lines  ✅ Git + lazygit
 hyprland.nix           319 lines  ✅ Hyprland user config (keybindings)
@@ -159,7 +159,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | services.gnome.gnome-keyring.enable | security.nix (with PAM) |
 | LACT package duplication | Service auto-installs |
 
-### Optimizations (5)
+### Optimizations (7)
 | Optimization | Impact |
 |--------------|--------|
 | hardware-configuration.nix simplified | 94 → 41 lines (-53) |
@@ -167,6 +167,8 @@ qt.nix                  20 lines  ✅ Qt theme
 | Fonts system-wide | NEW fonts.nix module |
 | Disko swap options | Added nodatacow + nodatasum |
 | Installation guide | Updated for NixOS 25.05 minimal |
+| VSCode config disabled | Use account sync instead |
+| Removed K8s/Terraform | Lighter installation |
 
 ---
 
