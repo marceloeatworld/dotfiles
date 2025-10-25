@@ -43,7 +43,7 @@ browsers.nix            23 lines  ✅ Brave browser
 development.nix         74 lines  ✅ VS Code + dev tools (VSCode sync enabled)
 fastfetch.nix          138 lines  ✅ System info display
 git.nix                 31 lines  ✅ Git + lazygit
-hyprland.nix           319 lines  ✅ Hyprland user config (keybindings)
+hyprland.nix           315 lines  ✅ Hyprland user config (v0.45+ compat)
 media.nix               35 lines  ✅ MPV + IMV + media apps
 nvim.nix                50 lines  ✅ Neovim editor (minimal config)
 shell.nix              130 lines  ✅ Zsh + Starship + CLI tools
@@ -160,7 +160,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | LACT package duplication | Service auto-installs |
 | xdg-desktop-portal duplication | System-level (hyprland.nix) |
 
-### Optimizations (9)
+### Optimizations (10)
 | Optimization | Impact |
 |--------------|--------|
 | hardware-configuration.nix simplified | 94 → 41 lines (-53) |
@@ -172,6 +172,8 @@ qt.nix                  20 lines  ✅ Qt theme
 | Removed K8s/Terraform | Lighter installation |
 | Neovim plugins minimal | Avoid build errors (catppuccin/nvim-tree) |
 | Removed clang | Fix collision clang 19 vs 14 (gcc sufficient) |
+| Hyprland shadow options | Updated for Hyprland 0.45+ (shadow block) |
+| Hyprland no_gaps_when_only | Removed (deprecated in 0.45+) |
 
 ---
 

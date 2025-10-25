@@ -110,10 +110,13 @@
           ignore_opacity = true;
         };
 
-        drop_shadow = true;
-        shadow_range = 20;
-        shadow_render_power = 3;
-        "col.shadow" = "rgba(1a1a1aee)";
+        # Shadow settings (Hyprland 0.45+ new format)
+        shadow = {
+          enabled = true;
+          range = 20;
+          render_power = 3;
+          color = "rgba(1a1a1aee)";
+        };
 
         active_opacity = 1.0;
         inactive_opacity = 0.95;
@@ -146,7 +149,7 @@
       dwindle = {
         pseudotile = true;
         preserve_split = true;
-        no_gaps_when_only = false;
+        # no_gaps_when_only removed in Hyprland 0.45+ (use workspace rules instead)
       };
 
       # Master layout
