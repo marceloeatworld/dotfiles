@@ -125,6 +125,6 @@
     enable = true;
     enableZshIntegration = true;
     git = true;
-    icons = true;
+    icons = "auto";  # NixOS 25.05: icons = "auto" instead of true
   };
 }

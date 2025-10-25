@@ -3,11 +3,13 @@
 
 {
   # VMware Workstation Pro
-  virtualisation.vmware.host = {
-    enable = true;
-    # Package will be vmware-workstation from nixpkgs
-    # Your license will work with this
-  };
+  # DISABLED during installation - requires manual bundle download
+  # See instructions in VALIDATION-REPORT.md to install after NixOS setup
+  # virtualisation.vmware.host = {
+  #   enable = true;
+  #   # Package will be vmware-workstation from nixpkgs
+  #   # Your license will work with this
+  # };
 
   # Docker
   virtualisation.docker = {

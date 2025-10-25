@@ -24,7 +24,8 @@
   };
 
   # Disable PulseAudio (PipeWire replaces it)
-  hardware.pulseaudio.enable = false;
+  # NixOS 25.05: hardware.pulseaudio renamed to services.pulseaudio
+  services.pulseaudio.enable = false;
 
   # ALSA utils
   environment.systemPackages = with pkgs; [

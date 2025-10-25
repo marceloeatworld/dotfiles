@@ -130,7 +130,7 @@ qt.nix                  20 lines  ✅ Qt theme
 
 ## 🔧 FIXES APPLIED
 
-### Critical Fixes (11)
+### Critical Fixes (16)
 | Issue | File | Status |
 |-------|------|--------|
 | thermald on AMD (Intel-only) | services.nix | ✅ REMOVED |
@@ -139,11 +139,16 @@ qt.nix                  20 lines  ✅ Qt theme
 | liberation-fonts name | fontconfig.nix | ✅ → liberation_ttf |
 | nerdfonts.override syntax | terminal.nix | ✅ → nerd-fonts.* |
 | parllama package | development.nix | ✅ REMOVED |
+| VMware Workstation | virtualisation.nix | ✅ DISABLED (manual install) |
 | PhotoGIMP config | media.nix | ✅ REMOVED |
 | zsh initExtra | shell.nix | ✅ → initContent |
 | services.lact.enable | amd-optimizations.nix | ✅ DISABLED (not in 25.05) |
 | services.mako.extraConfig | mako.nix | ✅ → settings |
 | Infinite recursion | uwsm.nix | ✅ FIXED (self-referencing vars) |
+| programs.vscode.extensions | development.nix | ✅ → profiles.default.extensions |
+| programs.vscode.userSettings | development.nix | ✅ → profiles.default.settings |
+| programs.eza.icons = true | shell.nix | ✅ → icons = "auto" |
+| hardware.pulseaudio | sound.nix | ✅ → services.pulseaudio |
 
 ### Conflict Resolution (6)
 | Conflict | Resolution |
@@ -167,6 +172,29 @@ qt.nix                  20 lines  ✅ Qt theme
 ---
 
 ## 🚨 KNOWN ISSUES & WARNINGS
+
+### ⚠️ VMware Workstation Pro (DISABLED)
+**Issue:** VMware requires manual bundle download from Broadcom/VMware website
+**Status:** DISABLED in virtualisation.nix during installation
+**Why:** NixOS cannot auto-download proprietary VMware bundle (license required)
+**Installation:** After NixOS setup, follow these steps:
+
+```bash
+# 1. Download VMware Workstation Pro 17.x bundle from:
+# https://www.broadcom.com/support/download-search/?pg=&pf=&dk=vmware+workstation
+
+# 2. Make bundle executable
+chmod +x VMware-Workstation-Full-17.*.bundle
+
+# 3. Add to nix store (replace with exact filename)
+nix-store --add-fixed sha256 VMware-Workstation-Full-17.*.bundle
+
+# 4. Uncomment VMware section in modules/system/virtualisation.nix
+# 5. Rebuild
+sudo nixos-rebuild switch --flake /home/marcelo/dotfiles/thinkpad-p14s-gen5#pop
+```
+
+**Alternative:** Use KVM/QEMU + virt-manager (already configured and working)
 
 ### ⚠️ LACT Service (AMD GPU Control)
 **Issue:** `services.lact` is NOT available in NixOS 25.05 stable
