@@ -1,5 +1,18 @@
 # Disko configuration - Declarative disk partitioning
-# LUKS encryption + Btrfs with subvolumes for 1TB SSD
+# LUKS encryption + Btrfs with 7 subvolumes
+#
+# Usage during installation:
+# sudo nix --extra-experimental-features 'nix-command flakes' run github:nix-community/disko -- --mode disko hosts/thinkpad/disko-config.nix
+#
+# This will:
+# 1. Wipe the disk (⚠️ ALL DATA LOST)
+# 2. Create GPT partition table
+# 3. Create EFI partition (512MB)
+# 4. Create encrypted LUKS partition (rest of disk)
+# 5. Format with Btrfs
+# 6. Create 7 subvolumes
+# 7. Mount everything under /mnt
+
 { ... }:
 
 {
@@ -110,10 +123,15 @@
                       ];
                     };
 
-                    # Swap subvolume (2GB - minimal safety margin for 32GB RAM)
+                    # Swap subvolume (2GB - minimal for 32GB RAM)
+                    # CRITICAL: Btrfs swap REQUIRES nodatacow + nodatasum + NO compression
                     "@swap" = {
                       mountpoint = "/swap";
-                      mountOptions = [ "noatime" ];
+                      mountOptions = [
+                        "noatime"
+                        "nodatacow"   # Disable copy-on-write (required for swap)
+                        "nodatasum"   # Disable checksums (required for swap)
+                      ];
                       swap.swapfile = {
                         size = "2G";
                       };
@@ -128,10 +146,6 @@
     };
   };
 
-  # Optional: Noatime for all mounts (reduces writes)
-  fileSystems = {
-    "/".options = [ "noatime" ];
-    "/home".options = [ "noatime" ];
-    "/nix".options = [ "noatime" ];
-  };
+  # NOTE: fileSystems are automatically managed by disko
+  # Do NOT manually define them here - disko handles everything
 }

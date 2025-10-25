@@ -48,18 +48,21 @@ sudo dd if=latest-nixos-minimal-x86_64-linux.iso of=/dev/sdX bs=4M status=progre
 
 ## 🌐 **STEP 3: INTERNET CONNECTION**
 
-### **WiFi:**
+### **WiFi (command line):**
 
 ```bash
-# Graphical interface (easier)
-nmtui
-
-# Or command line
+# Start wpa_supplicant
 sudo systemctl start wpa_supplicant
-nmcli device wifi connect "YOUR_SSID" password "YOUR_PASSWORD"
 
-# Test connection
-ping -c 3 nixos.org
+# Connect to WiFi (ONE LINE - replace SSID and PASSWORD)
+sudo wpa_passphrase "YOUR_SSID" "YOUR_PASSWORD" | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf && sudo systemctl restart wpa_supplicant && sleep 5 && ping -c 3 nixos.org
+```
+
+### **Alternative: If available, use nmcli:**
+
+```bash
+# Connect to WiFi (ONE LINE)
+nmcli device wifi connect "YOUR_SSID" password "YOUR_PASSWORD" && ping -c 3 nixos.org
 ```
 
 ---
@@ -67,15 +70,14 @@ ping -c 3 nixos.org
 ## 📦 **STEP 4: CLONE YOUR CONFIGURATION**
 
 ```bash
-# Switch to root
+# Switch to root and install git (ONE LINE)
+sudo su -c "nix-shell -p git --run 'cd /tmp && git clone https://github.com/marceloeatworld/dotfiles thinkpad-p14s-gen5 && cd thinkpad-p14s-gen5'"
+
+# Or step by step:
 sudo su
-
-# Install Git (if not present)
 nix-shell -p git
-
-# Clone your dotfiles repo
-cd /mnt
-git clone https://github.com/YOUR_USERNAME/dotfiles thinkpad-p14s-gen5
+cd /tmp
+git clone https://github.com/marceloeatworld/dotfiles thinkpad-p14s-gen5
 cd thinkpad-p14s-gen5
 ```
 
@@ -110,21 +112,18 @@ nano hosts/thinkpad/disko-config.nix
 **⚠️ WARNING: This command WIPES THE ENTIRE DISK!**
 
 ```bash
-# Install disko in shell
-nix --extra-experimental-features 'nix-command flakes' \
-    run github:nix-community/disko -- \
-    --mode disko \
-    hosts/thinkpad/disko-config.nix
+# Run disko (ONE LINE - will prompt for LUKS password)
+sudo nix --extra-experimental-features 'nix-command flakes' run github:nix-community/disko -- --mode disko hosts/thinkpad/disko-config.nix
 
 # Disko will:
 # 1. Create EFI partition (512MB)
 # 2. Create encrypted LUKS partition (rest)
 # 3. Format with Btrfs
-# 4. Create 7 subvolumes
+# 4. Create 7 subvolumes (@root, @home, @nix, @persist, @log, @snapshots, @swap)
 # 5. Mount everything under /mnt
 
-# You will need to enter:
-# - LUKS encryption password (⚠️ DO NOT FORGET!)
+# You will be prompted to enter:
+# - LUKS encryption password (⚠️ REMEMBER THIS - no recovery possible!)
 ```
 
 ---
@@ -150,17 +149,23 @@ df -h /mnt
 ## 🎯 **STEP 8: GENERATE hardware-configuration.nix**
 
 ```bash
-# Generate hardware config
-nixos-generate-config --root /mnt
+# Generate hardware config WITHOUT filesystems (disko handles that) - ONE LINE
+sudo nixos-generate-config --no-filesystems --root /mnt && sudo cp /mnt/etc/nixos/hardware-configuration.nix hosts/thinkpad/hardware-configuration.nix
 
-# Copy hardware-configuration.nix to your config
-cp /mnt/etc/nixos/hardware-configuration.nix \
-   hosts/thinkpad/hardware-configuration.nix
+# Or step by step:
+sudo nixos-generate-config --no-filesystems --root /mnt
+sudo cp /mnt/etc/nixos/hardware-configuration.nix hosts/thinkpad/hardware-configuration.nix
 
-# IMPORTANT: Verify file contains:
-# - boot.initrd.luks.devices."crypted"
-# - All Btrfs mount options
+# IMPORTANT: --no-filesystems flag is REQUIRED
+# Disko already manages fileSystems configuration
+# hardware-configuration.nix should ONLY contain:
+# - boot.initrd.availableKernelModules
+# - boot.initrd.kernelModules
+# - boot.kernelModules
+# - boot.initrd.luks.devices."crypted" (LUKS config)
+# - nixpkgs.hostPlatform
 
+# Verify:
 cat hosts/thinkpad/hardware-configuration.nix
 ```
 
@@ -169,30 +174,34 @@ cat hosts/thinkpad/hardware-configuration.nix
 ## 🚀 **STEP 9: INSTALLATION**
 
 ```bash
-# Copy config to /mnt
-cp -r /mnt/thinkpad-p14s-gen5 /mnt/home/marcelo/dotfiles
+# Copy config to /mnt and install (ONE LINE)
+sudo mkdir -p /mnt/home/marcelo/dotfiles && sudo cp -r . /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5 && sudo nixos-install --flake /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5#pop
 
-# Install NixOS with your flake
-nixos-install --flake /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5#pop
+# Or step by step:
+sudo mkdir -p /mnt/home/marcelo/dotfiles
+sudo cp -r . /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5
+sudo nixos-install --flake /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5#pop
 
-# ⏳ Installation takes 20-40 minutes
+# ⏳ Installation takes 20-40 minutes depending on internet speed
 # NixOS will:
-# - Download all packages
-# - Compile what's necessary
-# - Configure the system
-# - Install Hyprland
-# - Configure all modules
+# - Download all packages (~3-5GB)
+# - Build what's necessary
+# - Configure the entire system
+# - Install Hyprland + all modules
 ```
 
-### **Set root password:**
+### **Set user password (CRITICAL):**
 
 ```bash
-# When prompted, set root password
-# Or after installation:
-nixos-enter
-passwd root
-passwd marcelo  # ⚠️ IMPORTANT: Set user password
+# Set password for user marcelo (ONE LINE - run AFTER installation completes)
+sudo nixos-enter --root /mnt -c 'passwd marcelo' && exit
+
+# Or step by step:
+sudo nixos-enter --root /mnt
+passwd marcelo
 exit
+
+# ⚠️ IMPORTANT: You MUST set this password or you won't be able to login!
 ```
 
 ---
@@ -200,11 +209,10 @@ exit
 ## 🔄 **STEP 10: REBOOT**
 
 ```bash
-# Unmount and reboot
-umount -R /mnt
-reboot
+# Unmount all and reboot (ONE LINE)
+sudo umount -R /mnt && sudo reboot
 
-# ⚠️ Remove USB drive during reboot
+# ⚠️ Remove USB drive when system shuts down
 ```
 
 ---
@@ -345,58 +353,79 @@ uwsm start -S hyprland-uwsm.desktop
 
 ---
 
-## 📊 **QUICK SUMMARY**
+## 📊 **QUICK SUMMARY - ONE-LINE COMMANDS**
 
 ```bash
-# 1. Create USB
-dd if=nixos.iso of=/dev/sdX bs=4M
+# 1. Create USB (replace sdX with your USB drive)
+sudo dd if=latest-nixos-minimal-x86_64-linux.iso of=/dev/sdX bs=4M status=progress && sync
 
-# 2. Boot USB + Connect WiFi
-nmtui
+# 2. Boot USB + Connect WiFi (replace SSID and PASSWORD)
+nmcli device wifi connect "YOUR_SSID" password "YOUR_PASSWORD" && ping -c 3 nixos.org
 
-# 3. Clone
+# 3. Switch to root, install git, clone repo
 sudo su
-git clone https://github.com/USER/dotfiles /mnt/thinkpad-p14s-gen5
-cd /mnt/thinkpad-p14s-gen5
+nix-shell -p git
+cd /tmp && git clone https://github.com/marceloeatworld/dotfiles thinkpad-p14s-gen5 && cd thinkpad-p14s-gen5
 
-# 4. Disko (⚠️ WIPES DISK)
-nix run github:nix-community/disko -- --mode disko hosts/thinkpad/disko-config.nix
+# 4. Verify disk (should be nvme0n1)
+lsblk
 
-# 5. Hardware config
-nixos-generate-config --root /mnt
-cp /mnt/etc/nixos/hardware-configuration.nix hosts/thinkpad/
+# 5. Run Disko (⚠️ WIPES ENTIRE DISK - will prompt for LUKS password)
+sudo nix --extra-experimental-features 'nix-command flakes' run github:nix-community/disko -- --mode disko hosts/thinkpad/disko-config.nix
 
-# 6. Install
-cp -r . /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5
-nixos-install --flake /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5#pop
+# 6. Generate hardware config WITHOUT filesystems (disko manages them)
+sudo nixos-generate-config --no-filesystems --root /mnt && sudo cp /mnt/etc/nixos/hardware-configuration.nix hosts/thinkpad/hardware-configuration.nix
 
-# 7. Password
-nixos-enter
-passwd marcelo
-exit
+# 7. Copy config and install NixOS
+sudo mkdir -p /mnt/home/marcelo/dotfiles && sudo cp -r . /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5 && sudo nixos-install --flake /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5#pop
 
-# 8. Reboot
-reboot
+# 8. Set user password (CRITICAL - run AFTER installation completes)
+sudo nixos-enter --root /mnt -c 'passwd marcelo'
+
+# 9. Reboot
+sudo umount -R /mnt && sudo reboot
+```
+
+### **🚀 ULTRA-COMPACT (Copy-Paste After Connecting WiFi):**
+
+```bash
+# Run these commands in order (YOU MUST BE ROOT)
+sudo su
+nix-shell -p git
+cd /tmp && git clone https://github.com/marceloeatworld/dotfiles thinkpad-p14s-gen5 && cd thinkpad-p14s-gen5
+lsblk
+sudo nix --extra-experimental-features 'nix-command flakes' run github:nix-community/disko -- --mode disko hosts/thinkpad/disko-config.nix
+sudo nixos-generate-config --no-filesystems --root /mnt && sudo cp /mnt/etc/nixos/hardware-configuration.nix hosts/thinkpad/hardware-configuration.nix
+sudo mkdir -p /mnt/home/marcelo/dotfiles && sudo cp -r . /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5 && sudo nixos-install --flake /mnt/home/marcelo/dotfiles/thinkpad-p14s-gen5#pop
+sudo nixos-enter --root /mnt -c 'passwd marcelo'
+sudo umount -R /mnt && sudo reboot
 ```
 
 ---
 
 ## 🎯 **CHECKLIST**
 
-- [ ] USB drive created
-- [ ] Data backup done
-- [ ] Boot from USB
-- [ ] WiFi connected
-- [ ] Repo cloned
-- [ ] Disk device verified (nvme0n1)
-- [ ] Disko executed
-- [ ] LUKS password set (⚠️ written down somewhere)
-- [ ] hardware-configuration.nix copied
-- [ ] Installation launched
-- [ ] marcelo password set
-- [ ] Reboot successful
-- [ ] Hyprland starts
-- [ ] Web apps working
+- [ ] USB drive created (minimal ISO)
+- [ ] Data backup done (⚠️ disk will be wiped)
+- [ ] Boot from USB (F12 on ThinkPad)
+- [ ] WiFi connected (ping nixos.org works)
+- [ ] Root shell (sudo su)
+- [ ] Repo cloned to /tmp
+- [ ] Disk device verified (lsblk → nvme0n1)
+- [ ] Disko executed (disk partitioned + encrypted)
+- [ ] LUKS password set (⚠️ WRITE IT DOWN - no recovery!)
+- [ ] Mounts verified (mount | grep /mnt)
+- [ ] hardware-configuration.nix generated WITH --no-filesystems
+- [ ] hardware-configuration.nix copied to repo
+- [ ] Config copied to /mnt/home/marcelo/dotfiles
+- [ ] Installation launched (nixos-install --flake)
+- [ ] User password set (passwd marcelo)
+- [ ] Unmount and reboot
+- [ ] LUKS unlock works
+- [ ] Login as marcelo works
+- [ ] Hyprland auto-starts
+- [ ] Internet works
+- [ ] LACT/GPU working
 
 ---
 

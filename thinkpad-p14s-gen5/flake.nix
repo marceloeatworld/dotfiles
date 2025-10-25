@@ -107,6 +107,7 @@
           ./modules/system/btrfs.nix
           ./modules/system/amd-optimizations.nix  # AMD Ryzen 7 PRO 8840HS + Radeon 780M
           ./modules/system/steam.nix
+          ./modules/system/fonts.nix  # System-wide fonts (REQUIRED for Hyprland/Wayland)
 
           # Home Manager
           home-manager.nixosModules.home-manager

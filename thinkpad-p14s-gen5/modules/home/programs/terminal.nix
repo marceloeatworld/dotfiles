@@ -93,11 +93,6 @@
     '';
   };
 
-  # Font packages - NixOS 25.05 uses individual nerd-fonts packages
-  home.packages = with pkgs; [
-    nerd-fonts.jetbrains-mono
-    nerd-fonts.caskaydia-cove  # CascadiaCode Nerd Font
-    nerd-fonts.fira-code
-    nerd-fonts.hack
-  ];
+  # NOTE: Nerd Fonts are installed system-wide in modules/system/fonts.nix
+  # This ensures they work properly with Hyprland, Waybar, and all Wayland apps
 }

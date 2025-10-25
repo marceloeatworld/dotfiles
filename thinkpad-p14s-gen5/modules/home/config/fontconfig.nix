@@ -1,14 +1,9 @@
-# Font configuration (fontconfig)
-{ pkgs, ... }:
+# User-level fontconfig overrides
+# NOTE: Fonts are installed system-wide in modules/system/fonts.nix
+{ ... }:
 
 {
-  # Font packages
-  home.packages = with pkgs; [
-    liberation_ttf  # Liberation Sans, Serif, Mono
-    # Note: Nerd Fonts installed in terminal.nix
-  ];
-
-  # Fontconfig settings
+  # User-specific fontconfig settings
   xdg.configFile."fontconfig/fonts.conf".text = ''
     <?xml version="1.0"?>
     <!DOCTYPE fontconfig SYSTEM "fonts.dtd">

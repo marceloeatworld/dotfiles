@@ -1,5 +1,9 @@
 # Hardware configuration for ThinkPad P14s Gen 5 (AMD)
-# Basic hardware detection - AMD-specific optimizations in amd-optimizations.nix
+# Generated with: nixos-generate-config --no-filesystems --root /mnt
+#
+# IMPORTANT: This file should NOT contain fileSystems declarations!
+# Disko (disko-config.nix) manages all filesystem configuration.
+# Only hardware detection and LUKS config belong here.
 
 { config, lib, modulesPath, ... }:
 

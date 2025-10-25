@@ -120,11 +120,9 @@
     xdg-desktop-portal-gtk       # GTK portal
     blueman           # Bluetooth manager GUI
 
-    # Fonts (better coverage)
-    noto-fonts
-    noto-fonts-emoji
-    font-awesome
-    # Note: JetBrainsMono Nerd Font installed in terminal.nix
+    # NOTE: Fonts are installed system-wide in modules/system/fonts.nix
+    # This is REQUIRED for Hyprland/Waybar and other Wayland apps
+    # Do NOT install fonts in home.packages - use fonts.packages instead
   ];
 
   # XDG user directories
