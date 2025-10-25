@@ -83,8 +83,7 @@
   # Enable D-Bus
   services.dbus.enable = true;
 
-  # Gnome Keyring (password management)
-  services.gnome.gnome-keyring.enable = true;
+  # NOTE: gnome-keyring configured in security.nix with PAM integration
 
   # Enable udisks2 for automatic mounting
   services.udisks2.enable = true;
