@@ -116,8 +116,8 @@
     swayosd           # Beautiful OSD for volume/brightness
     hyprsunset        # Blue light filter
     satty             # Screenshot annotation
-    xdg-desktop-portal-hyprland  # Desktop integration
-    xdg-desktop-portal-gtk       # GTK portal
+    # xdg-desktop-portal-hyprland - REMOVED: already configured in system/hyprland.nix
+    # xdg-desktop-portal-gtk - REMOVED: already configured in system/hyprland.nix
     blueman           # Bluetooth manager GUI
 
     # NOTE: Fonts are installed system-wide in modules/system/fonts.nix

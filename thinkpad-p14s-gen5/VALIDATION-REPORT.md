@@ -149,7 +149,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | programs.eza.icons = true | shell.nix | ✅ → icons = "auto" |
 | hardware.pulseaudio | sound.nix | ✅ → services.pulseaudio |
 
-### Conflict Resolution (6)
+### Conflict Resolution (7)
 | Conflict | Resolution |
 |----------|------------|
 | CPU Governor (TLP vs powerManagement) | TLP only |
@@ -158,6 +158,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | hardware.enableRedistributableFirmware | amd-optimizations.nix |
 | services.gnome.gnome-keyring.enable | security.nix (with PAM) |
 | LACT package duplication | Service auto-installs |
+| xdg-desktop-portal duplication | System-level (hyprland.nix) |
 
 ### Optimizations (9)
 | Optimization | Impact |
