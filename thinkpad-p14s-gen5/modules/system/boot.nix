@@ -51,4 +51,9 @@
   systemd.extraConfig = ''
     DefaultTimeoutStopSec=5s
   '';
+
+  # NOTE: boot.initrd.systemd NOT enabled - keeps default QWERTY keyboard for LUKS
+  # This is intentional: LUKS password was created with QWERTY layout
+  # If you want French (AZERTY) keyboard for LUKS, enable boot.initrd.systemd.enable
+  # and recreate LUKS with a new password
 }
