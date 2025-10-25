@@ -17,7 +17,7 @@
   xdg.portal = {
     enable = true;
     wlr.enable = true;
-    xdgOpenUsePortal = true;
+    xdgOpenUsePortal = false;  # Disabled - hyprland portal doesn't fully support OpenURI
     extraPortals = with pkgs; [
       xdg-desktop-portal-gtk
     ];
@@ -27,6 +27,7 @@
       };
       hyprland = {
         default = [ "hyprland" "gtk" ];
+        "org.freedesktop.impl.portal.OpenURI" = [ "gtk" ];  # Use GTK for opening URIs
       };
     };
   };

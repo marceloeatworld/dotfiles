@@ -12,7 +12,8 @@ This is a NixOS dotfiles repository using flakes and home-manager for declarativ
 - NixOS Version: 25.05
 - Processor: AMD Ryzen 7 PRO 8840HS + Radeon 780M (RDNA 3 iGPU)
 - RAM: 32GB
-- Theme: Ristretto (applied system-wide)
+- GTK Theme: Gruvbox-Dark-BL
+- Hyprland: Custom configuration with modern animations
 
 ## Architecture
 
@@ -25,7 +26,8 @@ The flake defines `nixosConfigurations.pop` and imports:
 - **home-manager**: User environment management (release-25.05)
 - **hyprland**: Wayland compositor from upstream
 - **nixos-hardware**: Official ThinkPad P14s Gen 5 AMD profile
-- **themes**: Hyprland themes from basecamp/omarchy (Ristretto theme)
+- **walker**: Application launcher (with elephant dependency)
+- **themes**: Hyprland themes from basecamp/omarchy (available but not actively sourced)
 - **catppuccin-bat**, **catppuccin-starship**: Catppuccin themes for CLI tools
 
 ### Module Organization
@@ -115,16 +117,17 @@ nix shell nixpkgs#<package-name>
 - **Network Fix**: TCP MTU probing enabled (fixes SSH/VPN issues)
 
 ### Desktop Environment
-- **Window Manager**: Hyprland with Ristretto theme
-- **Launcher**: Walker (single launcher, Ristretto theme)
-- **Terminal**: Kitty with Ristretto theme, 14px padding, block cursor
-- **Status Bar**: Waybar (Ristretto theme)
-- **Notifications**: Mako (Ristretto theme)
-- **OSD**: SwayOSD for volume/brightness (Ristretto theme)
+- **Window Manager**: Hyprland with custom animations (fluent bezier curves, blur, shadows)
+- **Launcher**: Walker (runs as service, minimal config)
+- **Terminal**: Kitty with 14px padding, block cursor
+- **Status Bar**: Waybar
+- **Notifications**: Mako
+- **OSD**: SwayOSD for volume/brightness
 - **Shell**: Zsh with Starship prompt
 - **Editor**: Neovim (primary), VS Code
 - **Browser**: Brave with Wayland flags
 - **Fonts**: Liberation Sans/Serif, CaskaydiaMono Nerd Font, JetBrains Mono
+- **GTK Theme**: Gruvbox-Dark-BL with Papirus-Dark icons and Bibata-Modern-Classic cursor
 
 ### AI & Development
 - **Ollama**: Local LLM with ROCm acceleration for AMD GPU
@@ -151,9 +154,13 @@ Main modifier: `$mod = SUPER`
 
 **Utilities:**
 - `SUPER + C` → Hyprpicker (color picker)
-- `SUPER + N` → Toggle blue light filter (hyprsunset 4500K)
-- `Print` → Screenshot to clipboard
-- `SUPER + Print` → Screenshot to file
+- `SUPER + N` → Cycle blue light filter (Off → 5500K → 4500K → 3500K → 2500K → Off)
+- `SUPER + V` → Clipboard history (cliphist via walker)
+- `SUPER + SHIFT + V` → Clear clipboard history
+- `Print` → Screenshot selection to clipboard
+- `SUPER + Print` → Screenshot selection to file (~/Pictures/Screenshots/)
+- `SHIFT + Print` → Screenshot full screen to clipboard
+- `SUPER + SHIFT + Print` → Screenshot full screen to file
 
 **Media Keys:**
 - Volume/brightness controls trigger SwayOSD with Ristretto styling
@@ -169,23 +176,29 @@ Main modifier: `$mod = SUPER`
 - Disko config: `hosts/thinkpad/disko-config.nix`
 - System modules: `modules/system/*.nix`
 - Home modules: `modules/home/{programs,services,config}/*.nix`
-- Theme source: `${inputs.themes}/themes/ristretto/` (from basecamp/omarchy)
+- Theme source (available): `${inputs.themes}/themes/` (from basecamp/omarchy, not actively used)
 
-## Theme: Ristretto
+## Theming
 
-All applications use the Ristretto color palette from the Omarchy theme collection:
-- Background: `#2c2525` (dark brown)
-- Foreground: `#e6d9db` (beige/rose)
-- Accent: `#f9cc6c` (golden yellow)
-- Cursor: `#c3b7b8` (light beige)
+**GTK Theme**: Gruvbox-Dark-BL
+- Icon Theme: Papirus-Dark
+- Cursor Theme: Bibata-Modern-Classic (24px)
+- Dark mode preferred globally
 
-**Themed applications:**
-1. Hyprland - borders, colors from `${inputs.themes}/themes/ristretto/hyprland.conf`
-2. Kitty - full 16-color palette
-3. Walker - theme + custom CSS
-4. SwayOSD - CSS styling
-5. Mako - notification colors
-6. Waybar - status bar styling
+**Hyprland Styling**:
+- Custom animations with fluent bezier curves
+- Blur enabled (size 5, 2 passes, xray mode)
+- Rounded corners (10px)
+- Active opacity: 1.0, Inactive: 0.96
+- Dynamic opacity rules per application
+- Shadows enabled (range 15, power 3)
+
+**Window Opacity Rules**:
+- Kitty/Nemo/Thunar: 95%
+- Brave: 100% active, 97% inactive
+- VS Code: 100% active, 95% inactive
+- Media (YouTube/Netflix/Twitch/Discord): 100%
+- Default windows: 97% active, 92% inactive
 
 ## Development Notes
 
@@ -194,8 +207,8 @@ All applications use the Ristretto color palette from the Omarchy theme collecti
 - Unfree packages are allowed globally
 - System state version: `25.05` (do not change)
 - Home state version: `25.05` (do not change)
-- No variable names reference "omarchy" - only theme path uses it
-- Walker is the **only** launcher (wofi was removed)
+- Walker is the **only** launcher (runs as a service via `walker --gapplication-service`)
+- **NPM packages**: Use `$HOME/.npm-global/bin` for global npm packages (configured in development.nix)
 
 ## Special Configurations
 
@@ -203,6 +216,16 @@ All applications use the Ristretto color palette from the Omarchy theme collecti
 Access at `http://localhost:11434`
 Models stored in `/var/lib/ollama`
 ROCm acceleration configured for Radeon 780M
+
+### Blue Light Filter
+Multi-level temperature cycle via `SUPER + N`:
+1. Off (6500K/default)
+2. Low (5500K)
+3. Medium (4500K)
+4. High (3500K)
+5. Very High (2500K)
+
+Custom script using hyprsunset with notifications for each level.
 
 ### Btrfs
 - Monthly scrub via systemd timer
