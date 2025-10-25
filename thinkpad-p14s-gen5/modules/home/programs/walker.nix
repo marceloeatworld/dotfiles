@@ -6,22 +6,19 @@
     walker
   ];
 
-  # Walker configuration
+  # Walker configuration - Simplified for reliability
   xdg.configFile."walker/config.toml".text = ''
-    force_keyboard_focus = true       # Forces keyboard focus to stay in Walker
-    close_when_open = true             # Close walker when invoking while already opened
-    selection_wrap = true              # Wrap list if at bottom or top
-    click_to_close = true              # Closes walker if clicking outside of main content area
-    global_argument_delimiter = "#"    # Query: firefox#https://example.com => part after # ignored
-    exact_search_prefix = "'"          # Disable fuzzy searching with ' prefix
-    theme = "ristretto"                # Ristretto theme
-    disable_mouse = false              # Enable mouse support
+    force_keyboard_focus = true
+    close_when_open = true
+    selection_wrap = true
+    click_to_close = true
+    theme = "ristretto"
+    disable_mouse = false
 
+    # Window positioning (centered, not fullscreen)
     [shell]
-    anchor_top = true
-    anchor_bottom = true
-    anchor_left = true
-    anchor_right = true
+    width = 800
+    height = 600
 
     [placeholders]
     "default" = { input = " Search...", list = "No Results" }
