@@ -7,32 +7,33 @@
     enable = true;
     package = pkgs.vscode;
 
-    # NOTE: profiles.default.extensions/settings is BUGGED in home-manager
-    # Bug report: https://github.com/nix-community/home-manager/issues/7880
-    # Using direct syntax instead (works correctly)
-    extensions = with pkgs.vscode-extensions; [
-      jnoortheen.nix-ide
-      bbenoist.nix
-      ms-python.python
-      ms-vscode.cpptools
-      rust-lang.rust-analyzer
-      tamasfe.even-better-toml
-      eamodio.gitlens
-      github.copilot
-      catppuccin.catppuccin-vsc
-    ];
+    # NixOS 25.05: extensions and userSettings renamed to profiles.default
+    # IMPORTANT: Use "settings" NOT "userSettings" under profiles.default
+    profiles.default = {
+      extensions = with pkgs.vscode-extensions; [
+        jnoortheen.nix-ide
+        bbenoist.nix
+        ms-python.python
+        ms-vscode.cpptools
+        rust-lang.rust-analyzer
+        tamasfe.even-better-toml
+        eamodio.gitlens
+        github.copilot
+        catppuccin.catppuccin-vsc
+      ];
 
-    userSettings = {
-      "workbench.colorTheme" = "Catppuccin Mocha";
-      "editor.fontFamily" = "'JetBrainsMono Nerd Font', 'monospace'";
-      "editor.fontSize" = 13;
-      "editor.fontLigatures" = true;
-      "editor.formatOnSave" = true;
-      "editor.minimap.enabled" = false;
-      "terminal.integrated.fontFamily" = "'JetBrainsMono Nerd Font'";
-      "files.autoSave" = "afterDelay";
-      "nix.enableLanguageServer" = true;
-      "nix.serverPath" = "nil";
+      settings = {  # "settings" not "userSettings" in profiles.default!
+        "workbench.colorTheme" = "Catppuccin Mocha";
+        "editor.fontFamily" = "'JetBrainsMono Nerd Font', 'monospace'";
+        "editor.fontSize" = 13;
+        "editor.fontLigatures" = true;
+        "editor.formatOnSave" = true;
+        "editor.minimap.enabled" = false;
+        "terminal.integrated.fontFamily" = "'JetBrainsMono Nerd Font'";
+        "files.autoSave" = "afterDelay";
+        "nix.enableLanguageServer" = true;
+        "nix.serverPath" = "nil";
+      };
     };
   };
 
