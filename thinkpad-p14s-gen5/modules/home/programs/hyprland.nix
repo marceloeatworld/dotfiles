@@ -157,12 +157,16 @@
         new_status = "master";
       };
 
-      # Gestures
+      # Gestures (Hyprland 0.51+ new format)
       gestures = {
-        workspace_swipe = true;
-        workspace_swipe_fingers = 3;
-        workspace_swipe_cancel_ratio = 0.15;
+        # workspace_swipe removed - use gesture definitions instead
       };
+
+      # New gesture system (Hyprland 0.51+)
+      gesture = [
+        # 3-finger horizontal swipe to change workspace
+        "3, horizontal, workspace"
+      ];
 
       # Misc settings
       misc = {
@@ -269,11 +273,11 @@
         ", XF86MonBrightnessDown, exec, brightnessctl set 5%-"
       ];
 
-      # Window rules
+      # Window rules (Hyprland 0.48+ requires class: prefix)
       windowrule = [
-        "float, ^(pavucontrol)$"
-        "float, ^(nm-connection-editor)$"
-        "float, ^(blueman-manager)$"
+        "float, class:^(pavucontrol)$"
+        "float, class:^(nm-connection-editor)$"
+        "float, class:^(blueman-manager)$"
         "float, title:^(Picture-in-Picture)$"
         "pin, title:^(Picture-in-Picture)$"
       ];

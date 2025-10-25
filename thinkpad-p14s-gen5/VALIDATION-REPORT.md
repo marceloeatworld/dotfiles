@@ -160,7 +160,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | LACT package duplication | Service auto-installs |
 | xdg-desktop-portal duplication | System-level (hyprland.nix) |
 
-### Optimizations (10)
+### Optimizations (11)
 | Optimization | Impact |
 |--------------|--------|
 | hardware-configuration.nix simplified | 94 → 41 lines (-53) |
@@ -174,6 +174,8 @@ qt.nix                  20 lines  ✅ Qt theme
 | Removed clang | Fix collision clang 19 vs 14 (gcc sufficient) |
 | Hyprland shadow options | Updated for Hyprland 0.45+ (shadow block) |
 | Hyprland no_gaps_when_only | Removed (deprecated in 0.45+) |
+| Hyprland gestures | Updated for 0.51+ (new gesture format) |
+| Hyprland windowrule | Added class: prefix (required in 0.48+) |
 
 ---
 
