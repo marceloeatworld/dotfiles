@@ -8,40 +8,19 @@
     viAlias = true;
     vimAlias = true;
 
+    # Plugins DISABLED due to build errors in NixOS 25.05
+    # catppuccin-nvim and nvim-tree-lua have known build issues
+    # You can configure Neovim manually after installation with your preferred plugin manager
+    # (lazy.nvim, packer.nvim, vim-plug, etc.)
+
+    # Minimal working plugins only
     plugins = with pkgs.vimPlugins; [
-      # Essential plugins
+      # Essential plugins that work reliably
       vim-sensible
       vim-commentary
       vim-surround
       vim-repeat
-
-      # File navigation
-      telescope-nvim
-      nvim-tree-lua
-
-      # Syntax and LSP
-      nvim-treesitter.withAllGrammars
-      nvim-lspconfig
-
-      # Autocomplete
-      nvim-cmp
-      cmp-nvim-lsp
-      cmp-buffer
-      cmp-path
-      luasnip
-
-      # UI
-      lualine-nvim
-      nvim-web-devicons
-      catppuccin-nvim
-
-      # Git
-      gitsigns-nvim
-      vim-fugitive
-
-      # Misc
-      which-key-nvim
-      indent-blankline-nvim
+      vim-fugitive  # Git integration
     ];
 
     extraPackages = with pkgs; [
@@ -64,41 +43,16 @@
       set smartindent
       set termguicolors
 
-      " Theme
-      colorscheme catppuccin-mocha
-
       " Leader key
       let mapleader = " "
 
       " Basic keymaps
       nnoremap <leader>w :w<CR>
       nnoremap <leader>q :q<CR>
-      nnoremap <leader>e :NvimTreeToggle<CR>
-      nnoremap <leader>ff :Telescope find_files<CR>
-      nnoremap <leader>fg :Telescope live_grep<CR>
-      nnoremap <leader>fb :Telescope buffers<CR>
 
-      " LSP configuration (Nix only)
-      lua << EOF
-      local lspconfig = require('lspconfig')
-
-      -- Nil LSP for Nix
-      lspconfig.nil_ls.setup({
-        settings = {
-          ['nil'] = {
-            formatting = {
-              command = { "nixpkgs-fmt" },
-            },
-          },
-        },
-      })
-
-      -- Keybindings LSP
-      vim.keymap.set('n', 'gd', vim.lsp.buf.definition, {})
-      vim.keymap.set('n', 'K', vim.lsp.buf.hover, {})
-      vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, {})
-      vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, {})
-      EOF
+      " Note: After installation, you can configure Neovim with:
+      " - lazy.nvim (recommended): https://github.com/folke/lazy.nvim
+      " - Or add working plugins back to this file
     '';
   };
 }

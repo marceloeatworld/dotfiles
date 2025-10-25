@@ -45,7 +45,7 @@ fastfetch.nix          138 lines  ✅ System info display
 git.nix                 31 lines  ✅ Git + lazygit
 hyprland.nix           319 lines  ✅ Hyprland user config (keybindings)
 media.nix               35 lines  ✅ MPV + IMV + media apps
-nvim.nix               104 lines  ✅ Neovim editor
+nvim.nix                50 lines  ✅ Neovim editor (minimal config)
 shell.nix              130 lines  ✅ Zsh + Starship + CLI tools
 terminal.nix            98 lines  ✅ Kitty terminal (Ristretto theme)
 uwsm.nix                15 lines  ✅ Universal Wayland Session Manager
@@ -159,7 +159,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | services.gnome.gnome-keyring.enable | security.nix (with PAM) |
 | LACT package duplication | Service auto-installs |
 
-### Optimizations (7)
+### Optimizations (8)
 | Optimization | Impact |
 |--------------|--------|
 | hardware-configuration.nix simplified | 94 → 41 lines (-53) |
@@ -169,6 +169,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | Installation guide | Updated for NixOS 25.05 minimal |
 | VSCode config disabled | Use account sync instead |
 | Removed K8s/Terraform | Lighter installation |
+| Neovim plugins minimal | Avoid build errors (catppuccin/nvim-tree) |
 
 ---
 
