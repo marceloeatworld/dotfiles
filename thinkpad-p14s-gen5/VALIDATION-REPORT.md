@@ -130,7 +130,7 @@ qt.nix                  20 lines  ✅ Qt theme
 
 ## 🔧 FIXES APPLIED
 
-### Critical Fixes (16)
+### Critical Fixes (15)
 | Issue | File | Status |
 |-------|------|--------|
 | thermald on AMD (Intel-only) | services.nix | ✅ REMOVED |
@@ -145,8 +145,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | services.lact.enable | amd-optimizations.nix | ✅ DISABLED (not in 25.05) |
 | services.mako.extraConfig | mako.nix | ✅ → settings |
 | Infinite recursion | uwsm.nix | ✅ FIXED (self-referencing vars) |
-| programs.vscode.extensions | development.nix | ✅ → profiles.default.extensions |
-| programs.vscode.userSettings | development.nix | ✅ → profiles.default.settings |
+| programs.vscode (profiles bug) | development.nix | ✅ Use direct syntax (not profiles) |
 | programs.eza.icons = true | shell.nix | ✅ → icons = "auto" |
 | hardware.pulseaudio | sound.nix | ✅ → services.pulseaudio |
 
