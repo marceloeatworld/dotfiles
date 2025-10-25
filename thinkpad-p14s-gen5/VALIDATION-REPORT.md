@@ -48,7 +48,7 @@ media.nix               35 lines  ✅ MPV + IMV + media apps
 nvim.nix               104 lines  ✅ Neovim editor
 shell.nix              130 lines  ✅ Zsh + Starship + CLI tools
 terminal.nix            98 lines  ✅ Kitty terminal (Ristretto theme)
-uwsm.nix                21 lines  ✅ Universal Wayland Session Manager
+uwsm.nix                15 lines  ✅ Universal Wayland Session Manager
 walker.nix             173 lines  ✅ Launcher (Ristretto theme)
 webapps.nix            123 lines  ✅ 10 Brave PWAs
 xournalpp.nix           64 lines  ✅ PDF annotation
@@ -130,7 +130,7 @@ qt.nix                  20 lines  ✅ Qt theme
 
 ## 🔧 FIXES APPLIED
 
-### Critical Fixes (10)
+### Critical Fixes (11)
 | Issue | File | Status |
 |-------|------|--------|
 | thermald on AMD (Intel-only) | services.nix | ✅ REMOVED |
@@ -143,6 +143,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | zsh initExtra | shell.nix | ✅ → initContent |
 | services.lact.enable | amd-optimizations.nix | ✅ DISABLED (not in 25.05) |
 | services.mako.extraConfig | mako.nix | ✅ → settings |
+| Infinite recursion | uwsm.nix | ✅ FIXED (self-referencing vars) |
 
 ### Conflict Resolution (6)
 | Conflict | Resolution |
