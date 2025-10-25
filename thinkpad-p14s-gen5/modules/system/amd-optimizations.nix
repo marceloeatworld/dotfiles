@@ -17,9 +17,12 @@
 
   # LACT - Linux AMDGPU Control Tool
   # GUI for overclock/undervolt/fan control for Radeon 780M
-  services.lact.enable = true;
+  # NOTE: services.lact is NOT available in NixOS 25.05 stable (only in unstable)
+  # LACT can be installed from nixpkgs-unstable after installation if needed
+  # services.lact.enable = true;  # DISABLED - not in 25.05
 
-  # Required for LACT to access AMD GPU overclocking features
+  # Enable AMD GPU overclocking features (works independently of LACT service)
+  # This allows manual GPU control and is required if installing LACT later
   hardware.amdgpu.overdrive.enable = true;
 
   # Vulkan layers and ROCm for AMD
@@ -108,7 +111,8 @@
     # AMD monitoring tools
     lm_sensors   # Hardware monitoring (sensors command)
     radeontop    # GPU usage monitor
-    # NOTE: lact package is auto-installed by services.lact.enable above
+    # NOTE: LACT can be added manually from pkgs-unstable if needed:
+    # pkgs-unstable.lact
 
     # Power monitoring
     powertop
