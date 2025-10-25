@@ -159,7 +159,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | services.gnome.gnome-keyring.enable | security.nix (with PAM) |
 | LACT package duplication | Service auto-installs |
 
-### Optimizations (8)
+### Optimizations (9)
 | Optimization | Impact |
 |--------------|--------|
 | hardware-configuration.nix simplified | 94 → 41 lines (-53) |
@@ -170,6 +170,7 @@ qt.nix                  20 lines  ✅ Qt theme
 | VSCode config disabled | Use account sync instead |
 | Removed K8s/Terraform | Lighter installation |
 | Neovim plugins minimal | Avoid build errors (catppuccin/nvim-tree) |
+| Removed clang | Fix collision clang 19 vs 14 (gcc sufficient) |
 
 ---
 

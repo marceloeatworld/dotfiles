@@ -55,7 +55,7 @@
     go
     rustup
     gcc
-    clang         # Alternative C/C++ compiler
+    # clang - REMOVED: collision between clang 19 and 14 (gcc is sufficient)
     gnumake
     cmake
 
