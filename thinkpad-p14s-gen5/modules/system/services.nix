@@ -113,8 +113,9 @@
       ROC_ENABLE_PRE_VEGA = "1";            # Compatibility
     };
 
-    # Host address (default: 127.0.0.1:11434)
-    host = "127.0.0.1:11434";
+    # Host address (IP only, port is separate)
+    host = "127.0.0.1";
+    port = 11434;
 
     # Models will be stored in /var/lib/ollama
   };

@@ -18,6 +18,7 @@
           "pulseaudio"
           "bluetooth"
           "network"
+          "disk"
           "cpu"
           "memory"
           "temperature"
@@ -79,47 +80,57 @@
         };
 
         "network" = {
-          format-wifi = "{icon} {signalStrength}%";
-          format-ethernet = " {bandwidthDownBytes}";
-          format-disconnected = "⚠ Disconnected";
-          format-icons = [ "󰤯" "󰤟" "󰤢" "󰤥" "󰤨" ];
-          tooltip-format = "{essid}\n⇣{bandwidthDownBytes} ⇡{bandwidthUpBytes}";
+          format-wifi = "󰖩 {essid} {signalStrength}%";
+          format-ethernet = "󰈀 {bandwidthDownBytes}";
+          format-disconnected = "󰖪 Disconnected";
+          tooltip-format-wifi = "WiFi: {essid}\nSignal: {signalStrength}%\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";
+          tooltip-format-ethernet = "Ethernet: {ifname}\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";
+          tooltip-format-disconnected = "No network connection";
+          on-click = "nm-connection-editor";
           interval = 5;
         };
 
         "pulseaudio" = {
           format = "{volume}% {icon}";
-          format-bluetooth = "{volume}% {icon}";
-          format-muted = "";
+          format-muted = "󰖁 Muted";
           format-icons = {
-            headphone = "";
-            hands-free = "";
-            headset = "";
-            phone = "";
-            portable = "";
-            car = "";
-            default = [ "" "" "" ];
+            default = [ "󰕿" "󰖀" "󰕾" ];
           };
+          tooltip-format = "Volume: {volume}%\nDevice: {desc}";
           on-click = "pavucontrol";
+          on-click-right = "pamixer -t";
+        };
+
+        "disk" = {
+          format = "󰋊 {percentage_used}%";
+          path = "/";
+          tooltip-format = "Disk Usage: {used} / {total}\nAvailable: {free}";
+          on-click = "nemo /";
         };
 
         "cpu" = {
-          format = "{usage}% ";
-          tooltip = true;
+          format = "󰻠 {usage}%";
+          tooltip-format = "CPU Usage: {usage}%\nLoad: {load}";
+          on-click = "kitty -e btop";
         };
 
         "memory" = {
-          format = "{}% ";
+          format = "󰍛 {percentage_used}%";
+          tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB\nAvailable: {avail:0.1f}GB";
+          on-click = "kitty -e btop";
         };
 
         "temperature" = {
           critical-threshold = 80;
           format = "{temperatureC}°C {icon}";
-          format-icons = [ "" "" "" ];
+          format-icons = [ "󰔏" "󱃃" "󰸁" ];
+          tooltip-format = "Temperature: {temperatureC}°C";
+          on-click = "kitty -e btop";
         };
 
         "tray" = {
           spacing = 10;
+          icon-size = 18;
         };
       };
     };
@@ -162,6 +173,7 @@
       #battery,
       #cpu,
       #memory,
+      #disk,
       #temperature,
       #network,
       #bluetooth,
