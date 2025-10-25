@@ -2,41 +2,35 @@
   description = "NixOS configuration for ThinkPad P14s Gen 5 (AMD) with Hyprland";
 
   inputs = {
-    # NixOS 25.05 stable channel
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-
-    # Unstable for latest packages if needed
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    # Home Manager - for user environment management
+    
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # NixOS Hardware - official hardware configurations
+    
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-
-    # Disko - Declarative disk partitioning
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # Hyprland - Wayland compositor
+    
     hyprland.url = "github:hyprwm/Hyprland";
-
-    # Hyprland plugins
     hyprland-plugins = {
       url = "github:hyprwm/hyprland-plugins";
       inputs.hyprland.follows = "hyprland";
     };
-
-    # Hyprland contrib tools
     hypr-contrib.url = "github:hyprwm/contrib";
     hyprpicker.url = "github:hyprwm/hyprpicker";
-
-    # Catppuccin themes
+    
+    # AJOUTE ÇA - Walker + Elephant
+    elephant.url = "github:abenz1267/elephant";
+    walker = {
+      url = "github:abenz1267/walker";
+      inputs.elephant.follows = "elephant";
+    };
+    
     catppuccin-bat = {
       url = "github:catppuccin/bat";
       flake = false;
@@ -45,8 +39,6 @@
       url = "github:catppuccin/starship";
       flake = false;
     };
-
-    # Hyprland themes collection
     themes = {
       url = "github:basecamp/omarchy";
       flake = false;

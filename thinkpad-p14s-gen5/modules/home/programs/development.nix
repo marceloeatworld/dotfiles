@@ -2,6 +2,14 @@
 { pkgs, pkgs-unstable, ... }:
 
 {
+  # Configuration npm pour NixOS
+  home.sessionVariables = {
+    NPM_CONFIG_PREFIX = "$HOME/.npm-global";
+  };
+
+  home.sessionPath = [
+    "$HOME/.npm-global/bin"
+  ];
   # Official Visual Studio Code
   programs.vscode = {
     enable = true;

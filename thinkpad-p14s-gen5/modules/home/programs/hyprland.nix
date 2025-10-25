@@ -1,78 +1,85 @@
-# Hyprland configuration via Home Manager
-{ pkgs, inputs, ... }:
+# Hyprland - FIXED gestures
+{ pkgs, ... }:
 
+let
+  bluelight-toggle = pkgs.writeShellScriptBin "bluelight-toggle" ''
+    #!/usr/bin/env bash
+    if pgrep -x hyprsunset > /dev/null; then
+      current=$(pgrep -af hyprsunset | grep -oP '\-t \K[0-9]+' || echo "0")
+      case "$current" in
+        6500|0)
+          pkill hyprsunset
+          hyprsunset -t 5500 &
+          notify-send -t 2000 "Blue Light Filter" "Low (5500K)" -i weather-clear-night
+          ;;
+        5500)
+          pkill hyprsunset
+          hyprsunset -t 4500 &
+          notify-send -t 2000 "Blue Light Filter" "Medium (4500K)" -i weather-clear-night
+          ;;
+        4500)
+          pkill hyprsunset
+          hyprsunset -t 3500 &
+          notify-send -t 2000 "Blue Light Filter" "High (3500K)" -i weather-clear-night
+          ;;
+        3500)
+          pkill hyprsunset
+          hyprsunset -t 2500 &
+          notify-send -t 2000 "Blue Light Filter" "Very High (2500K)" -i weather-clear-night
+          ;;
+        *)
+          pkill hyprsunset
+          notify-send -t 2000 "Blue Light Filter" "Off" -i weather-clear
+          ;;
+      esac
+    else
+      hyprsunset -t 5500 &
+      notify-send -t 2000 "Blue Light Filter" "Low (5500K)" -i weather-clear-night
+    fi
+  '';
+in
 {
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
-
-    # Use the Hyprland package from the flake
-    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-
-    # Hyprland theme (choose one from the list below)
-    # Available themes: catppuccin, catppuccin-latte, everforest, flexoki-light,
-    #                   gruvbox, kanagawa, matte-black, nord, osaka-jade,
-    #                   ristretto, rose-pine, tokyo-night
-    extraConfig = ''
-      source = ${inputs.themes}/themes/ristretto/hyprland.conf
-    '';
+    package = pkgs.hyprland;
 
     settings = {
-      # Monitor configuration
-      # eDP-1: Built-in Lenovo screen (1920x1200)
-      # HDMI-A-1/DP-1: External monitor (1920x1080) - primary when connected
       monitor = [
-        # External monitor (primary when connected) - positioned at top
         "HDMI-A-1,1920x1080@60,0x0,1"
         "DP-1,1920x1080@60,0x0,1"
-
-        # Built-in laptop screen - positioned below external
-        # When external connected: at 0x1080 (below external)
-        # When no external: at 0x0
         "eDP-1,1920x1200@60,0x1080,1"
-
-        # Fallback for unknown monitors
         ",preferred,auto,1"
       ];
 
-      # Autostart applications
       exec-once = [
         "waybar"
         "mako"
-        "swaylock -f"
         "hyprpaper"
+        "wl-paste --type text --watch cliphist store"
+        "wl-paste --type image --watch cliphist store"
+        "walker --gapplication-service"
+        "hypridle"
       ];
 
-      # Environment variables
       env = [
-        # Cursor
         "XCURSOR_SIZE,24"
         "HYPRCURSOR_SIZE,24"
-
-        # Wayland backend selection (force native Wayland for better performance)
         "GDK_BACKEND,wayland,x11,*"
         "QT_QPA_PLATFORM,wayland;xcb"
         "SDL_VIDEODRIVER,wayland"
-
-        # Browser Wayland support (Brave, VS Code, Electron apps)
         "MOZ_ENABLE_WAYLAND,1"
         "ELECTRON_OZONE_PLATFORM_HINT,wayland"
-
-        # Session identification (tells apps which compositor is running)
         "XDG_SESSION_TYPE,wayland"
         "XDG_CURRENT_DESKTOP,Hyprland"
         "XDG_SESSION_DESKTOP,Hyprland"
       ];
 
-      # Input configuration
       input = {
         kb_layout = "fr";
         numlock_by_default = true;
-
-        # Keyboard responsiveness
-        repeat_rate = 40;
-        repeat_delay = 600;
-
+        repeat_rate = 45;
+        repeat_delay = 300;
         follow_mouse = 1;
 
         touchpad = {
@@ -80,124 +87,107 @@
           disable_while_typing = true;
           tap-to-click = true;
           clickfinger_behavior = true;
-          scroll_factor = 0.4;  # Adjust for touchpad scroll speed (0.4 = slower, 1.0 = normal)
+          scroll_factor = 0.5;
+          middle_button_emulation = true;
         };
 
         sensitivity = 0;
       };
 
-      # General window settings
       general = {
-        gaps_in = 4;
-        gaps_out = 8;
+        gaps_in = 5;
+        gaps_out = 10;
         border_size = 2;
-        # Colors defined by Ristretto theme (sourced above)
-        # "col.active_border" will be set to rgb(e6d9db) by theme
         layout = "dwindle";
         resize_on_border = true;
+        allow_tearing = false;
       };
 
-      # Decorations
       decoration = {
-        rounding = 8;
+        rounding = 10;
 
         blur = {
           enabled = true;
-          size = 6;
-          passes = 3;
+          size = 5;
+          passes = 2;
           new_optimizations = true;
           xray = true;
           ignore_opacity = true;
         };
 
-        # Shadow settings (Hyprland 0.45+ new format)
         shadow = {
           enabled = true;
-          range = 20;
+          range = 15;
           render_power = 3;
           color = "rgba(1a1a1aee)";
         };
 
         active_opacity = 1.0;
-        inactive_opacity = 0.95;
+        inactive_opacity = 0.96;
         fullscreen_opacity = 1.0;
       };
 
-      # Animations
       animations = {
         enabled = true;
         bezier = [
           "fluent_decel, 0.0, 0.2, 0.4, 1.0"
           "easeOutCirc, 0, 0.55, 0.45, 1"
           "easeOutCubic, 0.33, 1, 0.68, 1"
+          "easeInOutQuart, 0.76, 0, 0.24, 1"
         ];
 
         animation = [
-          "windows, 1, 4, easeOutCubic, popin 70%"
+          "windows, 1, 5, easeOutCubic, popin 80%"
           "windowsOut, 1, 4, fluent_decel, popin 80%"
-          "windowsMove, 1, 3, easeOutCubic"
-          "fade, 1, 4, easeOutCubic"
-          "fadeIn, 1, 4, easeOutCubic"
-          "fadeOut, 1, 4, easeOutCubic"
-          "border, 1, 3, easeOutCubic"  # Animated border color transitions
-          "workspaces, 1, 4, easeOutCubic, fade"
-          "specialWorkspace, 1, 4, easeOutCubic, slidevert"
+          "windowsMove, 1, 4, easeOutCubic, slide"
+          "fade, 1, 5, easeOutCubic"
+          "fadeIn, 1, 5, easeOutCubic"
+          "fadeOut, 1, 5, easeOutCubic"
+          "border, 1, 4, easeOutCubic"
+          "workspaces, 1, 5, easeOutCubic, slide"
+          "specialWorkspace, 1, 5, easeInOutQuart, slidevert"
         ];
       };
 
-      # Dwindle layout
       dwindle = {
         pseudotile = true;
         preserve_split = true;
-        # no_gaps_when_only removed in Hyprland 0.45+ (use workspace rules instead)
+        smart_split = true;
+        smart_resizing = true;
       };
 
-      # Master layout
       master = {
         new_status = "master";
+        new_on_top = true;
       };
 
-      # Gestures (Hyprland 0.51+ new format)
-      gestures = {
-        # workspace_swipe removed - use gesture definitions instead
-      };
-
-      # New gesture system (Hyprland 0.51+)
-      gesture = [
-        # 3-finger horizontal swipe to change workspace
-        "3, horizontal, workspace"
-      ];
-
-      # Misc settings
       misc = {
         disable_hyprland_logo = true;
         disable_splash_rendering = true;
         mouse_move_enables_dpms = true;
         key_press_enables_dpms = true;
-        vrr = 1;
+        vrr = 2;
         enable_swallow = true;
         swallow_regex = "^(kitty)$";
+        force_default_wallpaper = 0;
+        vfr = true;
+        focus_on_activate = true;
       };
 
-      # Keybindings
       "$mod" = "SUPER";
 
       bind = [
-        # Applications
         "$mod, Return, exec, kitty"
         "$mod, B, exec, brave"
         "$mod, E, exec, nemo"
-        "$mod, D, exec, walker"             # Application launcher
-
-        # Window management
+        "$mod, D, exec, pkill walker || walker"
+        "$mod SHIFT, D, exec, walker"
         "$mod, Q, killactive"
         "$mod, F, fullscreen, 0"
         "$mod SHIFT, F, fullscreen, 1"
         "$mod, Space, togglefloating"
         "$mod, P, pseudo"
-        "$mod, J, togglesplit"
-
-        # Focus
+        "$mod, T, togglesplit"
         "$mod, left, movefocus, l"
         "$mod, right, movefocus, r"
         "$mod, up, movefocus, u"
@@ -206,8 +196,6 @@
         "$mod, L, movefocus, r"
         "$mod, K, movefocus, u"
         "$mod, J, movefocus, d"
-
-        # Move windows
         "$mod SHIFT, left, movewindow, l"
         "$mod SHIFT, right, movewindow, r"
         "$mod SHIFT, up, movewindow, u"
@@ -216,8 +204,14 @@
         "$mod SHIFT, L, movewindow, r"
         "$mod SHIFT, K, movewindow, u"
         "$mod SHIFT, J, movewindow, d"
-
-        # Workspaces
+        "$mod CTRL, left, resizeactive, -40 0"
+        "$mod CTRL, right, resizeactive, 40 0"
+        "$mod CTRL, up, resizeactive, 0 -40"
+        "$mod CTRL, down, resizeactive, 0 40"
+        "$mod CTRL, H, resizeactive, -40 0"
+        "$mod CTRL, L, resizeactive, 40 0"
+        "$mod CTRL, K, resizeactive, 0 -40"
+        "$mod CTRL, J, resizeactive, 0 40"
         "$mod, 1, workspace, 1"
         "$mod, 2, workspace, 2"
         "$mod, 3, workspace, 3"
@@ -228,8 +222,6 @@
         "$mod, 8, workspace, 8"
         "$mod, 9, workspace, 9"
         "$mod, 0, workspace, 10"
-
-        # Move to workspace
         "$mod SHIFT, 1, movetoworkspace, 1"
         "$mod SHIFT, 2, movetoworkspace, 2"
         "$mod SHIFT, 3, movetoworkspace, 3"
@@ -240,40 +232,39 @@
         "$mod SHIFT, 8, movetoworkspace, 8"
         "$mod SHIFT, 9, movetoworkspace, 9"
         "$mod SHIFT, 0, movetoworkspace, 10"
-
-        # Special workspace (scratchpad)
         "$mod, S, togglespecialworkspace, magic"
         "$mod SHIFT, S, movetoworkspace, special:magic"
-
-        # Utilities
-        "$mod, Escape, exec, swaylock"
+        "$mod, V, exec, cliphist list | walker --dmenu | cliphist decode | wl-copy"
+        "$mod SHIFT, V, exec, cliphist wipe"
+        "$mod, Escape, exec, hyprlock"
         "$mod SHIFT, Escape, exec, systemctl poweroff"
+        "$mod CTRL, Escape, exec, systemctl reboot"
         "$mod, C, exec, hyprpicker -a"
-        "$mod, N, exec, pkill hyprsunset || hyprsunset -t 4500"  # Toggle blue light filter
-        ", Print, exec, grim -g \"$(slurp)\" - | wl-copy"
-        "$mod, Print, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"
+        "$mod, N, exec, ${bluelight-toggle}/bin/bluelight-toggle"
+        ", Print, exec, grim -g \"$(slurp)\" - | wl-copy && notify-send 'Screenshot' 'Copié dans le presse-papier'"
+        "$mod, Print, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png && notify-send 'Screenshot' 'Sauvegardé dans Pictures/Screenshots'"
+        "SHIFT, Print, exec, grim - | wl-copy && notify-send 'Screenshot' 'Écran complet copié'"
+        "$mod SHIFT, Print, exec, grim ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png && notify-send 'Screenshot' 'Écran complet sauvegardé'"
+        "$mod SHIFT, R, exec, killall waybar && waybar"
       ];
 
-      # Mouse bindings
       bindm = [
         "$mod, mouse:272, movewindow"
         "$mod, mouse:273, resizewindow"
       ];
 
-      # Media keys
       bindl = [
-        ", XF86AudioMute, exec, pamixer -t"
-        ", XF86AudioMicMute, exec, pamixer --default-source -t"
+        ", XF86AudioMute, exec, pamixer -t && notify-send -t 1000 'Audio' \"$(pamixer --get-mute &> /dev/null && echo 'Muet' || echo 'Son activé')\""
+        ", XF86AudioMicMute, exec, pamixer --default-source -t && notify-send -t 1000 'Microphone' \"$(pamixer --default-source --get-mute &> /dev/null && echo 'Muet' || echo 'Activé')\""
       ];
 
       bindle = [
-        ", XF86AudioRaiseVolume, exec, pamixer -i 5"
-        ", XF86AudioLowerVolume, exec, pamixer -d 5"
-        ", XF86MonBrightnessUp, exec, brightnessctl set 5%+"
-        ", XF86MonBrightnessDown, exec, brightnessctl set 5%-"
+        ", XF86AudioRaiseVolume, exec, pamixer -i 5 && notify-send -t 500 'Volume' \"$(pamixer --get-volume)%\""
+        ", XF86AudioLowerVolume, exec, pamixer -d 5 && notify-send -t 500 'Volume' \"$(pamixer --get-volume)%\""
+        ", XF86MonBrightnessUp, exec, brightnessctl set 5%+ && notify-send -t 500 'Luminosité' \"$(brightnessctl get)\""
+        ", XF86MonBrightnessDown, exec, brightnessctl set 5%- && notify-send -t 500 'Luminosité' \"$(brightnessctl get)\""
       ];
 
-      # Window rules (Hyprland 0.48+ requires class: prefix)
       windowrule = [
         "float, class:^(pavucontrol)$"
         "float, class:^(nm-connection-editor)$"
@@ -283,44 +274,41 @@
       ];
 
       windowrulev2 = [
-        # Terminal opacity
         "opacity 0.95 0.95,class:^(kitty)$"
         "opacity 0.95 0.95,class:^(thunar)$"
-
-        # Suppress maximize events (tiling WM best practice)
+        "opacity 0.95 0.95,class:^(nemo)$"
         "suppressevent maximize, class:.*"
-
-        # Global opacity (97% active, 90% inactive)
-        "opacity 0.97 0.90,class:.*"
-
-        # Browser improvements
-        "tile,class:^(Brave-browser)$"  # Force tiling (fixes Chromium bugs)
+        "opacity 0.97 0.92,class:.*"
+        "tile,class:^(Brave-browser)$"
         "opacity 1.0 0.97,class:^(Brave-browser)$"
-
-        # Full opacity for video streaming/calls (no dimming)
-        "opacity 1.0 1.0,title:^.*(YouTube|Netflix|Twitch|Zoom|Meet).*$"
-
-        # XWayland focus fix (prevents focus on empty XWayland windows)
+        "opacity 1.0 1.0,title:^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$"
         "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
-
-        # IDE/Editor opacity
-        "opacity 1.0 0.95,class:^(code-url-handler)$"  # VS Code
-        "opacity 1.0 0.95,class:^(jetbrains-.*)$"      # JetBrains IDEs
-
-        # Picture-in-Picture improvements
+        "opacity 1.0 0.95,class:^(code-url-handler)$"
+        "opacity 1.0 0.95,class:^(jetbrains-.*)$"
         "float,title:^(Picture-in-Picture)$"
         "pin,title:^(Picture-in-Picture)$"
         "size 640 360,title:^(Picture-in-Picture)$"
-        "move 100%-650 100%-370,title:^(Picture-in-Picture)$"  # Bottom-right corner
+        "move 100%-650 100%-370,title:^(Picture-in-Picture)$"
+        "float,class:^(walker)$"
+        "center,class:^(walker)$"
+        "size 800 600,class:^(walker)$"
+        "stayfocused,class:^(walker)$"
       ];
     };
   };
 
-  # Additional Hyprland-related packages
   home.packages = with pkgs; [
     hyprpaper
     hypridle
     hyprlock
     brightnessctl
+    cliphist
+    wl-clipboard
+    grim
+    slurp
+    libnotify
+    pamixer
+    hyprsunset
+    bluelight-toggle
   ];
 }

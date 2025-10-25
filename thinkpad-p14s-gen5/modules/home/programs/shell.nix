@@ -1,26 +1,22 @@
 # Shell configuration (ZSH with Starship prompt)
 { pkgs, config, inputs, ... }:
-
 {
   programs.zsh = {
     enable = true;
     enableCompletion = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
-
     shellAliases = {
       # NixOS
       rebuild = "sudo nixos-rebuild switch --flake /home/marcelo/dotfiles/thinkpad-p14s-gen5#pop";
       update = "cd /home/marcelo/dotfiles/thinkpad-p14s-gen5 && nix flake update && sudo nixos-rebuild switch --flake .#pop";
       clean = "sudo nix-collect-garbage -d && nix-collect-garbage -d";
-
       # Modern replacements
       ls = "eza --icons";
       ll = "eza -l --icons";
       la = "eza -la --icons";
       tree = "eza --tree --icons";
       cat = "bat";
-
       # Git
       g = "git";
       gs = "git status";
@@ -29,22 +25,22 @@
       gp = "git push";
       gl = "git pull";
       gd = "git diff";
-
       # Shortcuts
       v = "nvim";
       vim = "nvim";
       ".." = "cd ..";
       "..." = "cd ../..";
     };
-
     history = {
       size = 10000;
       path = "${config.xdg.dataHome}/zsh/history";
       ignoreDups = true;
       ignoreSpace = true;
     };
-
     initContent = ''
+      # npm global packages
+      export PATH="$HOME/.npm-global/bin:$PATH"
+
       # Launch Hyprland on login to TTY1
       if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
         exec uwsm start -S hyprland-uwsm.desktop

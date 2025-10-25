@@ -1,4 +1,4 @@
-# Terminal emulator configuration
+# Terminal emulator configuration - WITH MOUSE COPY FIXED
 { pkgs, ... }:
 
 {
@@ -7,7 +7,7 @@
 
     font = {
       name = "JetBrainsMono Nerd Font";
-      size = 10;  # Slightly smaller for better screen space (was 11)
+      size = 10;
     };
 
     settings = {
@@ -21,7 +21,7 @@
       cursor = "#c3b7b8";
       cursor_text_color = "#c3b7b8";
       cursor_shape = "block";
-      cursor_blink_interval = 0;  # No blinking
+      cursor_blink_interval = 0;
 
       # URL underline color
       url_color = "#e6d9db";
@@ -62,14 +62,89 @@
       allow_remote_control = true;
       listen_on = "unix:/tmp/kitty";
       single_instance = true;
+
+      # ========================================
+      # MOUSE & CLIPBOARD - NEW/FIXED
+      # ========================================
+      
+      # Auto-copy when selecting with mouse (IMPORTANT!)
+      copy_on_select = "clipboard";
+      
+      # Mouse settings
+      mouse_hide_wait = "3.0";
+      detect_urls = true;
+      url_style = "curly";
+      open_url_with = "default";
+      url_prefixes = "http https file ftp gemini irc gopher mailto news git";
+      
+      # Strip trailing spaces when copying
+      strip_trailing_spaces = "smart";
+      
+      # What characters are part of a word (for double-click selection)
+      select_by_word_characters = "@-./_~?&=%+#";
+      
+      # Click interval for double/triple click
+      click_interval = "0.5";
+      
+      # Clipboard control (allow kitty to access clipboard)
+      clipboard_control = "write-clipboard write-primary read-clipboard read-primary";
+      
+      # Rectangle select modifier (hold this + drag to select rectangle)
+      rectangle_select_modifiers = "ctrl+alt";
+      
+      # Terminal select modifier (hold this + click to select from cursor to click)
+      terminal_select_modifiers = "shift";
+      
+      # Clear selection when you start typing
+      clear_selection_on_paste = true;
     };
 
     # Keyboard shortcuts
     keybindings = {
-      "ctrl+insert" = "copy_to_clipboard";
-      "shift+insert" = "paste_from_clipboard";
+      # Copy/Paste - Primary shortcuts
       "ctrl+shift+c" = "copy_to_clipboard";
       "ctrl+shift+v" = "paste_from_clipboard";
+      
+      # Copy/Paste - Alternative (Ctrl+Insert/Shift+Insert)
+      "ctrl+insert" = "copy_to_clipboard";
+      "shift+insert" = "paste_from_clipboard";
+      
+      # Copy to selection buffer (for middle-click paste)
+      "ctrl+shift+s" = "copy_to_clipboard";
+      
+      # Select all
+      "ctrl+shift+a" = "select_all";
+      
+      # Clear selection
+      "escape" = "clear_selection";
+      
+      # Scrollback
+      "ctrl+shift+up" = "scroll_line_up";
+      "ctrl+shift+down" = "scroll_line_down";
+      "ctrl+shift+page_up" = "scroll_page_up";
+      "ctrl+shift+page_down" = "scroll_page_down";
+      "ctrl+shift+home" = "scroll_home";
+      "ctrl+shift+end" = "scroll_end";
+      
+      # Show scrollback in pager (less)
+      "ctrl+shift+h" = "show_scrollback";
+      
+      # Window management
+      "ctrl+shift+enter" = "new_window";
+      "ctrl+shift+w" = "close_window";
+      "ctrl+shift+]" = "next_window";
+      "ctrl+shift+[" = "previous_window";
+      
+      # Tab management
+      "ctrl+shift+t" = "new_tab";
+      "ctrl+shift+q" = "close_tab";
+      "ctrl+shift+right" = "next_tab";
+      "ctrl+shift+left" = "previous_tab";
+      
+      # Font size
+      "ctrl+shift+equal" = "increase_font_size";
+      "ctrl+shift+minus" = "decrease_font_size";
+      "ctrl+shift+0" = "restore_font_size";
     };
 
     extraConfig = ''
@@ -90,9 +165,16 @@
       color13 #bebffd
       color14 #9bf1e1
       color15 #f1e5e7
+      
+      # Mouse actions
+      # Click URLs to open them
+      mouse_map left click ungrabbed mouse_handle_click selection link prompt
+      
+      # Paste on middle-click
+      mouse_map middle release ungrabbed paste_from_selection
+      
+      # Right-click extends selection
+      mouse_map right click ungrabbed mouse_select_command_output
     '';
   };
-
-  # NOTE: Nerd Fonts are installed system-wide in modules/system/fonts.nix
-  # This ensures they work properly with Hyprland, Waybar, and all Wayland apps
 }
