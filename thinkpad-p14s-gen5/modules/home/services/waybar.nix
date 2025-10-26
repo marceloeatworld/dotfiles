@@ -370,6 +370,7 @@ in
       }
 
       #custom-bitcoin,
+      #custom-wallets,
       #pulseaudio,
       #bluetooth,
       #network,
@@ -392,6 +393,13 @@ in
         font-size: 12px;
         background: rgba(249, 204, 108, 0.2);
         color: #f9cc6c;
+      }
+
+      #custom-wallets {
+        padding: 0 8px;
+        font-size: 12px;
+        background: rgba(253, 104, 131, 0.2);
+        color: #fd6883;
       }
 
       #custom-removable-disks {
