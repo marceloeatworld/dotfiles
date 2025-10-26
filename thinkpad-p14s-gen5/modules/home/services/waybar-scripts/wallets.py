@@ -31,10 +31,12 @@ CACHE_FILE = CACHE_DIR / "wallet_cache.json"
 CACHE_DURATION = timedelta(hours=1)  # Cache balances for 1 hour
 
 # Real gap limit: stop after finding N consecutive empty addresses
-GAP_LIMIT = 20  # Bitcoin standard gap limit
+# Increased to 50 to handle wallets with scattered transactions
+GAP_LIMIT = 50  # Extended gap limit for better coverage
 
 # Maximum addresses to check per wallet (safety limit)
-MAX_ADDRESS_INDEX = 200
+# Increased to 500 to ensure we catch all addresses
+MAX_ADDRESS_INDEX = 500
 
 # Delay between API requests to avoid rate limiting (seconds)
 API_DELAY = 1.5
