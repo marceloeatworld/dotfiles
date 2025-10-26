@@ -3,6 +3,11 @@
 Bitcoin Wallet Balance Monitor for Waybar
 Derives addresses from zpub keys LOCALLY using embit and checks balances via Mempool.space API
 Privacy-focused: zpub keys never leave your machine
+
+IMPROVED VERSION:
+- Real gap limit: scans until finding 20 consecutive empty addresses
+- Caches derived addresses to avoid re-derivation on rebuild
+- Dynamic Python version detection for venv compatibility
 """
 
 import os
@@ -10,8 +15,9 @@ import sys
 import json
 import subprocess
 import time
+import glob
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
 
 
@@ -21,16 +27,17 @@ ENV_EXAMPLE = CONFIG_DIR / ".env.example"
 
 # Cache configuration
 CACHE_DIR = Path.home() / ".cache/waybar-bitcoin"
-CACHE_FILE = CACHE_DIR / "balances.json"
+CACHE_FILE = CACHE_DIR / "wallet_cache.json"
 CACHE_DURATION = timedelta(hours=1)  # Cache balances for 1 hour
 
-# Number of addresses to derive per wallet (balanced to avoid API rate limiting)
-ADDRESS_GAP_LIMIT = 30
+# Real gap limit: stop after finding N consecutive empty addresses
+GAP_LIMIT = 20  # Bitcoin standard gap limit
+
+# Maximum addresses to check per wallet (safety limit)
+MAX_ADDRESS_INDEX = 200
 
 # Delay between API requests to avoid rate limiting (seconds)
-# With 6 wallets × 30 addresses = 180 requests, 2s delay = ~6 minutes total
-# But cache makes subsequent requests instant!
-API_DELAY = 2.0
+API_DELAY = 1.5
 
 # Lazy import for requests (imported after dependencies are installed)
 _requests = None
@@ -49,9 +56,18 @@ def ensure_dependencies():
     venv_dir = Path.home() / ".local/share/waybar-bitcoin-venv"
     python_bin = venv_dir / "bin" / "python3"
 
-    # Add venv to path if it exists
-    if python_bin.exists():
-        sys.path.insert(0, str(venv_dir / "lib" / "python3.13" / "site-packages"))
+    # Dynamically find site-packages directory (handles any Python version)
+    def add_venv_to_path():
+        if python_bin.exists():
+            # Find site-packages using glob pattern
+            site_packages = glob.glob(str(venv_dir / "lib" / "python*" / "site-packages"))
+            if site_packages:
+                sys.path.insert(0, site_packages[0])
+                return True
+        return False
+
+    # Try to add existing venv to path
+    add_venv_to_path()
 
     try:
         import embit
@@ -64,7 +80,7 @@ def ensure_dependencies():
             if not venv_dir.exists():
                 subprocess.check_call([
                     "uv", "venv", str(venv_dir)
-                ])
+                ], stderr=subprocess.DEVNULL)
 
             # Install embit and requests with uv (much faster than pip)
             subprocess.check_call([
@@ -73,7 +89,7 @@ def ensure_dependencies():
             ], env={**os.environ, "VIRTUAL_ENV": str(venv_dir)})
 
             # Add to path
-            sys.path.insert(0, str(venv_dir / "lib" / "python3.13" / "site-packages"))
+            add_venv_to_path()
 
             print("✓ embit installed with uv", file=sys.stderr)
             return True
@@ -100,8 +116,8 @@ def load_env() -> Dict[str, str]:
     return env_vars
 
 
-def load_cache() -> Dict:
-    """Load cached balances if they exist and are fresh"""
+def load_cache() -> Optional[Dict]:
+    """Load cached addresses and balances if they exist and are fresh"""
     if not CACHE_FILE.exists():
         return None
 
@@ -122,7 +138,7 @@ def load_cache() -> Dict:
 
 
 def save_cache(data: Dict):
-    """Save balances to cache file"""
+    """Save addresses and balances to cache file"""
     try:
         # Ensure cache directory exists
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -138,16 +154,16 @@ def save_cache(data: Dict):
         print(f"Error saving cache: {e}", file=sys.stderr)
 
 
-def derive_addresses_from_zpub(zpub: str, count: int = ADDRESS_GAP_LIMIT) -> List[str]:
+def derive_address_at_index(zpub: str, index: int) -> Optional[str]:
     """
-    Derive Bitcoin addresses from zpub (BIP84 - Native SegWit) LOCALLY
+    Derive a single Bitcoin address from zpub at specified index (BIP84 - Native SegWit)
 
     Args:
         zpub: Extended public key (zpub...)
-        count: Number of addresses to derive
+        index: Address index to derive
 
     Returns:
-        List of Bitcoin addresses (bc1...)
+        Bitcoin address (bc1...) or None on error
     """
     try:
         from embit import bip32
@@ -156,21 +172,74 @@ def derive_addresses_from_zpub(zpub: str, count: int = ADDRESS_GAP_LIMIT) -> Lis
         # Parse zpub
         key = bip32.HDKey.from_string(zpub)
 
+        # Derive path 0/index (external chain, address index)
+        child_key = key.derive([0, index])
+
+        # Get P2WPKH (native SegWit) address
+        address = p2wpkh(child_key).address()
+
+        return address
+    except Exception as e:
+        print(f"Error deriving address at index {index}: {e}", file=sys.stderr)
+        return None
+
+
+def derive_addresses_from_cache_or_scan(zpub: str, cached_data: Optional[Dict] = None) -> Tuple[List[str], int]:
+    """
+    Derive addresses intelligently: use cache if available, or scan with gap limit
+
+    Args:
+        zpub: Extended public key
+        cached_data: Previously cached address data
+
+    Returns:
+        Tuple of (list of all addresses to check, max_index)
+    """
+    if cached_data and cached_data.get('addresses'):
+        # Use cached addresses
+        addresses = cached_data['addresses']
+        max_index = cached_data.get('max_index', len(addresses) - 1)
+        print(f"  Using {len(addresses)} cached addresses (up to index {max_index})", file=sys.stderr)
+
+        # Also derive a few more addresses after max_index to detect new usage
+        scan_extra = 5  # Check 5 more addresses after cached max
+        for i in range(max_index + 1, max_index + scan_extra + 1):
+            if i >= MAX_ADDRESS_INDEX:
+                break
+            addr = derive_address_at_index(zpub, i)
+            if addr:
+                addresses.append(addr)
+                max_index = i
+
+        print(f"  Extended scan to index {max_index}", file=sys.stderr)
+        return addresses, max_index
+    else:
+        # No cache: full gap limit scan
+        print(f"  No cache found, performing full gap limit scan...", file=sys.stderr)
         addresses = []
-        # Derive external chain addresses (0/i)
-        for i in range(count):
-            # Derive path 0/i (external chain, address index)
-            child_key = key.derive([0, i])
-            # Get P2WPKH (native SegWit) address
-            address = p2wpkh(child_key).address()
+        consecutive_empty = 0
+        current_index = 0
+
+        while current_index < MAX_ADDRESS_INDEX and consecutive_empty < GAP_LIMIT:
+            # Derive address
+            address = derive_address_at_index(zpub, current_index)
+            if not address:
+                break
             addresses.append(address)
 
-        return addresses
-    except Exception as e:
-        print(f"Error deriving addresses from zpub: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        return []
+            # Check balance
+            balance = get_address_balance(address)
+            if balance > 0:
+                consecutive_empty = 0
+                print(f"    Found balance at index {current_index}: {balance:.8f} BTC", file=sys.stderr)
+            else:
+                consecutive_empty += 1
+
+            current_index += 1
+
+        max_index = current_index - 1
+        print(f"  Scanned up to index {max_index} ({len(addresses)} addresses total)", file=sys.stderr)
+        return addresses, max_index
 
 
 def get_address_balance(address: str) -> float:
@@ -206,27 +275,66 @@ def get_address_balance(address: str) -> float:
         return 0.0
 
 
-def get_wallet_balance(zpub: str) -> float:
+def get_wallet_balance(zpub: str, cached_data: Optional[Dict] = None) -> Tuple[float, Dict]:
     """
-    Get total balance for a wallet from its zpub
+    Get total balance for a wallet from its zpub using intelligent caching
 
     Args:
         zpub: Extended public key
+        cached_data: Previously cached address data
 
     Returns:
-        Total balance in BTC
+        Tuple of (total_balance in BTC, address_data dict for caching)
     """
-    addresses = derive_addresses_from_zpub(zpub)
+    # Derive addresses intelligently (use cache or scan)
+    addresses, max_index = derive_addresses_from_cache_or_scan(zpub, cached_data)
+
     if not addresses:
-        return 0.0
+        return 0.0, {}
 
     total_balance = 0.0
-    for addr in addresses:
-        balance = get_address_balance(addr)
-        if balance > 0:
-            total_balance += balance
+    active_indices = []
 
-    return total_balance
+    # If using cache, only check previously active addresses + a few new ones
+    if cached_data and cached_data.get('active_indices'):
+        cached_active = set(cached_data['active_indices'])
+        cached_max = cached_data.get('max_index', 0)
+
+        print(f"  Checking {len(cached_active)} previously active addresses", file=sys.stderr)
+
+        # Check previously active addresses
+        for index in cached_active:
+            if index < len(addresses):
+                balance = get_address_balance(addresses[index])
+                if balance > 0:
+                    total_balance += balance
+                    active_indices.append(index)
+
+        # Check newly derived addresses (after cached max_index)
+        print(f"  Checking new addresses from index {cached_max + 1} to {max_index}", file=sys.stderr)
+        for index in range(cached_max + 1, min(len(addresses), max_index + 1)):
+            balance = get_address_balance(addresses[index])
+            if balance > 0:
+                total_balance += balance
+                active_indices.append(index)
+                print(f"    New balance found at index {index}: {balance:.8f} BTC", file=sys.stderr)
+    else:
+        # No cache: check all addresses
+        print(f"  Checking all {len(addresses)} addresses", file=sys.stderr)
+        for index, addr in enumerate(addresses):
+            balance = get_address_balance(addr)
+            if balance > 0:
+                total_balance += balance
+                active_indices.append(index)
+
+    # Prepare cache data
+    address_data = {
+        'addresses': addresses,
+        'max_index': max_index,
+        'active_indices': sorted(active_indices)
+    }
+
+    return total_balance, address_data
 
 
 def get_btc_prices() -> Tuple[float, float]:
@@ -323,7 +431,7 @@ def main():
         }))
         return
 
-    # Try to load cached balances (skip if --force flag is used)
+    # Try to load cached data (skip if --force flag is used)
     cache = None if force_refresh else load_cache()
     use_cache = cache is not None
 
@@ -331,7 +439,7 @@ def main():
         print("🔄 Force refresh requested, ignoring cache", file=sys.stderr)
 
     if use_cache:
-        print("✓ Using cached balances", file=sys.stderr)
+        print("✓ Using cached data (addresses + balances)", file=sys.stderr)
         # Extract balances from cache
         for wallet_id, wallet in wallets.items():
             wallet_key = f"wallet_{wallet_id}"
@@ -340,18 +448,37 @@ def main():
         print("Fetching fresh balances from Mempool.space API...", file=sys.stderr)
         # Calculate balances for each wallet (with API requests)
         cache_balances = {}
+        cache_addresses = {}
+
         for wallet_id, wallet in wallets.items():
+            wallet_key = f"wallet_{wallet_id}"
+            print(f"\nProcessing {wallet['name']}...", file=sys.stderr)
+
             try:
-                balance = get_wallet_balance(wallet['zpub'])
+                # Get cached address data for this wallet (if exists)
+                cached_addr_data = cache.get('addresses', {}).get(wallet_key) if cache else None
+
+                # Get balance with gap limit scanning
+                balance, address_data = get_wallet_balance(wallet['zpub'], cached_addr_data)
+
                 wallet['balance'] = balance
-                cache_balances[f"wallet_{wallet_id}"] = balance
+                cache_balances[wallet_key] = balance
+                cache_addresses[wallet_key] = address_data
+
+                print(f"  Total balance: {balance:.8f} BTC", file=sys.stderr)
             except Exception as e:
                 print(f"Error processing wallet {wallet_id}: {e}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
                 wallet['balance'] = 0.0
-                cache_balances[f"wallet_{wallet_id}"] = 0.0
+                cache_balances[wallet_key] = 0.0
+                cache_addresses[wallet_key] = {}
 
-        # Save balances to cache
-        save_cache({'balances': cache_balances})
+        # Save addresses and balances to cache
+        save_cache({
+            'addresses': cache_addresses,
+            'balances': cache_balances
+        })
 
     # Calculate total BTC
     total_btc = sum(wallet['balance'] for wallet in wallets.values())
