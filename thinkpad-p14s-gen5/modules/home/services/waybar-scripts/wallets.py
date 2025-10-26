@@ -24,13 +24,13 @@ CACHE_DIR = Path.home() / ".cache/waybar-bitcoin"
 CACHE_FILE = CACHE_DIR / "balances.json"
 CACHE_DURATION = timedelta(hours=1)  # Cache balances for 1 hour
 
-# Number of addresses to derive per wallet (increased to catch all used addresses)
-ADDRESS_GAP_LIMIT = 50
+# Number of addresses to derive per wallet (balanced to avoid API rate limiting)
+ADDRESS_GAP_LIMIT = 30
 
 # Delay between API requests to avoid rate limiting (seconds)
-# With 6 wallets × 50 addresses = 300 requests, 2.5s delay = ~12 minutes total
+# With 6 wallets × 30 addresses = 180 requests, 2s delay = ~6 minutes total
 # But cache makes subsequent requests instant!
-API_DELAY = 2.5
+API_DELAY = 2.0
 
 # Lazy import for requests (imported after dependencies are installed)
 _requests = None
