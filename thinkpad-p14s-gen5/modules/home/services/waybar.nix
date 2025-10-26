@@ -280,7 +280,7 @@ in
           exec = "${pkgs.python313}/bin/python3 ~/.config/waybar/scripts/wallets.py";
           return-type = "json";
           interval = 1200;  # Update every 20 minutes (1200 seconds) - uses cache, very fast
-          format = "₿ {}";
+          format = "{}";
           tooltip = true;
           on-click = "${pkgs.python313}/bin/python3 ~/.config/waybar/scripts/wallets.py --force";  # Force refresh on click
         };
