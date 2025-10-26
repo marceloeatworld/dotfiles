@@ -1,0 +1,8 @@
+.claude/
+CLAUDE.md
+*/CLAUDE.md
+
+# Bitcoin wallet configuration (contains private zpub keys)
+.env
+*/.env
+**/.env

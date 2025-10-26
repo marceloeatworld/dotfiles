@@ -1,0 +1,19 @@
+# Flake outputs
+result
+result-*
+
+# Hardware configuration (machine-specific)
+# Uncomment if you don't want to commit your hardware config
+# hosts/*/hardware-configuration.nix
+
+# Backup files
+*.bak
+*~
+.*.swp
+.*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+CLAUDE.md
+.claude
