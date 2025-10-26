@@ -58,6 +58,7 @@ nix flake update
 - **Hyprland** - Tiling Wayland compositor with Ristretto theme
 - **Walker** - Modern application launcher
 - **Kitty** - GPU-accelerated terminal
+- **Bitcoin Wallet Monitor** - Privacy-focused balance tracking (local zpub derivation, Waybar integration)
 - **DNS Privacy** - AdGuard + Mullvad + Quad9 (ad-blocking, malware blocking, encrypted)
 - **VPN Integration** - Automatic DNS switching (Quad9 ↔ Proton VPN)
 - **Windows 11 VM** - Docker-based with RDP integration
@@ -570,7 +571,10 @@ All icons stored locally in `assets/icons/` (no internet download needed)
 
 **Desktop Tools**
 - **Walker** - Application launcher (Ristretto themed)
-- **Waybar** - Status bar with custom modules (Bitcoin, Removable Disks)
+- **Waybar** - Status bar with custom modules:
+  - Bitcoin price monitor (Coinbase API)
+  - Bitcoin wallet balance (privacy-focused zpub derivation)
+  - Removable disks monitor
 - **Mako** - Notification daemon
 - **SwayOSD** - On-screen display for volume/brightness
 - **Hyprpaper** - Wallpaper manager
@@ -598,6 +602,61 @@ All icons stored locally in `assets/icons/` (no internet download needed)
 - **Ollama** - Local LLM server (`http://localhost:11434`)
 - **aichat** - CLI chat interface
 - **ROCm** - AMD GPU acceleration for AI workloads
+
+---
+
+## Bitcoin Wallet Monitoring
+
+Privacy-focused Bitcoin wallet balance monitor integrated into Waybar.
+
+### Features
+
+- **100% Privacy**: Derives addresses from zpub keys LOCALLY using embit library
+- **Your keys never leave your machine** - all derivation happens on your laptop
+- **BIP84 compliant**: Scans both external (receiving) and change (internal) chains
+- **Gap limit scanning**: Finds all used addresses (50 consecutive empty = stop)
+- **Smart caching**: Caches addresses for 24 hours to minimize API calls
+- **Mempool.space API**: Checks balances via public blockchain API
+- **Multi-wallet support**: Monitor multiple wallets simultaneously
+- **Real-time prices**: Shows BTC balance with USD/EUR values (Coinbase API)
+
+### Setup
+
+1. **Create wallet configuration:**
+```bash
+cp ~/.config/waybar/.env.example ~/.config/waybar/.env
+nano ~/.config/waybar/.env
+```
+
+2. **Add your zpub keys** (extended public keys from your Bitcoin wallet):
+```bash
+# Example .env file
+WALLET_1_NAME="Cold Storage"
+WALLET_1_ZPUB="zpub6r..."
+
+WALLET_2_NAME="Hot Wallet"
+WALLET_2_ZPUB="zpub6s..."
+```
+
+3. **Dependencies auto-install** via uv (Python package manager)
+   - embit (BIP84 address derivation)
+   - requests (API calls)
+
+4. **Force refresh** (bypass cache):
+```bash
+~/.config/waybar/scripts/wallets.py --force
+```
+
+### How It Works
+
+1. Derives Bitcoin addresses locally from your zpub key
+2. Scans both external (m/84'/0'/0'/0/x) and change (m/84'/0'/0'/1/x) chains
+3. Checks balance for each address via Mempool.space API
+4. Stops after finding 50 consecutive empty addresses (gap limit)
+5. Caches addresses for 24 hours to reduce API load
+6. Updates balance display in Waybar every 20 minutes
+
+**Privacy Note**: Only addresses are shared with Mempool.space API, never your zpub keys. This is the same privacy level as using any Bitcoin block explorer.
 
 ---
 
