@@ -28,7 +28,7 @@ ENV_EXAMPLE = CONFIG_DIR / ".env.example"
 # Cache configuration
 CACHE_DIR = Path.home() / ".cache/waybar-bitcoin"
 CACHE_FILE = CACHE_DIR / "wallet_cache.json"
-CACHE_DURATION = timedelta(hours=1)  # Cache balances for 1 hour
+CACHE_DURATION = timedelta(hours=24)  # Cache addresses/balances for 24 hours (only price updates every 20 min)
 
 # Real gap limit: stop after finding N consecutive empty addresses
 # Increased to 50 to handle wallets with scattered transactions
@@ -39,7 +39,8 @@ GAP_LIMIT = 50  # Extended gap limit for better coverage
 MAX_ADDRESS_INDEX = 500
 
 # Delay between API requests to avoid rate limiting (seconds)
-API_DELAY = 1.5
+# Increased to 3s to handle double chain scanning (external + change)
+API_DELAY = 3.0
 
 # Lazy import for requests (imported after dependencies are installed)
 _requests = None
@@ -156,13 +157,14 @@ def save_cache(data: Dict):
         print(f"Error saving cache: {e}", file=sys.stderr)
 
 
-def derive_address_at_index(zpub: str, index: int) -> Optional[str]:
+def derive_address_at_index(zpub: str, index: int, chain: int = 0) -> Optional[str]:
     """
     Derive a single Bitcoin address from zpub at specified index (BIP84 - Native SegWit)
 
     Args:
         zpub: Extended public key (zpub...)
         index: Address index to derive
+        chain: Chain type (0 = external/receiving, 1 = internal/change)
 
     Returns:
         Bitcoin address (bc1...) or None on error
@@ -174,15 +176,15 @@ def derive_address_at_index(zpub: str, index: int) -> Optional[str]:
         # Parse zpub
         key = bip32.HDKey.from_string(zpub)
 
-        # Derive path 0/index (external chain, address index)
-        child_key = key.derive([0, index])
+        # Derive path chain/index (0 = external, 1 = change)
+        child_key = key.derive([chain, index])
 
         # Get P2WPKH (native SegWit) address
         address = p2wpkh(child_key).address()
 
         return address
     except Exception as e:
-        print(f"Error deriving address at index {index}: {e}", file=sys.stderr)
+        print(f"Error deriving address at chain {chain}, index {index}: {e}", file=sys.stderr)
         return None
 
 
@@ -277,9 +279,65 @@ def get_address_balance(address: str) -> float:
         return 0.0
 
 
+def scan_chain(zpub: str, chain: int, cached_data: Optional[Dict] = None) -> Tuple[float, List[str], int, List[int]]:
+    """
+    Scan a single chain (external or change) for balances
+
+    Args:
+        zpub: Extended public key
+        chain: 0 for external/receiving, 1 for change/internal
+        cached_data: Previously cached data for this chain
+
+    Returns:
+        Tuple of (balance, addresses, max_index, active_indices)
+    """
+    chain_name = "external" if chain == 0 else "change"
+    print(f"  Scanning {chain_name} chain (m/84'/0'/0'/{chain}/x)...", file=sys.stderr)
+
+    addresses = []
+    consecutive_empty = 0
+    current_index = 0
+    total_balance = 0.0
+    active_indices = []
+
+    # Use cached addresses if available
+    if cached_data and cached_data.get('addresses'):
+        addresses = cached_data['addresses']
+        current_index = len(addresses)
+        print(f"    Using {current_index} cached addresses", file=sys.stderr)
+
+    # Scan with gap limit
+    while current_index < MAX_ADDRESS_INDEX and consecutive_empty < GAP_LIMIT:
+        if current_index < len(addresses):
+            address = addresses[current_index]
+        else:
+            address = derive_address_at_index(zpub, current_index, chain)
+            if not address:
+                break
+            addresses.append(address)
+
+        # Check balance
+        balance = get_address_balance(address)
+        if balance > 0:
+            consecutive_empty = 0
+            total_balance += balance
+            active_indices.append(current_index)
+            print(f"      Found balance at {chain_name} index {current_index}: {balance:.8f} BTC", file=sys.stderr)
+        else:
+            consecutive_empty += 1
+
+        current_index += 1
+
+    max_index = current_index - 1
+    print(f"    {chain_name} chain: {len(addresses)} addresses, balance: {total_balance:.8f} BTC", file=sys.stderr)
+
+    return total_balance, addresses, max_index, active_indices
+
+
 def get_wallet_balance(zpub: str, cached_data: Optional[Dict] = None) -> Tuple[float, Dict]:
     """
     Get total balance for a wallet from its zpub using intelligent caching
+    Scans BOTH external (receiving) and change (internal) chains
 
     Args:
         zpub: Extended public key
@@ -288,52 +346,30 @@ def get_wallet_balance(zpub: str, cached_data: Optional[Dict] = None) -> Tuple[f
     Returns:
         Tuple of (total_balance in BTC, address_data dict for caching)
     """
-    # Derive addresses intelligently (use cache or scan)
-    addresses, max_index = derive_addresses_from_cache_or_scan(zpub, cached_data)
-
-    if not addresses:
-        return 0.0, {}
-
     total_balance = 0.0
-    active_indices = []
 
-    # If using cache, only check previously active addresses + a few new ones
-    if cached_data and cached_data.get('active_indices'):
-        cached_active = set(cached_data['active_indices'])
-        cached_max = cached_data.get('max_index', 0)
+    # Scan external chain (chain 0)
+    external_cached = cached_data.get('external') if cached_data else None
+    external_balance, external_addrs, external_max, external_active = scan_chain(zpub, 0, external_cached)
+    total_balance += external_balance
 
-        print(f"  Checking {len(cached_active)} previously active addresses", file=sys.stderr)
-
-        # Check previously active addresses
-        for index in cached_active:
-            if index < len(addresses):
-                balance = get_address_balance(addresses[index])
-                if balance > 0:
-                    total_balance += balance
-                    active_indices.append(index)
-
-        # Check newly derived addresses (after cached max_index)
-        print(f"  Checking new addresses from index {cached_max + 1} to {max_index}", file=sys.stderr)
-        for index in range(cached_max + 1, min(len(addresses), max_index + 1)):
-            balance = get_address_balance(addresses[index])
-            if balance > 0:
-                total_balance += balance
-                active_indices.append(index)
-                print(f"    New balance found at index {index}: {balance:.8f} BTC", file=sys.stderr)
-    else:
-        # No cache: check all addresses
-        print(f"  Checking all {len(addresses)} addresses", file=sys.stderr)
-        for index, addr in enumerate(addresses):
-            balance = get_address_balance(addr)
-            if balance > 0:
-                total_balance += balance
-                active_indices.append(index)
+    # Scan change chain (chain 1)
+    change_cached = cached_data.get('change') if cached_data else None
+    change_balance, change_addrs, change_max, change_active = scan_chain(zpub, 1, change_cached)
+    total_balance += change_balance
 
     # Prepare cache data
     address_data = {
-        'addresses': addresses,
-        'max_index': max_index,
-        'active_indices': sorted(active_indices)
+        'external': {
+            'addresses': external_addrs,
+            'max_index': external_max,
+            'active_indices': sorted(external_active)
+        },
+        'change': {
+            'addresses': change_addrs,
+            'max_index': change_max,
+            'active_indices': sorted(change_active)
+        }
     }
 
     return total_balance, address_data
