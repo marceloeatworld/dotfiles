@@ -505,11 +505,13 @@ in
         layer = "top";
         position = "top";
         height = 32;
-        spacing = 2;
+        spacing = 6;  # More space between modules
 
         modules-left = [ "hyprland/workspaces" "hyprland/submap" "hyprland/window" ];
         modules-center = [ "clock" ];
         modules-right = [
+          "custom/weather"
+          "custom/polymarket"
           "custom/bitcoin"
           "custom/wallets"
           "custom/removable-disks"
@@ -666,6 +668,28 @@ in
           on-scroll-up = "~/.config/waybar/scripts/brightness-sync.sh 5%+";
           on-scroll-down = "~/.config/waybar/scripts/brightness-sync.sh 5%-";
           # on-click removed to prevent system freeze
+        };
+
+        "custom/weather" = {
+          exec = "${pkgs.python313}/bin/python3 ~/.config/waybar/scripts/weather.py";
+          return-type = "json";
+          interval = 600;  # Update every 10 minutes (600 seconds) - cached
+          format = "{}";
+          tooltip = true;
+          on-click = "${pkgs.xdg-utils}/bin/xdg-open https://open-meteo.com";
+          on-scroll-up = "pkill -RTMIN+3 waybar";  # Force refresh on scroll
+          on-scroll-down = "pkill -RTMIN+3 waybar";  # Force refresh on scroll
+        };
+
+        "custom/polymarket" = {
+          exec = "${pkgs.python313}/bin/python3 ~/.config/waybar/scripts/polymarket.py";
+          return-type = "json";
+          interval = 300;  # Update every 5 minutes (300 seconds) - cached
+          format = "{}";
+          tooltip = true;
+          on-click = "${pkgs.xdg-utils}/bin/xdg-open https://polymarket.com";
+          on-scroll-up = "pkill -RTMIN+2 waybar";  # Force refresh on scroll
+          on-scroll-down = "pkill -RTMIN+2 waybar";  # Force refresh on scroll
         };
 
         "custom/bitcoin" = {
