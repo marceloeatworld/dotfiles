@@ -63,8 +63,10 @@ let
     change_30d=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_30d // "N/A"')
     market_cap=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.market_cap.usd // "N/A"')
     volume_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.total_volume.usd // "N/A"')
-    high_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.high_24h.usd // "N/A"')
-    low_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.low_24h.usd // "N/A"')
+    high_24h_usd=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.high_24h.usd // "N/A"')
+    high_24h_eur=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.high_24h.eur // "N/A"')
+    low_24h_usd=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.low_24h.usd // "N/A"')
+    low_24h_eur=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.low_24h.eur // "N/A"')
 
     if [ "$usd" = "N/A" ]; then
       echo '{"text": "BTC: N/A", "tooltip": "Failed to parse Bitcoin data"}'
@@ -103,49 +105,53 @@ let
       echo "$usd" > "$LAST_PRICE_FILE"
     fi
 
-    # Fetch 30-day historical data for detailed chart
-    history_response=$(${pkgs.curl}/bin/curl -s "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily")
+    # Fetch 30-day historical data for detailed chart (USD and EUR)
+    history_response_usd=$(${pkgs.curl}/bin/curl -s "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily")
+    history_response_eur=$(${pkgs.curl}/bin/curl -s "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=eur&days=30&interval=daily")
 
     # Extract daily prices - CoinGecko returns [timestamp, price] arrays
-    prices=$(echo "$history_response" | ${pkgs.jq}/bin/jq -r '.prices[]?[1]' 2>/dev/null)
+    prices_usd=$(echo "$history_response_usd" | ${pkgs.jq}/bin/jq -r '.prices[]?[1]' 2>/dev/null)
+    prices_eur=$(echo "$history_response_eur" | ${pkgs.jq}/bin/jq -r '.prices[]?[1]' 2>/dev/null)
 
     # Initialize sparkline and stats
     sparkline=""
-    min_price=""
-    max_price=""
+    min_price_usd=""
+    max_price_usd=""
+    min_price_eur=""
+    max_price_eur=""
     trend_indicator=""
 
-    if [ -n "$prices" ]; then
-      price_array=($prices)
+    if [ -n "$prices_usd" ]; then
+      price_array_usd=($prices_usd)
 
-      if [ ''${#price_array[@]} -gt 0 ]; then
-        # Calculate min and max
-        min_price=''${price_array[0]}
-        max_price=''${price_array[0]}
+      if [ ''${#price_array_usd[@]} -gt 0 ]; then
+        # Calculate min and max for USD
+        min_price_usd=''${price_array_usd[0]}
+        max_price_usd=''${price_array_usd[0]}
 
-        for price in "''${price_array[@]}"; do
-          if (( $(echo "$price < $min_price" | ${pkgs.bc}/bin/bc -l) )); then
-            min_price=$price
+        for price in "''${price_array_usd[@]}"; do
+          if (( $(echo "$price < $min_price_usd" | ${pkgs.bc}/bin/bc -l) )); then
+            min_price_usd=$price
           fi
-          if (( $(echo "$price > $max_price" | ${pkgs.bc}/bin/bc -l) )); then
-            max_price=$price
+          if (( $(echo "$price > $max_price_usd" | ${pkgs.bc}/bin/bc -l) )); then
+            max_price_usd=$price
           fi
         done
 
         # Calculate trend indicator using simple moving average
         # Compare first half average vs second half average
-        array_len=''${#price_array[@]}
+        array_len=''${#price_array_usd[@]}
         mid_point=$((array_len / 2))
 
         first_half_sum=0
         second_half_sum=0
 
         for ((i=0; i<mid_point; i++)); do
-          first_half_sum=$(echo "$first_half_sum + ''${price_array[$i]}" | ${pkgs.bc}/bin/bc -l)
+          first_half_sum=$(echo "$first_half_sum + ''${price_array_usd[$i]}" | ${pkgs.bc}/bin/bc -l)
         done
 
         for ((i=mid_point; i<array_len; i++)); do
-          second_half_sum=$(echo "$second_half_sum + ''${price_array[$i]}" | ${pkgs.bc}/bin/bc -l)
+          second_half_sum=$(echo "$second_half_sum + ''${price_array_usd[$i]}" | ${pkgs.bc}/bin/bc -l)
         done
 
         first_half_avg=$(echo "scale=2; $first_half_sum / $mid_point" | ${pkgs.bc}/bin/bc -l)
@@ -163,17 +169,36 @@ let
 
         # Generate detailed sparkline using Unicode block characters ▁▂▃▄▅▆▇█
         spark_chars=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█")
-        range=$(echo "$max_price - $min_price" | ${pkgs.bc}/bin/bc -l)
+        range=$(echo "$max_price_usd - $min_price_usd" | ${pkgs.bc}/bin/bc -l)
 
         if (( $(echo "$range > 0" | ${pkgs.bc}/bin/bc -l) )); then
-          for price in "''${price_array[@]}"; do
-            normalized=$(echo "scale=2; (($price - $min_price) / $range) * 7" | ${pkgs.bc}/bin/bc -l)
+          for price in "''${price_array_usd[@]}"; do
+            normalized=$(echo "scale=2; (($price - $min_price_usd) / $range) * 7" | ${pkgs.bc}/bin/bc -l)
             index=$(printf "%.0f" "$normalized")
             [ "$index" -lt 0 ] && index=0
             [ "$index" -gt 7 ] && index=7
             sparkline="''${sparkline}''${spark_chars[$index]}"
           done
         fi
+      fi
+    fi
+
+    # Calculate min and max for EUR
+    if [ -n "$prices_eur" ]; then
+      price_array_eur=($prices_eur)
+
+      if [ ''${#price_array_eur[@]} -gt 0 ]; then
+        min_price_eur=''${price_array_eur[0]}
+        max_price_eur=''${price_array_eur[0]}
+
+        for price in "''${price_array_eur[@]}"; do
+          if (( $(echo "$price < $min_price_eur" | ${pkgs.bc}/bin/bc -l) )); then
+            min_price_eur=$price
+          fi
+          if (( $(echo "$price > $max_price_eur" | ${pkgs.bc}/bin/bc -l) )); then
+            max_price_eur=$price
+          fi
+        done
       fi
     fi
 
@@ -205,8 +230,10 @@ let
     fi
 
     # Format 24h range
-    high_24h_formatted=$(printf "%'.0f" "$high_24h" 2>/dev/null || echo "$high_24h")
-    low_24h_formatted=$(printf "%'.0f" "$low_24h" 2>/dev/null || echo "$low_24h")
+    high_24h_usd_formatted=$(printf "%'.0f" "$high_24h_usd" 2>/dev/null || echo "$high_24h_usd")
+    high_24h_eur_formatted=$(printf "%'.0f" "$high_24h_eur" 2>/dev/null || echo "$high_24h_eur")
+    low_24h_usd_formatted=$(printf "%'.0f" "$low_24h_usd" 2>/dev/null || echo "$low_24h_usd")
+    low_24h_eur_formatted=$(printf "%'.0f" "$low_24h_eur" 2>/dev/null || echo "$low_24h_eur")
 
     # Build comprehensive tooltip
     tooltip="━━━━━ Bitcoin (BTC) ━━━━━"
@@ -246,10 +273,10 @@ let
     fi
 
     # 24h range
-    if [ "$high_24h" != "N/A" ] && [ "$low_24h" != "N/A" ]; then
+    if [ "$high_24h_usd" != "N/A" ] && [ "$low_24h_usd" != "N/A" ]; then
       tooltip="$tooltip\n\n📈 24h Range:"
-      tooltip="$tooltip\n  High: \$$high_24h_formatted"
-      tooltip="$tooltip\n  Low:  \$$low_24h_formatted"
+      tooltip="$tooltip\n  High: \$$high_24h_usd_formatted USD / €$high_24h_eur_formatted EUR"
+      tooltip="$tooltip\n  Low:  \$$low_24h_usd_formatted USD / €$low_24h_eur_formatted EUR"
     fi
 
     # Market data
@@ -266,11 +293,13 @@ let
         tooltip="$tooltip\n  Trend: $trend_indicator"
       fi
 
-      if [ -n "$min_price" ] && [ -n "$max_price" ]; then
-        min_formatted=$(printf "%'.0f" "$min_price")
-        max_formatted=$(printf "%'.0f" "$max_price")
-        tooltip="$tooltip\n\n  30d High: \$$max_formatted"
-        tooltip="$tooltip\n  30d Low:  \$$min_formatted"
+      if [ -n "$min_price_usd" ] && [ -n "$max_price_usd" ]; then
+        min_usd_formatted=$(printf "%'.0f" "$min_price_usd")
+        max_usd_formatted=$(printf "%'.0f" "$max_price_usd")
+        min_eur_formatted=$(printf "%'.0f" "$min_price_eur")
+        max_eur_formatted=$(printf "%'.0f" "$max_price_eur")
+        tooltip="$tooltip\n\n  30d High: \$$max_usd_formatted USD / €$max_eur_formatted EUR"
+        tooltip="$tooltip\n  30d Low:  \$$min_usd_formatted USD / €$min_eur_formatted EUR"
       fi
     fi
 
