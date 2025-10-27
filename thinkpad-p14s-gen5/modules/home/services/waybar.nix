@@ -677,8 +677,9 @@ in
           format = "{}";
           tooltip = true;
           on-click = "${pkgs.xdg-utils}/bin/xdg-open https://open-meteo.com";
-          on-scroll-up = "pkill -RTMIN+3 waybar";  # Force refresh on scroll
-          on-scroll-down = "pkill -RTMIN+3 waybar";  # Force refresh on scroll
+          signal = 4;  # Use SIGRTMIN+4 for manual refresh
+          on-scroll-up = "pkill -RTMIN+4 waybar";  # Force refresh on scroll
+          on-scroll-down = "pkill -RTMIN+4 waybar";  # Force refresh on scroll
         };
 
         "custom/polymarket" = {
@@ -688,6 +689,7 @@ in
           format = "{}";
           tooltip = true;
           on-click = "${pkgs.xdg-utils}/bin/xdg-open https://polymarket.com";
+          signal = 2;  # Use SIGRTMIN+2 for manual refresh
           on-scroll-up = "pkill -RTMIN+2 waybar";  # Force refresh on scroll
           on-scroll-down = "pkill -RTMIN+2 waybar";  # Force refresh on scroll
         };
@@ -698,6 +700,7 @@ in
           interval = 300;  # Update every 5 minutes (300 seconds)
           format = "₿ {}";
           tooltip = true;
+          signal = 1;  # Use SIGRTMIN+1 for manual refresh
           on-scroll-up = "pkill -RTMIN+1 waybar";  # Force refresh on scroll
           on-scroll-down = "pkill -RTMIN+1 waybar";  # Force refresh on scroll
         };
@@ -708,6 +711,9 @@ in
           interval = 300;  # Update every 5 minutes (300 seconds) - updates price only, balances cached
           format = "{}";  # Shows balance - blurred by CSS, clear on hover
           tooltip = true;
+          signal = 3;  # Use SIGRTMIN+3 for manual refresh
+          on-scroll-up = "pkill -RTMIN+3 waybar";  # Force price refresh (EUR/USD only, balances stay cached)
+          on-scroll-down = "pkill -RTMIN+3 waybar";  # Force price refresh (EUR/USD only, balances stay cached)
         };
 
         "custom/removable-disks" = {

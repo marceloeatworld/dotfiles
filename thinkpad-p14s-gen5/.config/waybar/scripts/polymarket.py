@@ -141,19 +141,33 @@ def fetch_trending_markets():
     # Sort Bitcoin by volume24hr
     bitcoin_markets.sort(key=lambda m: float(m.get('volume24hr', 0)), reverse=True)
 
+    # Track shown markets to avoid duplicates
+    shown_slugs = set(m['slug'] for m in bitcoin_markets if m.get('slug'))
+
     # === SECTION 2: TRENDING ===
-    # Top markets by 24h volume (all categories)
-    trending_markets = sorted(all_markets, key=lambda m: float(m.get('volume24hr', 0)), reverse=True)
+    # Top markets by 24h volume (all categories) - exclude already shown
+    trending_markets = [m for m in all_markets if m.get('slug') not in shown_slugs]
+    trending_markets.sort(key=lambda m: float(m.get('volume24hr', 0)), reverse=True)
+    shown_slugs.update(m['slug'] for m in trending_markets[:8] if m.get('slug'))
 
     # === SECTION 3: BREAKING ===
-    # Markets with extreme probabilities (>75% or <25%) indicating strong consensus
-    breaking_markets = [m for m in all_markets if m['probability'] >= 75 or m['probability'] <= 25]
-    # Sort breaking by volume24hr (most active breaking news)
-    breaking_markets.sort(key=lambda m: float(m.get('volume24hr', 0)), reverse=True)
+    # Markets with extreme probabilities (>75% or <25%) indicating strong consensus - exclude already shown
+    breaking_markets = [m for m in all_markets
+                       if (m['probability'] >= 75 or m['probability'] <= 25)
+                       and m.get('slug') not in shown_slugs]
+    # Sort breaking by combined score: volume24hr * extremeness of probability
+    # Extremeness: distance from 50% (0 to 50)
+    def breaking_score(m):
+        volume = float(m.get('volume24hr', 0))
+        prob = m['probability']
+        extremeness = abs(prob - 50)  # 0 to 50
+        return volume * extremeness
+    breaking_markets.sort(key=breaking_score, reverse=True)
+    shown_slugs.update(m['slug'] for m in breaking_markets[:6] if m.get('slug'))
 
     # === SECTION 4: NEW ===
-    # Most recently created markets
-    new_markets = [m for m in all_markets if m.get('created_at')]
+    # Most recently created markets - exclude already shown
+    new_markets = [m for m in all_markets if m.get('created_at') and m.get('slug') not in shown_slugs]
     new_markets.sort(key=lambda m: m.get('created_at', ''), reverse=True)
 
     result = {
