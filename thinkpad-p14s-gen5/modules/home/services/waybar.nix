@@ -40,36 +40,247 @@ let
 
   bitcoinScript = pkgs.writeShellScriptBin "bitcoin-waybar" ''
     #!/usr/bin/env bash
-    # Fetch Bitcoin price in USD and EUR from Coinbase API
+    # Advanced Bitcoin price monitor with 30-day chart, volume, market cap, and price alerts
 
-    # Fetch USD price from Coinbase
-    usd_response=$(${pkgs.curl}/bin/curl -s "https://api.coinbase.com/v2/prices/BTC-USD/spot")
-    eur_response=$(${pkgs.curl}/bin/curl -s "https://api.coinbase.com/v2/prices/BTC-EUR/spot")
+    # Configuration files
+    ALERT_FILE="$HOME/.config/waybar/bitcoin-alerts.conf"
+    LAST_PRICE_FILE="$HOME/.config/waybar/bitcoin-last-price"
 
-    if [ $? -ne 0 ] || [ -z "$usd_response" ] || [ -z "$eur_response" ]; then
-      echo '{"text": "BTC: N/A", "tooltip": "Failed to fetch Bitcoin price"}'
+    # Fetch comprehensive data from CoinGecko (free API, no key needed)
+    # This single call gets: current price, 24h change, market cap, volume, and more
+    coingecko_data=$(${pkgs.curl}/bin/curl -s "https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false")
+
+    if [ $? -ne 0 ] || [ -z "$coingecko_data" ]; then
+      echo '{"text": "BTC: N/A", "tooltip": "Failed to fetch Bitcoin data"}'
       exit 0
     fi
 
-    # Parse JSON using jq
-    usd=$(echo "$usd_response" | ${pkgs.jq}/bin/jq -r '.data.amount // "N/A"')
-    eur=$(echo "$eur_response" | ${pkgs.jq}/bin/jq -r '.data.amount // "N/A"')
+    # Parse current prices and market data
+    usd=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.current_price.usd // "N/A"')
+    eur=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.current_price.eur // "N/A"')
+    change_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_24h // "N/A"')
+    change_7d=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_7d // "N/A"')
+    change_30d=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_30d // "N/A"')
+    market_cap=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.market_cap.usd // "N/A"')
+    volume_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.total_volume.usd // "N/A"')
+    high_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.high_24h.usd // "N/A"')
+    low_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.low_24h.usd // "N/A"')
 
-    if [ "$usd" = "N/A" ] || [ "$eur" = "N/A" ]; then
-      echo '{"text": "BTC: N/A", "tooltip": "Failed to parse Bitcoin price"}'
+    if [ "$usd" = "N/A" ]; then
+      echo '{"text": "BTC: N/A", "tooltip": "Failed to parse Bitcoin data"}'
       exit 0
     fi
 
-    # Format prices (example: 100k USD)
+    # Check price alerts
+    if [ -f "$ALERT_FILE" ]; then
+      while IFS='=' read -r threshold_type threshold_value; do
+        # Skip comments and empty lines
+        [[ "$threshold_type" =~ ^#.*$ ]] && continue
+        [[ -z "$threshold_type" ]] && continue
+
+        case "$threshold_type" in
+          above)
+            if (( $(echo "$usd >= $threshold_value" | ${pkgs.bc}/bin/bc -l) )); then
+              # Check if we already notified
+              last_price=$(cat "$LAST_PRICE_FILE" 2>/dev/null || echo "0")
+              if (( $(echo "$last_price < $threshold_value" | ${pkgs.bc}/bin/bc -l) )); then
+                ${pkgs.libnotify}/bin/notify-send -u critical "Bitcoin Alert" "Price crossed above \$$threshold_value\nCurrent: \$$usd"
+              fi
+            fi
+            ;;
+          below)
+            if (( $(echo "$usd <= $threshold_value" | ${pkgs.bc}/bin/bc -l) )); then
+              last_price=$(cat "$LAST_PRICE_FILE" 2>/dev/null || echo "999999")
+              if (( $(echo "$last_price > $threshold_value" | ${pkgs.bc}/bin/bc -l) )); then
+                ${pkgs.libnotify}/bin/notify-send -u critical "Bitcoin Alert" "Price dropped below \$$threshold_value\nCurrent: \$$usd"
+              fi
+            fi
+            ;;
+        esac
+      done < "$ALERT_FILE"
+
+      # Save current price for next check
+      echo "$usd" > "$LAST_PRICE_FILE"
+    fi
+
+    # Fetch 30-day historical data for detailed chart
+    history_response=$(${pkgs.curl}/bin/curl -s "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily")
+
+    # Extract daily prices - CoinGecko returns [timestamp, price] arrays
+    prices=$(echo "$history_response" | ${pkgs.jq}/bin/jq -r '.prices[]?[1]' 2>/dev/null)
+
+    # Initialize sparkline and stats
+    sparkline=""
+    min_price=""
+    max_price=""
+    trend_indicator=""
+
+    if [ -n "$prices" ]; then
+      price_array=($prices)
+
+      if [ ''${#price_array[@]} -gt 0 ]; then
+        # Calculate min and max
+        min_price=''${price_array[0]}
+        max_price=''${price_array[0]}
+
+        for price in "''${price_array[@]}"; do
+          if (( $(echo "$price < $min_price" | ${pkgs.bc}/bin/bc -l) )); then
+            min_price=$price
+          fi
+          if (( $(echo "$price > $max_price" | ${pkgs.bc}/bin/bc -l) )); then
+            max_price=$price
+          fi
+        done
+
+        # Calculate trend indicator using simple moving average
+        # Compare first half average vs second half average
+        array_len=''${#price_array[@]}
+        mid_point=$((array_len / 2))
+
+        first_half_sum=0
+        second_half_sum=0
+
+        for ((i=0; i<mid_point; i++)); do
+          first_half_sum=$(echo "$first_half_sum + ''${price_array[$i]}" | ${pkgs.bc}/bin/bc -l)
+        done
+
+        for ((i=mid_point; i<array_len; i++)); do
+          second_half_sum=$(echo "$second_half_sum + ''${price_array[$i]}" | ${pkgs.bc}/bin/bc -l)
+        done
+
+        first_half_avg=$(echo "scale=2; $first_half_sum / $mid_point" | ${pkgs.bc}/bin/bc -l)
+        second_half_avg=$(echo "scale=2; $second_half_sum / ($array_len - $mid_point)" | ${pkgs.bc}/bin/bc -l)
+
+        trend_diff=$(echo "scale=2; (($second_half_avg - $first_half_avg) / $first_half_avg) * 100" | ${pkgs.bc}/bin/bc -l)
+
+        if (( $(echo "$trend_diff > 2" | ${pkgs.bc}/bin/bc -l) )); then
+          trend_indicator="↗ Bullish"
+        elif (( $(echo "$trend_diff < -2" | ${pkgs.bc}/bin/bc -l) )); then
+          trend_indicator="↘ Bearish"
+        else
+          trend_indicator="→ Stable"
+        fi
+
+        # Generate detailed sparkline using Unicode block characters ▁▂▃▄▅▆▇█
+        spark_chars=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█")
+        range=$(echo "$max_price - $min_price" | ${pkgs.bc}/bin/bc -l)
+
+        if (( $(echo "$range > 0" | ${pkgs.bc}/bin/bc -l) )); then
+          for price in "''${price_array[@]}"; do
+            normalized=$(echo "scale=2; (($price - $min_price) / $range) * 7" | ${pkgs.bc}/bin/bc -l)
+            index=$(printf "%.0f" "$normalized")
+            [ "$index" -lt 0 ] && index=0
+            [ "$index" -gt 7 ] && index=7
+            sparkline="''${sparkline}''${spark_chars[$index]}"
+          done
+        fi
+      fi
+    fi
+
+    # Format prices
     usd_formatted=$(printf "%.0fk" $(echo "$usd / 1000" | ${pkgs.bc}/bin/bc))
-    eur_formatted=$(printf "%.0fk" $(echo "$eur / 1000" | ${pkgs.bc}/bin/bc))
 
-    # Format full prices with thousands separator
     usd_full=$(printf "%'.0f" "$usd" 2>/dev/null || echo "$usd")
     eur_full=$(printf "%'.0f" "$eur" 2>/dev/null || echo "$eur")
 
-    # Output JSON for Waybar - show only USD in text, both in tooltip
-    echo "{\"text\": \"$usd_formatted\", \"tooltip\": \"Bitcoin Price\nUSD: \$$usd_full ($usd_formatted)\nEUR: €$eur_full ($eur_formatted)\"}"
+    # Format market cap (in trillions or billions)
+    if [ "$market_cap" != "N/A" ]; then
+      market_cap_t=$(echo "scale=3; $market_cap / 1000000000000" | ${pkgs.bc}/bin/bc)
+      # If >= 1 trillion, show in trillions, otherwise billions
+      if (( $(echo "$market_cap_t >= 1" | ${pkgs.bc}/bin/bc -l) )); then
+        market_cap_formatted=$(printf "%.2fT" "$market_cap_t")
+      else
+        market_cap_b=$(echo "scale=2; $market_cap / 1000000000" | ${pkgs.bc}/bin/bc)
+        market_cap_formatted=$(printf "%.2fB" "$market_cap_b")
+      fi
+    else
+      market_cap_formatted="N/A"
+    fi
+
+    if [ "$volume_24h" != "N/A" ]; then
+      volume_b=$(echo "scale=2; $volume_24h / 1000000000" | ${pkgs.bc}/bin/bc)
+      volume_formatted=$(printf "%.2fB" "$volume_b")
+    else
+      volume_formatted="N/A"
+    fi
+
+    # Format 24h range
+    high_24h_formatted=$(printf "%'.0f" "$high_24h" 2>/dev/null || echo "$high_24h")
+    low_24h_formatted=$(printf "%'.0f" "$low_24h" 2>/dev/null || echo "$low_24h")
+
+    # Build comprehensive tooltip
+    tooltip="━━━━━ Bitcoin (BTC) ━━━━━"
+
+    tooltip="$tooltip\n\n💰 Current Price:"
+    tooltip="$tooltip\n  USD: \$$usd_full"
+    tooltip="$tooltip\n  EUR: €$eur_full"
+
+    # Price changes
+    tooltip="$tooltip\n\n📊 Price Changes:"
+
+    if [ "$change_24h" != "N/A" ]; then
+      change_24h_fmt=$(printf "%.2f" "$change_24h")
+      if (( $(echo "$change_24h >= 0" | ${pkgs.bc}/bin/bc -l) )); then
+        tooltip="$tooltip\n  24h: ▲ +$change_24h_fmt%"
+      else
+        tooltip="$tooltip\n  24h: ▼ $change_24h_fmt%"
+      fi
+    fi
+
+    if [ "$change_7d" != "N/A" ]; then
+      change_7d_fmt=$(printf "%.2f" "$change_7d")
+      if (( $(echo "$change_7d >= 0" | ${pkgs.bc}/bin/bc -l) )); then
+        tooltip="$tooltip\n  7d:  ▲ +$change_7d_fmt%"
+      else
+        tooltip="$tooltip\n  7d:  ▼ $change_7d_fmt%"
+      fi
+    fi
+
+    if [ "$change_30d" != "N/A" ]; then
+      change_30d_fmt=$(printf "%.2f" "$change_30d")
+      if (( $(echo "$change_30d >= 0" | ${pkgs.bc}/bin/bc -l) )); then
+        tooltip="$tooltip\n  30d: ▲ +$change_30d_fmt%"
+      else
+        tooltip="$tooltip\n  30d: ▼ $change_30d_fmt%"
+      fi
+    fi
+
+    # 24h range
+    if [ "$high_24h" != "N/A" ] && [ "$low_24h" != "N/A" ]; then
+      tooltip="$tooltip\n\n📈 24h Range:"
+      tooltip="$tooltip\n  High: \$$high_24h_formatted"
+      tooltip="$tooltip\n  Low:  \$$low_24h_formatted"
+    fi
+
+    # Market data
+    tooltip="$tooltip\n\n💎 Market Data:"
+    tooltip="$tooltip\n  Market Cap: \$$market_cap_formatted"
+    tooltip="$tooltip\n  Volume 24h: \$$volume_formatted"
+
+    # 30-day chart and trend
+    if [ -n "$sparkline" ]; then
+      tooltip="$tooltip\n\n📉 30-Day Chart:"
+      tooltip="$tooltip\n$sparkline"
+
+      if [ -n "$trend_indicator" ]; then
+        tooltip="$tooltip\n  Trend: $trend_indicator"
+      fi
+
+      if [ -n "$min_price" ] && [ -n "$max_price" ]; then
+        min_formatted=$(printf "%'.0f" "$min_price")
+        max_formatted=$(printf "%'.0f" "$max_price")
+        tooltip="$tooltip\n\n  30d High: \$$max_formatted"
+        tooltip="$tooltip\n  30d Low:  \$$min_formatted"
+      fi
+    fi
+
+    # Alert info
+    if [ -f "$ALERT_FILE" ]; then
+      tooltip="$tooltip\n\n🔔 Price Alerts: Active"
+    fi
+
+    # Output JSON for Waybar
+    echo "{\"text\": \"$usd_formatted\", \"tooltip\": \"$tooltip\"}"
   '';
 
   # Brightness sync script - synchronizes internal and external monitor brightness
@@ -128,6 +339,36 @@ in
   # Wallet configuration template
   home.file.".config/waybar/.env.example" = {
     source = ./waybar-scripts/.env.example;
+  };
+
+  # Bitcoin price alerts configuration example
+  home.file.".config/waybar/bitcoin-alerts.conf.example" = {
+    text = ''
+      # Bitcoin Price Alerts Configuration
+      #
+      # Format: threshold_type=value
+      #
+      # Types:
+      #   above=PRICE   - Alert when price goes ABOVE this value
+      #   below=PRICE   - Alert when price goes BELOW this value
+      #
+      # Examples:
+
+      # Alert when Bitcoin goes above $120,000
+      #above=120000
+
+      # Alert when Bitcoin drops below $100,000
+      #below=100000
+
+      # Multiple alerts are supported
+      #above=125000
+      #below=95000
+
+      # To activate alerts:
+      # 1. Copy this file: cp bitcoin-alerts.conf.example bitcoin-alerts.conf
+      # 2. Uncomment and modify the alert thresholds above
+      # 3. Waybar will check prices every 5 minutes and notify you
+    '';
   };
 
   programs.waybar = {
