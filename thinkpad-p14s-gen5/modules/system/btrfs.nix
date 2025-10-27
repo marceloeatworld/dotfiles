@@ -28,12 +28,17 @@
           target_preserve_min = "no";
 
           # Volume configurations
+          # Note: @root and @home are already mounted at / and /home
           volume."/" = {
             subvolume = {
-              "@root" = {
+              "." = {  # Current directory = @root
                 snapshot_dir = "/.snapshots/root";
               };
-              "@home" = {
+            };
+          };
+          volume."/home" = {
+            subvolume = {
+              "." = {  # Current directory = @home
                 snapshot_dir = "/.snapshots/home";
               };
             };

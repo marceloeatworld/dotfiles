@@ -738,7 +738,7 @@ in
           "custom/weather"
           "clock"
           "custom/nix-updates"
-          "tray"
+          "tray"  # System tray (shows service status like btrbk, next to updates)
         ];
 
         "hyprland/workspaces" = {
