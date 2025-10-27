@@ -237,17 +237,14 @@ let
     low_24h_usd_formatted=$(printf "%'.0f" "$low_24h_usd" 2>/dev/null || echo "$low_24h_usd")
     low_24h_eur_formatted=$(printf "%'.0f" "$low_24h_eur" 2>/dev/null || echo "$low_24h_eur")
 
-    # Build comprehensive tooltip - centered, compact version
-    tooltip="       ₿ BITCOIN (BTC)"
-    tooltip="$tooltip\n"
+    # Current Price (light box)
+    tooltip="┌─ 🏷️ PRICE ──────────"
+    tooltip="$tooltip\n│ USD  \$$usd_full"
+    tooltip="$tooltip\n│ EUR  €$eur_full"
+    tooltip="$tooltip\n└────"
 
-    # Current Price (no box, compact, centered)
-    tooltip="$tooltip\n        💰 PRICE"
-    tooltip="$tooltip\n      USD  \$$usd_full"
-    tooltip="$tooltip\n      EUR  €$eur_full"
-
-    # Price changes with visual bars (centered)
-    tooltip="$tooltip\n\n      📊 PERFORMANCE"
+    # Price changes with visual bars
+    tooltip="$tooltip\n┌─ 📊 PERFORMANCE ─────"
 
     if [ "$change_24h" != "N/A" ]; then
       change_24h_fmt=$(printf "%.2f" "$change_24h")
@@ -259,9 +256,9 @@ let
       for ((i=0; i<bar_len; i++)); do bar="''${bar}█"; done
 
       if (( $(echo "$change_24h >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-        tooltip="$tooltip\n      24h  🟢 $bar +$change_24h_fmt%"
+        tooltip="$tooltip\n│ 24h  🟢 $bar +$change_24h_fmt%"
       else
-        tooltip="$tooltip\n      24h  🔴 $bar $change_24h_fmt%"
+        tooltip="$tooltip\n│ 24h  🔴 $bar $change_24h_fmt%"
       fi
     fi
 
@@ -274,9 +271,9 @@ let
       for ((i=0; i<bar_len; i++)); do bar="''${bar}█"; done
 
       if (( $(echo "$change_7d >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-        tooltip="$tooltip\n      7d   🟢 $bar +$change_7d_fmt%"
+        tooltip="$tooltip\n│ 7d   🟢 $bar +$change_7d_fmt%"
       else
-        tooltip="$tooltip\n      7d   🔴 $bar $change_7d_fmt%"
+        tooltip="$tooltip\n│ 7d   🔴 $bar $change_7d_fmt%"
       fi
     fi
 
@@ -289,9 +286,9 @@ let
       for ((i=0; i<bar_len; i++)); do bar="''${bar}█"; done
 
       if (( $(echo "$change_30d >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-        tooltip="$tooltip\n      30d  🟢 $bar +$change_30d_fmt%"
+        tooltip="$tooltip\n│ 30d  🟢 $bar +$change_30d_fmt%"
       else
-        tooltip="$tooltip\n      30d  🔴 $bar $change_30d_fmt%"
+        tooltip="$tooltip\n│ 30d  🔴 $bar $change_30d_fmt%"
       fi
     fi
 
@@ -304,31 +301,34 @@ let
       for ((i=0; i<bar_len; i++)); do bar="''${bar}█"; done
 
       if (( $(echo "$change_1y >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-        tooltip="$tooltip\n      1yr  🟢 $bar +$change_1y_fmt%"
+        tooltip="$tooltip\n│ 1yr  🟢 $bar +$change_1y_fmt%"
       else
-        tooltip="$tooltip\n      1yr  🔴 $bar $change_1y_fmt%"
+        tooltip="$tooltip\n│ 1yr  🔴 $bar $change_1y_fmt%"
       fi
     fi
+    tooltip="$tooltip\n└────"
 
-    # 24h range (centered)
+    # 24h range
     if [ "$high_24h_usd" != "N/A" ] && [ "$low_24h_usd" != "N/A" ]; then
-      tooltip="$tooltip\n\n      📈 24H RANGE"
-      tooltip="$tooltip\n     High  \$$high_24h_usd_formatted / €$high_24h_eur_formatted"
-      tooltip="$tooltip\n     Low   \$$low_24h_usd_formatted / €$low_24h_eur_formatted"
+      tooltip="$tooltip\n┌─ 📈 24H RANGE ───────"
+      tooltip="$tooltip\n│ High \$$high_24h_usd_formatted / €$high_24h_eur_formatted"
+      tooltip="$tooltip\n│ Low  \$$low_24h_usd_formatted / €$low_24h_eur_formatted"
+      tooltip="$tooltip\n└────"
     fi
 
-    # Market data (centered)
-    tooltip="$tooltip\n\n        💎 MARKET"
-    tooltip="$tooltip\n     Cap     \$$market_cap_formatted"
-    tooltip="$tooltip\n     Volume  \$$volume_formatted"
+    # Market data
+    tooltip="$tooltip\n┌─ 💎 MARKET ──────────"
+    tooltip="$tooltip\n│ Cap    \$$market_cap_formatted"
+    tooltip="$tooltip\n│ Volume \$$volume_formatted"
+    tooltip="$tooltip\n└────"
 
-    # 30-day chart and trend (centered)
+    # 30-day chart and trend
     if [ -n "$sparkline" ]; then
-      tooltip="$tooltip\n\n     📉 30-DAY CHART"
-      tooltip="$tooltip\n   $sparkline"
+      tooltip="$tooltip\n┌─ 📉 30-DAY CHART ────"
+      tooltip="$tooltip\n│ $sparkline"
 
       if [ -n "$trend_indicator" ]; then
-        tooltip="$tooltip\n      $trend_indicator"
+        tooltip="$tooltip\n│  $trend_indicator"
       fi
 
       if [ -n "$min_price_usd" ] && [ -n "$max_price_usd" ]; then
@@ -336,9 +336,10 @@ let
         max_usd_formatted=$(printf "%'.0f" "$max_price_usd")
         min_eur_formatted=$(printf "%'.0f" "$min_price_eur")
         max_eur_formatted=$(printf "%'.0f" "$max_price_eur")
-        tooltip="$tooltip\n     High  \$$max_usd_formatted / €$max_eur_formatted"
-        tooltip="$tooltip\n     Low   \$$min_usd_formatted / €$min_eur_formatted"
+        tooltip="$tooltip\n│ High \$$max_usd_formatted / €$max_eur_formatted"
+        tooltip="$tooltip\n│ Low  \$$min_usd_formatted / €$min_eur_formatted"
       fi
+      tooltip="$tooltip\n└────"
     fi
 
     # Alert info
@@ -360,8 +361,6 @@ let
     difficulty_data=$(${pkgs.curl}/bin/curl -s "https://mempool.space/api/v1/difficulty-adjustment")
 
     if [ $? -eq 0 ] && [ -n "$blocks_data" ]; then
-      tooltip="$tooltip\n\n       ⛓️  BLOCKCHAIN"
-
       # Difficulty Adjustment info with progress bar (centered)
       if [ -n "$difficulty_data" ]; then
         progress=$(echo "$difficulty_data" | ${pkgs.jq}/bin/jq -r '.progressPercent // "N/A"')
@@ -373,29 +372,32 @@ let
           progress_fmt=$(printf "%.1f" "$progress")
           diff_change_fmt=$(printf "%+.2f" "$diff_change")
 
-          # Create visual progress bar (24 chars)
+          # Create visual progress bar (17 chars for box width)
           progress_int=$(printf "%.0f" "$progress")
-          filled=$((progress_int / 4))  # 24 blocks = 100%
-          empty=$((24 - filled))
+          filled=$((progress_int / 6))  # ~17 blocks = 100%
+          [ "$filled" -gt 17 ] && filled=17
+          empty=$((17 - filled))
 
           bar=""
           for ((i=0; i<filled; i++)); do bar="''${bar}█"; done
           for ((i=0; i<empty; i++)); do bar="''${bar}░"; done
 
-          tooltip="$tooltip\n\n       ⚙️  DIFFICULTY"
-          tooltip="$tooltip\n     $bar $progress_fmt%"
-          tooltip="$tooltip\n     Remaining: $remaining_blocks blocks"
+          tooltip="$tooltip\n┌─ ⚙️  DIFFICULTY ─────"
+          tooltip="$tooltip\n│ $bar"
+          tooltip="$tooltip\n│ Progress: $progress_fmt%"
+          tooltip="$tooltip\n│ Remain: $remaining_blocks blks"
 
           if (( $(echo "$diff_change >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-            tooltip="$tooltip\n     Next: 📈 $diff_change_fmt% HARDER"
+            tooltip="$tooltip\n│ Next: 📈 $diff_change_fmt%"
           else
-            tooltip="$tooltip\n     Next: 📉 $diff_change_fmt% easier"
+            tooltip="$tooltip\n│ Next: 📉 $diff_change_fmt%"
           fi
+          tooltip="$tooltip\n└────"
         fi
       fi
 
       # Last 3 mined blocks (compact & cute display)
-      tooltip="$tooltip\n\n      🧊 LAST 3 BLOCKS"
+      tooltip="$tooltip\n┌─ 🧊 LAST 3 BLOCKS ───"
 
       for i in 0 1 2; do
         block_height=$(echo "$blocks_data" | ${pkgs.jq}/bin/jq -r ".[$i].height // \"N/A\"")
@@ -458,21 +460,23 @@ let
           spark_chars=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█")
           block_bar="''${spark_chars[$tx_scaled]}"
 
-          # Multi-line cute display
-          tooltip="$tooltip\n"
-          tooltip="$tooltip\n     $block_bar  Block #$block_height"
-          tooltip="$tooltip\n        📊 $block_tx_count txs  💾 $size_fmt"
-          tooltip="$tooltip\n        ⏰ $time_ago  ⛏️  $pool_name"
+          # Multi-line cute display inside box
+          tooltip="$tooltip\n│"
+          tooltip="$tooltip\n│ $block_bar  #$block_height"
+          tooltip="$tooltip\n│    📊 $block_tx_count txs"
+          tooltip="$tooltip\n│    💾 $size_fmt · ⏰ $time_ago"
+          tooltip="$tooltip\n│    ⛏️  $pool_name"
         fi
       done
+      tooltip="$tooltip\n└────"
 
-      # Next 3 blocks estimation (based on mempool) (centered)
+      # Next 3 blocks estimation (based on mempool)
       if [ -n "$mempool_data" ]; then
         mempool_count=$(echo "$mempool_data" | ${pkgs.jq}/bin/jq -r '.count // 0')
         mempool_vsize=$(echo "$mempool_data" | ${pkgs.jq}/bin/jq -r '.vsize // 0')
         mempool_total_fee=$(echo "$mempool_data" | ${pkgs.jq}/bin/jq -r '.total_fee // 0')
 
-        tooltip="$tooltip\n\n     ⏳ NEXT 3 BLOCKS"
+        tooltip="$tooltip\n┌─ ⏳ NEXT 3 BLOCKS ───"
 
         # Get current tip height
         tip_height=$(echo "$blocks_data" | ${pkgs.jq}/bin/jq -r '.[0].height // 0')
@@ -499,10 +503,11 @@ let
               icon="⏸️"
             fi
 
-            tooltip="$tooltip\n     $icon #$next_height $bar ~$est_time min"
+            tooltip="$tooltip\n│ $icon #$next_height $bar ~$est_time m"
           done
+          tooltip="$tooltip\n└────"
 
-          # Show mempool stats with more info (centered)
+          # Show mempool stats with more info
           if [ "$mempool_count" != "0" ]; then
             mempool_mb=$(echo "scale=1; $mempool_vsize / 1048576" | ${pkgs.bc}/bin/bc)
             # Convert satoshis to BTC
@@ -510,11 +515,12 @@ let
             # Calculate fee rate (sat/vB)
             avg_fee_rate=$(echo "scale=0; ($mempool_total_fee / $mempool_vsize) * 1000" | ${pkgs.bc}/bin/bc)
 
-            tooltip="$tooltip\n\n        📦 MEMPOOL"
-            tooltip="$tooltip\n     Transactions: $mempool_count txs"
-            tooltip="$tooltip\n     Size: $mempool_mb MB"
-            tooltip="$tooltip\n     Total Fees: $mempool_btc BTC"
-            tooltip="$tooltip\n     Avg Fee Rate: ~$avg_fee_rate sat/vB"
+            tooltip="$tooltip\n┌─ 📦 MEMPOOL ─────────"
+            tooltip="$tooltip\n│ Txs:  $mempool_count"
+            tooltip="$tooltip\n│ Size: $mempool_mb MB"
+            tooltip="$tooltip\n│ Fees: $mempool_btc BTC"
+            tooltip="$tooltip\n│ Rate: ~$avg_fee_rate sat/vB"
+            tooltip="$tooltip\n└────"
           fi
         fi
       fi
