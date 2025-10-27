@@ -97,6 +97,7 @@
           ./modules/system/steam.nix
           ./modules/system/fonts.nix  # System-wide fonts (REQUIRED for Hyprland/Wayland)
           ./modules/system/vpn-dns-switch.nix  # Automatic DNS switching for VPN (Quad9 ↔ Proton)
+          ./modules/system/ddcutil.nix  # DDC/CI support for external monitor brightness control
 
           # Home Manager
           home-manager.nixosModules.home-manager
