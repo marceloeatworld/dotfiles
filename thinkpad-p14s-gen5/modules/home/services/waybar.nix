@@ -280,9 +280,8 @@ in
           exec = "${pkgs.python313}/bin/python3 ~/.config/waybar/scripts/wallets.py";
           return-type = "json";
           interval = 1200;  # Update every 20 minutes (1200 seconds) - uses cache, very fast
-          format = "{}";
+          format = "{}";  # Shows balance - blurred by CSS, clear on hover
           tooltip = true;
-          on-click = "${pkgs.python313}/bin/python3 ~/.config/waybar/scripts/wallets.py --force";  # Force refresh on click
         };
 
         "custom/removable-disks" = {
@@ -399,7 +398,14 @@ in
         padding: 0 8px;
         font-size: 12px;
         background: rgba(253, 104, 131, 0.2);
+        color: transparent;
+        text-shadow: 0 0 8px #fd6883;
+        transition: all 0.2s ease;
+      }
+
+      #custom-wallets:hover {
         color: #fd6883;
+        text-shadow: none;
       }
 
       #custom-removable-disks {
