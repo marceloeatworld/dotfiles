@@ -71,6 +71,35 @@ let
     # Output JSON for Waybar - show only USD in text, both in tooltip
     echo "{\"text\": \"$usd_formatted\", \"tooltip\": \"Bitcoin Price\nUSD: \$$usd_full ($usd_formatted)\nEUR: €$eur_full ($eur_formatted)\"}"
   '';
+
+  # Brightness sync script - synchronizes internal and external monitor brightness
+  brightnessSyncScript = pkgs.writeShellScriptBin "brightness-sync" ''
+    #!/usr/bin/env bash
+    # Synchronize brightness between internal (Lenovo) and external (HDMI) monitors
+
+    # Check if argument is provided
+    if [ -z "$1" ]; then
+      echo "Usage: brightness-sync <+5%|-5%|50%>"
+      exit 1
+    fi
+
+    CHANGE="$1"
+
+    # Change internal display brightness (Lenovo laptop screen)
+    ${pkgs.brightnessctl}/bin/brightnessctl set "$CHANGE" > /dev/null
+
+    # Get current brightness percentage
+    CURRENT=$(${pkgs.brightnessctl}/bin/brightnessctl get)
+    MAX=$(${pkgs.brightnessctl}/bin/brightnessctl max)
+    PERCENT=$((CURRENT * 100 / MAX))
+
+    # Sync external display if connected (HDMI via DDC/CI)
+    # Check if external display is available (suppress errors if not connected)
+    if ${pkgs.ddcutil}/bin/ddcutil detect 2>/dev/null | grep -q "Display"; then
+      # Set external monitor brightness to match internal
+      ${pkgs.ddcutil}/bin/ddcutil setvcp 10 "$PERCENT" 2>/dev/null || true
+    fi
+  '';
 in
 {
   # Create scripts in waybar config directory
@@ -81,6 +110,12 @@ in
 
   home.file.".config/waybar/scripts/removable-disks.sh" = {
     source = "${removableDisksScript}/bin/removable-disks-waybar";
+    executable = true;
+  };
+
+  # Brightness sync script for syncing internal + external monitors
+  home.file.".config/waybar/scripts/brightness-sync.sh" = {
+    source = "${brightnessSyncScript}/bin/brightness-sync";
     executable = true;
   };
 
@@ -260,9 +295,9 @@ in
           device = "amdgpu_bl1";  # AMD Radeon 780M backlight (was intel_backlight)
           format = "{icon} {percent}%";
           format-icons = [ "" "" "" "" "" "" "" "" "" ];
-          tooltip-format = "Brightness: {percent}%\nScroll to adjust";
-          on-scroll-up = "brightnessctl set 5%+";
-          on-scroll-down = "brightnessctl set 5%-";
+          tooltip-format = "Brightness: {percent}%\nScroll to adjust (syncs both screens)";
+          on-scroll-up = "~/.config/waybar/scripts/brightness-sync.sh 5%+";
+          on-scroll-down = "~/.config/waybar/scripts/brightness-sync.sh 5%-";
           # on-click removed to prevent system freeze
         };
 

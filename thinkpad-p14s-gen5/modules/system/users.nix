@@ -14,6 +14,7 @@
       "input"          # input devices
       "docker"         # docker (if enabled)
       "libvirtd"       # libvirt/KVM (if enabled)
+      "i2c"            # i2c devices for DDC/CI monitor control
     ];
     shell = pkgs.zsh;
 
