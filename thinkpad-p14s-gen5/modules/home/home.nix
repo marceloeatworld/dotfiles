@@ -30,6 +30,7 @@
     ./programs/uwsm.nix
     ./programs/btop.nix          # btop system monitor with Ristretto theme
     ./programs/windows-vm.nix    # Windows 11 VM via Docker with RDP
+    ./programs/security-tools.nix  # Security audit tools (sqlmap, nikto, etc.)
     ./services/waybar.nix
     ./services/mako.nix
     ./services/swaylock.nix

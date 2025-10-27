@@ -98,6 +98,7 @@
           ./modules/system/fonts.nix  # System-wide fonts (REQUIRED for Hyprland/Wayland)
           ./modules/system/vpn-dns-switch.nix  # Automatic DNS switching for VPN (Quad9 ↔ Proton)
           ./modules/system/ddcutil.nix  # DDC/CI support for external monitor brightness control
+          ./modules/system/security-tools.nix  # Security audit tools (nmap, wireshark, aircrack-ng, hashcat)
 
           # Home Manager
           home-manager.nixosModules.home-manager
