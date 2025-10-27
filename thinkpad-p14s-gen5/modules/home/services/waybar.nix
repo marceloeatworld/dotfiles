@@ -40,14 +40,14 @@ let
 
   bitcoinScript = pkgs.writeShellScriptBin "bitcoin-waybar" ''
     #!/usr/bin/env bash
-    # Bitcoin price monitor using Coinbase API (reliable, no rate limits)
+    # Bitcoin price monitor: Coinbase (price) + CoinGecko (market data)
     PATH="${pkgs.xxd}/bin:$PATH"
 
     # Configuration files
     ALERT_FILE="$HOME/.config/waybar/bitcoin-alerts.conf"
     LAST_PRICE_FILE="$HOME/.config/waybar/bitcoin-last-price"
 
-    # Fetch prices from Coinbase API (same as wallet script - very reliable)
+    # Fetch prices from Coinbase API (reliable primary source)
     usd_response=$(${pkgs.curl}/bin/curl -s "https://api.coinbase.com/v2/prices/BTC-USD/spot" --max-time 10)
     eur_response=$(${pkgs.curl}/bin/curl -s "https://api.coinbase.com/v2/prices/BTC-EUR/spot" --max-time 10)
 
@@ -56,13 +56,42 @@ let
       exit 0
     fi
 
-    # Parse prices
+    # Parse prices from Coinbase
     usd=$(echo "$usd_response" | ${pkgs.jq}/bin/jq -r '.data.amount // "N/A"')
     eur=$(echo "$eur_response" | ${pkgs.jq}/bin/jq -r '.data.amount // "N/A"')
 
     if [ "$usd" = "N/A" ] || [ "$usd" = "null" ]; then
       echo '{"text": "BTC: N/A", "tooltip": "Failed to parse Bitcoin data"}'
       exit 0
+    fi
+
+    # Fetch market data from CoinGecko (optional, with fallback)
+    coingecko_data=$(${pkgs.curl}/bin/curl -s --max-time 10 "https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false")
+
+    # Parse CoinGecko data (with fallback to N/A if it fails)
+    if [ -n "$coingecko_data" ]; then
+      change_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_24h // "N/A"')
+      change_7d=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_7d // "N/A"')
+      change_30d=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_30d // "N/A"')
+      change_1y=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_1y // "N/A"')
+      market_cap=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.market_cap.usd // "N/A"')
+      volume_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.total_volume.usd // "N/A"')
+      high_24h_usd=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.high_24h.usd // "N/A"')
+      high_24h_eur=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.high_24h.eur // "N/A"')
+      low_24h_usd=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.low_24h.usd // "N/A"')
+      low_24h_eur=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.low_24h.eur // "N/A"')
+    else
+      # CoinGecko failed, use N/A for market data
+      change_24h="N/A"
+      change_7d="N/A"
+      change_30d="N/A"
+      change_1y="N/A"
+      market_cap="N/A"
+      volume_24h="N/A"
+      high_24h_usd="N/A"
+      high_24h_eur="N/A"
+      low_24h_usd="N/A"
+      low_24h_eur="N/A"
     fi
 
     # Check price alerts
@@ -102,11 +131,95 @@ let
     usd_full=$(printf "%'.0f" "$usd" 2>/dev/null || echo "$usd")
     eur_full=$(printf "%'.0f" "$eur" 2>/dev/null || echo "$eur")
 
-    # Build simple tooltip with current price
+    # Format market data
+    if [ "$market_cap" != "N/A" ]; then
+      market_cap_t=$(echo "scale=3; $market_cap / 1000000000000" | ${pkgs.bc}/bin/bc)
+      if (( $(echo "$market_cap_t >= 1" | ${pkgs.bc}/bin/bc -l) )); then
+        market_cap_formatted=$(printf "%.2fT" "$market_cap_t")
+      else
+        market_cap_b=$(echo "scale=2; $market_cap / 1000000000" | ${pkgs.bc}/bin/bc)
+        market_cap_formatted=$(printf "%.2fB" "$market_cap_b")
+      fi
+    else
+      market_cap_formatted="N/A"
+    fi
+
+    if [ "$volume_24h" != "N/A" ]; then
+      volume_b=$(echo "scale=2; $volume_24h / 1000000000" | ${pkgs.bc}/bin/bc)
+      volume_formatted=$(printf "%.2fB" "$volume_b")
+    else
+      volume_formatted="N/A"
+    fi
+
+    # Build tooltip with Coinbase price + CoinGecko market data
     tooltip="┌─ 🏷️ PRICE ──────────"
     tooltip="$tooltip\n│ USD  \$$usd_full"
     tooltip="$tooltip\n│ EUR  €$eur_full"
     tooltip="$tooltip\n└────"
+
+    # Price changes (from CoinGecko)
+    if [ "$change_24h" != "N/A" ] || [ "$change_7d" != "N/A" ]; then
+      tooltip="$tooltip\n┌─ 📊 PERFORMANCE ─────"
+
+      if [ "$change_24h" != "N/A" ]; then
+        change_24h_fmt=$(printf "%.2f" "$change_24h")
+        if (( $(echo "$change_24h >= 0" | ${pkgs.bc}/bin/bc -l) )); then
+          tooltip="$tooltip\n│ 24h  🟢 +$change_24h_fmt%"
+        else
+          tooltip="$tooltip\n│ 24h  🔴 $change_24h_fmt%"
+        fi
+      fi
+
+      if [ "$change_7d" != "N/A" ]; then
+        change_7d_fmt=$(printf "%.2f" "$change_7d")
+        if (( $(echo "$change_7d >= 0" | ${pkgs.bc}/bin/bc -l) )); then
+          tooltip="$tooltip\n│ 7d   🟢 +$change_7d_fmt%"
+        else
+          tooltip="$tooltip\n│ 7d   🔴 $change_7d_fmt%"
+        fi
+      fi
+
+      if [ "$change_30d" != "N/A" ]; then
+        change_30d_fmt=$(printf "%.2f" "$change_30d")
+        if (( $(echo "$change_30d >= 0" | ${pkgs.bc}/bin/bc -l) )); then
+          tooltip="$tooltip\n│ 30d  🟢 +$change_30d_fmt%"
+        else
+          tooltip="$tooltip\n│ 30d  🔴 $change_30d_fmt%"
+        fi
+      fi
+
+      if [ "$change_1y" != "N/A" ]; then
+        change_1y_fmt=$(printf "%.2f" "$change_1y")
+        if (( $(echo "$change_1y >= 0" | ${pkgs.bc}/bin/bc -l) )); then
+          tooltip="$tooltip\n│ 1yr  🟢 +$change_1y_fmt%"
+        else
+          tooltip="$tooltip\n│ 1yr  🔴 $change_1y_fmt%"
+        fi
+      fi
+
+      tooltip="$tooltip\n└────"
+    fi
+
+    # 24h range (from CoinGecko)
+    if [ "$high_24h_usd" != "N/A" ] && [ "$low_24h_usd" != "N/A" ]; then
+      high_24h_usd_formatted=$(printf "%'.0f" "$high_24h_usd")
+      high_24h_eur_formatted=$(printf "%'.0f" "$high_24h_eur")
+      low_24h_usd_formatted=$(printf "%'.0f" "$low_24h_usd")
+      low_24h_eur_formatted=$(printf "%'.0f" "$low_24h_eur")
+
+      tooltip="$tooltip\n┌─ 📈 24H RANGE ───────"
+      tooltip="$tooltip\n│ High \$$high_24h_usd_formatted / €$high_24h_eur_formatted"
+      tooltip="$tooltip\n│ Low  \$$low_24h_usd_formatted / €$low_24h_eur_formatted"
+      tooltip="$tooltip\n└────"
+    fi
+
+    # Market data (from CoinGecko)
+    if [ "$market_cap" != "N/A" ] || [ "$volume_24h" != "N/A" ]; then
+      tooltip="$tooltip\n┌─ 💎 MARKET ──────────"
+      tooltip="$tooltip\n│ Cap    \$$market_cap_formatted"
+      tooltip="$tooltip\n│ Volume \$$volume_formatted"
+      tooltip="$tooltip\n└────"
+    fi
 
     # Alert info
     if [ -f "$ALERT_FILE" ]; then
@@ -568,7 +681,7 @@ in
         "custom/wallets" = {
           exec = "${pkgs.python313}/bin/python3 ~/.config/waybar/scripts/wallets.py";
           return-type = "json";
-          interval = 1200;  # Update every 20 minutes (1200 seconds) - uses cache, very fast
+          interval = 300;  # Update every 5 minutes (300 seconds) - updates price only, balances cached
           format = "{}";  # Shows balance - blurred by CSS, clear on hover
           tooltip = true;
         };

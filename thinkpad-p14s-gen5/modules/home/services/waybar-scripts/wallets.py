@@ -4,10 +4,28 @@ Bitcoin Wallet Balance Monitor for Waybar
 Derives addresses from zpub keys LOCALLY using embit and checks balances via Mempool.space API
 Privacy-focused: zpub keys never leave your machine
 
-IMPROVED VERSION:
-- Real gap limit: scans until finding 20 consecutive empty addresses
-- Caches derived addresses to avoid re-derivation on rebuild
+FEATURES:
+- Real gap limit: scans until finding 50 consecutive empty addresses
+- Intelligent incremental cache: only scans new addresses after last known index
+- Permanent address cache: never expires
+- Price updates via Coinbase API (reliable, no rate limits)
 - Dynamic Python version detection for venv compatibility
+
+USAGE MODES:
+1. Normal mode (default):
+   python wallets.py
+   → Uses cached balances, updates price only (fast, runs every 5 min)
+
+2. Incremental scan mode (--scan):
+   python wallets.py --scan
+   → Keeps cached addresses, only scans new addresses after last index
+   → Smart: goes back 5 addresses to catch any missed transactions
+   → Use when you received new BTC and want to update
+
+3. Full rescan mode (--force):
+   python wallets.py --force
+   → Rescans ALL addresses from index 0, updates entire cache
+   → Use for initial setup or if you suspect cache corruption
 """
 
 import os
@@ -120,7 +138,7 @@ def load_env() -> Dict[str, str]:
 
 
 def load_cache() -> Optional[Dict]:
-    """Load cached addresses and balances if they exist and are fresh"""
+    """Load cached addresses (permanent cache, never expires)"""
     if not CACHE_FILE.exists():
         return None
 
@@ -128,13 +146,9 @@ def load_cache() -> Optional[Dict]:
         with open(CACHE_FILE, 'r') as f:
             cache = json.load(f)
 
-        # Check if cache is still fresh
-        cache_time = datetime.fromisoformat(cache.get('timestamp', '2000-01-01'))
-        if datetime.now() - cache_time < CACHE_DURATION:
-            return cache
-        else:
-            print(f"Cache expired (age: {datetime.now() - cache_time})", file=sys.stderr)
-            return None
+        # Cache never expires - addresses are permanent
+        print(f"✓ Using permanent address cache", file=sys.stderr)
+        return cache
     except Exception as e:
         print(f"Error loading cache: {e}", file=sys.stderr)
         return None
@@ -279,14 +293,15 @@ def get_address_balance(address: str) -> float:
         return 0.0
 
 
-def scan_chain(zpub: str, chain: int, cached_data: Optional[Dict] = None) -> Tuple[float, List[str], int, List[int]]:
+def scan_chain(zpub: str, chain: int, cached_data: Optional[Dict] = None, incremental: bool = False) -> Tuple[float, List[str], int, List[int]]:
     """
-    Scan a single chain (external or change) for balances
+    Scan a single chain (external or change) for balances with intelligent incremental scanning
 
     Args:
         zpub: Extended public key
         chain: 0 for external/receiving, 1 for change/internal
         cached_data: Previously cached data for this chain
+        incremental: If True, only scan new addresses after cached max_index
 
     Returns:
         Tuple of (balance, addresses, max_index, active_indices)
@@ -302,9 +317,29 @@ def scan_chain(zpub: str, chain: int, cached_data: Optional[Dict] = None) -> Tup
 
     # Use cached addresses if available
     if cached_data and cached_data.get('addresses'):
-        addresses = cached_data['addresses']
-        current_index = len(addresses)
-        print(f"    Using {current_index} cached addresses", file=sys.stderr)
+        addresses = cached_data['addresses'].copy()
+        active_indices = cached_data.get('active_indices', []).copy()
+
+        if incremental:
+            # Incremental scan: start from cached max_index
+            cached_max = cached_data.get('max_index', len(addresses) - 1)
+            # Go back a few addresses to be safe (in case of reorg or missed tx)
+            start_index = max(0, cached_max - 5)
+            current_index = start_index
+            print(f"    🔄 Incremental scan: Using {len(addresses)} cached addresses, scanning from index {start_index}", file=sys.stderr)
+
+            # Calculate balance from cached active indices up to start_index
+            for idx in active_indices:
+                if idx < start_index and idx < len(addresses):
+                    balance = get_address_balance(addresses[idx])
+                    if balance > 0:
+                        total_balance += balance
+        else:
+            # Full rescan mode
+            current_index = 0
+            active_indices = []
+            total_balance = 0.0
+            print(f"    🔍 Full rescan: Starting from index 0", file=sys.stderr)
 
     # Scan with gap limit
     while current_index < MAX_ADDRESS_INDEX and consecutive_empty < GAP_LIMIT:
@@ -315,26 +350,36 @@ def scan_chain(zpub: str, chain: int, cached_data: Optional[Dict] = None) -> Tup
             if not address:
                 break
             addresses.append(address)
+            print(f"      + New address derived at index {current_index}", file=sys.stderr)
 
-        # Check balance
-        balance = get_address_balance(address)
-        if balance > 0:
-            consecutive_empty = 0
-            total_balance += balance
-            active_indices.append(current_index)
-            print(f"      Found balance at {chain_name} index {current_index}: {balance:.8f} BTC", file=sys.stderr)
+        # Check balance (only for new addresses or from start_index in incremental mode)
+        if not incremental or current_index >= start_index:
+            balance = get_address_balance(address)
+            if balance > 0:
+                consecutive_empty = 0
+                if current_index not in active_indices:
+                    active_indices.append(current_index)
+                if not incremental or current_index >= start_index:
+                    total_balance += balance
+                print(f"      Found balance at {chain_name} index {current_index}: {balance:.8f} BTC", file=sys.stderr)
+            else:
+                consecutive_empty += 1
         else:
-            consecutive_empty += 1
+            # Already scanned in cached data, reset consecutive counter if active
+            if current_index in active_indices:
+                consecutive_empty = 0
+            else:
+                consecutive_empty += 1
 
         current_index += 1
 
     max_index = current_index - 1
     print(f"    {chain_name} chain: {len(addresses)} addresses, balance: {total_balance:.8f} BTC", file=sys.stderr)
 
-    return total_balance, addresses, max_index, active_indices
+    return total_balance, addresses, max_index, sorted(active_indices)
 
 
-def get_wallet_balance(zpub: str, cached_data: Optional[Dict] = None) -> Tuple[float, Dict]:
+def get_wallet_balance(zpub: str, cached_data: Optional[Dict] = None, incremental: bool = False) -> Tuple[float, Dict]:
     """
     Get total balance for a wallet from its zpub using intelligent caching
     Scans BOTH external (receiving) and change (internal) chains
@@ -342,6 +387,7 @@ def get_wallet_balance(zpub: str, cached_data: Optional[Dict] = None) -> Tuple[f
     Args:
         zpub: Extended public key
         cached_data: Previously cached address data
+        incremental: If True, only scan new addresses after cached max_index
 
     Returns:
         Tuple of (total_balance in BTC, address_data dict for caching)
@@ -350,12 +396,12 @@ def get_wallet_balance(zpub: str, cached_data: Optional[Dict] = None) -> Tuple[f
 
     # Scan external chain (chain 0)
     external_cached = cached_data.get('external') if cached_data else None
-    external_balance, external_addrs, external_max, external_active = scan_chain(zpub, 0, external_cached)
+    external_balance, external_addrs, external_max, external_active = scan_chain(zpub, 0, external_cached, incremental)
     total_balance += external_balance
 
     # Scan change chain (chain 1)
     change_cached = cached_data.get('change') if cached_data else None
-    change_balance, change_addrs, change_max, change_active = scan_chain(zpub, 1, change_cached)
+    change_balance, change_addrs, change_max, change_active = scan_chain(zpub, 1, change_cached, incremental)
     total_balance += change_balance
 
     # Prepare cache data
@@ -415,8 +461,9 @@ def format_number(num: float, suffix: str = "") -> str:
 def main():
     """Main function to generate Waybar output"""
 
-    # Check for --force flag to force cache refresh
-    force_refresh = "--force" in sys.argv
+    # Check for flags
+    force_refresh = "--force" in sys.argv  # Full rescan from index 0
+    incremental_scan = "--scan" in sys.argv  # Intelligent incremental scan (only new addresses)
 
     # Ensure dependencies are installed
     if not ensure_dependencies():
@@ -474,17 +521,33 @@ def main():
     use_cache = cache is not None
 
     if force_refresh:
-        print("🔄 Force refresh requested, ignoring cache", file=sys.stderr)
+        print("🔄 Full rescan requested (--force), ignoring cache", file=sys.stderr)
+    elif incremental_scan:
+        print("🔄 Incremental scan requested (--scan), updating addresses", file=sys.stderr)
 
-    if use_cache:
-        print("✓ Using cached data (addresses + balances)", file=sys.stderr)
+    # If no cache and not forcing refresh/scan, show error
+    if not use_cache and not force_refresh and not incremental_scan:
+        print(json.dumps({
+            "text": "⚠️ No Cache",
+            "tooltip": "Cache not found. Run once with --force to create:\npython ~/.config/waybar/scripts/wallets.py --force\n\nOr use --scan for incremental updates",
+            "class": "warning"
+        }))
+        return
+
+    if use_cache and not incremental_scan:
+        # Normal mode: just use cached balances and update price
+        print("✓ Using cached balances (price updated every 5 min)", file=sys.stderr)
         # Extract balances from cache
         for wallet_id, wallet in wallets.items():
             wallet_key = f"wallet_{wallet_id}"
             wallet['balance'] = cache.get('balances', {}).get(wallet_key, 0.0)
     else:
-        print("Fetching fresh balances from Mempool.space API...", file=sys.stderr)
-        # Calculate balances for each wallet (with API requests)
+        # Scanning mode: --force (full) or --scan (incremental)
+        if force_refresh:
+            print("🔍 Full rescan: Checking all addresses from index 0...", file=sys.stderr)
+        else:
+            print("🔍 Incremental scan: Only checking new addresses...", file=sys.stderr)
+
         cache_balances = {}
         cache_addresses = {}
 
@@ -496,8 +559,12 @@ def main():
                 # Get cached address data for this wallet (if exists)
                 cached_addr_data = cache.get('addresses', {}).get(wallet_key) if cache else None
 
-                # Get balance with gap limit scanning
-                balance, address_data = get_wallet_balance(wallet['zpub'], cached_addr_data)
+                # Get balance with gap limit scanning (incremental if --scan, full if --force)
+                balance, address_data = get_wallet_balance(
+                    wallet['zpub'],
+                    cached_addr_data,
+                    incremental=incremental_scan
+                )
 
                 wallet['balance'] = balance
                 cache_balances[wallet_key] = balance
@@ -570,11 +637,7 @@ def main():
     tooltip_lines.append("")
 
     # Privacy note at bottom
-    tooltip_lines.append("┌─ 🔒 PRIVACY ────────────────┐")
-    tooltip_lines.append("│  Addresses derived locally")
-    tooltip_lines.append("│  zpub keys never leave your")
-    tooltip_lines.append("│  machine")
-    tooltip_lines.append("└─────────────────────────────┘")
+    tooltip_lines.append("🔒 Privacy matters")
 
     tooltip = "\n".join(tooltip_lines)
 
