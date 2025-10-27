@@ -505,25 +505,25 @@ in
         layer = "top";
         position = "top";
         height = 32;
-        spacing = 6;  # More space between modules
+        spacing = 2;  # Compact spacing between modules
 
         modules-left = [ "hyprland/workspaces" "hyprland/submap" "hyprland/window" ];
-        modules-center = [ "clock" ];
+        modules-center = [ ];
         modules-right = [
-          "custom/weather"
           "custom/polymarket"
           "custom/bitcoin"
           "custom/wallets"
           "custom/removable-disks"
           "pulseaudio"
-          "bluetooth"
-          "network"
           "disk"
           "cpu"
           "memory"
           "temperature"
           "backlight"
           "battery"
+          "network"
+          "custom/weather"
+          "clock"
           "tray"
         ];
 
@@ -579,10 +579,10 @@ in
             warning = 30;
             critical = 15;
           };
-          format = "{icon} {capacity}%";
+          format = " {capacity}%";
           format-charging = " {capacity}%";
           format-plugged = " {capacity}%";
-          format-alt = "{icon} {time}";
+          format-alt = " {time}";
           format-icons = [ "" "" "" "" "" ];
           tooltip-format = "{timeTo}\nPower: {power}W";
         };
@@ -613,7 +613,7 @@ in
 
         "pulseaudio" = {
           format = "{icon} {volume}%";
-          format-muted = "󰖁";
+          format-muted = " ";
           format-icons = {
             headphone = "";
             hands-free = "";
@@ -621,7 +621,7 @@ in
             phone = "";
             portable = "";
             car = "";
-            default = [ "󰕿" "󰖀" "󰕾" ];
+            default = [ "" "" "" ];
           };
           tooltip-format = "Volume: {volume}%\nDevice: {desc}";
           on-click = "pavucontrol";
@@ -662,7 +662,7 @@ in
 
         "backlight" = {
           device = "amdgpu_bl1";  # AMD Radeon 780M backlight (was intel_backlight)
-          format = "{icon} {percent}%";
+          format = " {percent}%";
           format-icons = [ "" "" "" "" "" "" "" "" "" ];
           tooltip-format = "Brightness: {percent}%\nScroll to adjust (syncs both screens)";
           on-scroll-up = "~/.config/waybar/scripts/brightness-sync.sh 5%+";
@@ -787,8 +787,8 @@ in
       }
 
       #clock {
-        padding: 0 16px;
-        margin: 0 8px;
+        padding: 0 12px;
+        margin: 0 2px;
         background: rgba(249, 204, 108, 0.15);
         color: #f9cc6c;
         border-radius: 10px;
@@ -806,8 +806,8 @@ in
       #backlight,
       #battery,
       #tray {
-        padding: 0 10px;
-        margin: 0 2px;
+        padding: 0 8px;
+        margin: 0 1px;
         background: rgba(64, 62, 65, 0.85);
         border-radius: 6px;
         color: #e6d9db;
@@ -835,9 +835,19 @@ in
       }
 
       #custom-removable-disks {
-        padding: 0 10px;
+        padding: 0 8px;
+        margin: 0 1px;
         background: rgba(173, 218, 120, 0.2);
         color: #adda78;
+      }
+
+      #custom-weather,
+      #custom-polymarket {
+        padding: 0 8px;
+        margin: 0 1px;
+        background: rgba(64, 62, 65, 0.85);
+        border-radius: 6px;
+        color: #e6d9db;
       }
 
       #pulseaudio.muted {
