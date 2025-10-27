@@ -62,140 +62,151 @@
      */
 
     /* ============================ */
-    /* NEMO FILE MANAGER            */
+    /* NEMO FILE MANAGER - SIMPLE   */
     /* ============================ */
 
+    /* Main window - clean and simple */
     .nemo-window {
       background-color: #2c2525;
       color: #e6d9db;
     }
 
-    /* Sidebar */
-    .nemo-window .sidebar,
-    .nemo-window sidebar {
+    /* Sidebar - darker for contrast */
+    .nemo-window sidebar,
+    .nemo-window .sidebar {
       background-color: #1f1a1a;
       color: #e6d9db;
+      border-right: 1px solid #403e41;
     }
 
-    .nemo-window .sidebar:selected,
-    .nemo-window sidebar:selected {
+    .nemo-window sidebar row:selected,
+    .nemo-window sidebar .sidebar-row:selected {
       background-color: #f9cc6c;
-      color: #2c2525;
-      font-weight: bold;
+      color: #1f1a1a;
     }
 
-    /* Toolbar */
-    .nemo-window toolbar,
-    .nemo-window headerbar {
-      background-color: #2c2525;
+    /* Toolbar - minimal */
+    .nemo-window headerbar,
+    .nemo-window toolbar {
+      background-color: #1f1a1a;
       color: #e6d9db;
       border-bottom: 1px solid #403e41;
+      padding: 4px;
     }
 
-    /* Path bar */
+    /* Path bar buttons - simple */
     .nemo-window .path-bar button {
-      background-color: #403e41;
+      background-color: transparent;
       color: #e6d9db;
       border: none;
-      border-radius: 6px;
-      margin: 2px;
+      border-radius: 4px;
+      padding: 4px 8px;
+      margin: 0 2px;
     }
 
     .nemo-window .path-bar button:hover {
-      background-color: rgba(249, 204, 108, 0.2);
+      background-color: #403e41;
       color: #f9cc6c;
     }
 
-    .nemo-window .path-bar button:active,
     .nemo-window .path-bar button:checked {
       background-color: #f9cc6c;
-      color: #2c2525;
+      color: #1f1a1a;
     }
 
-    /* File/folder list view */
-    .nemo-window .view {
+    /* File list - clean */
+    .nemo-window .view,
+    .nemo-window iconview,
+    .nemo-window treeview {
       background-color: #2c2525;
       color: #e6d9db;
     }
 
-    .nemo-window .view:selected {
+    .nemo-window .view:selected,
+    .nemo-window iconview:selected,
+    .nemo-window treeview:selected {
       background-color: #f9cc6c;
-      color: #2c2525;
+      color: #1f1a1a;
     }
 
-    /* Icon view */
-    .nemo-window iconview {
-      background-color: #2c2525;
-      color: #e6d9db;
+    /* Scrollbars - minimal */
+    .nemo-window scrollbar {
+      background-color: transparent;
     }
 
-    .nemo-window iconview:selected {
-      background-color: #f9cc6c;
-      color: #2c2525;
-    }
-
-    /* Scrollbars */
     .nemo-window scrollbar slider {
       background-color: #403e41;
       border-radius: 10px;
+      min-width: 8px;
+      min-height: 8px;
     }
 
     .nemo-window scrollbar slider:hover {
       background-color: #f9cc6c;
     }
 
-    /* Context menu */
+    /* Context menus - clean contrast */
     .nemo-window menu,
-    .nemo-window .menu {
-      background-color: #2c2525;
+    .nemo-window popover {
+      background-color: #1f1a1a;
       color: #e6d9db;
-      border: 2px solid rgba(249, 204, 108, 0.5);
-      border-radius: 10px;
+      border: 1px solid #f9cc6c;
+      border-radius: 8px;
+      padding: 4px;
     }
 
-    .nemo-window menuitem:hover,
-    .nemo-window .menuitem:hover {
-      background-color: rgba(249, 204, 108, 0.2);
-      color: #f9cc6c;
+    .nemo-window menuitem {
+      background-color: transparent;
+      color: #e6d9db;
+      padding: 6px 12px;
+      border-radius: 4px;
     }
 
-    /* Buttons */
+    .nemo-window menuitem:hover {
+      background-color: #f9cc6c;
+      color: #1f1a1a;
+    }
+
+    /* Buttons - simple grey */
     .nemo-window button {
       background-color: #403e41;
       color: #e6d9db;
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
+      padding: 6px 12px;
     }
 
     .nemo-window button:hover {
-      background-color: rgba(249, 204, 108, 0.2);
+      background-color: #4a4748;
       color: #f9cc6c;
     }
 
     .nemo-window button:active {
       background-color: #f9cc6c;
-      color: #2c2525;
+      color: #1f1a1a;
     }
 
-    /* Entry/search fields */
+    /* Search bar - clean */
     .nemo-window entry {
-      background-color: #403e41;
+      background-color: #1f1a1a;
       color: #e6d9db;
-      border: 1px solid #f9cc6c;
-      border-radius: 6px;
+      border: 1px solid #403e41;
+      border-radius: 4px;
       padding: 6px;
+      caret-color: #f9cc6c;
     }
 
     .nemo-window entry:focus {
-      border: 2px solid #f9cc6c;
-      background-color: #2c2525;
+      border-color: #f9cc6c;
     }
 
-    /* Status bar */
+    /* Status bar - minimal */
     .nemo-window statusbar {
       background-color: #1f1a1a;
-      color: #e6d9db;
+      color: #948a8b;
       border-top: 1px solid #403e41;
+      padding: 2px 8px;
+      font-size: 0.9em;
     }
 
     /* ============================ */
@@ -263,22 +274,26 @@
       background-color: #f9cc6c;
     }
 
-    /* Buttons */
+    /* Buttons - NO WHITE, GREY ONLY */
     .xed-window button {
-      background-color: #403e41;
-      color: #e6d9db;
-      border: none;
+      background-color: #403e41;  /* Dark grey */
+      color: #e6d9db;  /* Light beige text */
+      border: 1px solid #403e41;
       border-radius: 6px;
+      padding: 6px 12px;
     }
 
     .xed-window button:hover {
-      background-color: rgba(249, 204, 108, 0.2);
-      color: #f9cc6c;
+      background-color: #4a4748;  /* Slightly lighter grey */
+      color: #f9cc6c;  /* Yellow text on hover */
+      border-color: #f9cc6c;
     }
 
-    .xed-window button:active {
-      background-color: #f9cc6c;
-      color: #2c2525;
+    .xed-window button:active,
+    .xed-window button:checked {
+      background-color: #f9cc6c;  /* Yellow when pressed */
+      color: #1f1a1a;  /* Dark text */
+      border-color: #f9cc6c;
     }
 
     /* Search bar */
@@ -325,19 +340,171 @@
       color: #e6d9db;
     }
 
-    /* Context menu */
-    .xed-window menu,
-    .xed-window .menu {
+    /* ============================ */
+    /* GLOBAL GTK ELEMENTS          */
+    /* (Apply to all GTK apps)      */
+    /* ============================ */
+
+    /* Global context menus and popovers - MAXIMUM CONTRAST */
+    menu,
+    .menu,
+    popover.background,
+    popover {
+      background-color: #1f1a1a;  /* Dark background */
+      color: #e6d9db;  /* Light text */
+      border: 2px solid #f9cc6c;
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    menuitem,
+    .menuitem,
+    modelbutton {
+      background-color: transparent;
+      color: #e6d9db;  /* Always light text */
+      padding: 8px 12px;
+      border-radius: 6px;
+      min-height: 24px;
+    }
+
+    menuitem:hover,
+    .menuitem:hover,
+    modelbutton:hover {
+      background-color: #f9cc6c;  /* Bright yellow background */
+      color: #1f1a1a;  /* Dark text for contrast */
+      font-weight: bold;
+    }
+
+    menuitem:disabled,
+    .menuitem:disabled {
+      color: #948a8b;
+      opacity: 0.5;
+    }
+
+    /* Tooltips - IMPROVED CONTRAST */
+    tooltip,
+    .tooltip {
+      background-color: #1f1a1a;
+      color: #e6d9db;
+      border: 2px solid #f9cc6c;
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    tooltip label,
+    .tooltip label {
+      color: #e6d9db;
+    }
+
+    /* Dialog windows - IMPROVED CONTRAST */
+    dialog,
+    .dialog {
       background-color: #2c2525;
       color: #e6d9db;
-      border: 2px solid rgba(249, 204, 108, 0.5);
+    }
+
+    dialog headerbar,
+    .dialog headerbar {
+      background-color: #1f1a1a;
+      color: #e6d9db;
+      border-bottom: 1px solid #403e41;
+    }
+
+    /* File chooser dialogs */
+    filechooser {
+      background-color: #2c2525;
+      color: #e6d9db;
+    }
+
+    /* Ensure all text inputs have good contrast */
+    entry,
+    entry text {
+      background-color: #1f1a1a;
+      color: #e6d9db;
+      border: 2px solid #403e41;
+      caret-color: #f9cc6c;
+    }
+
+    entry:focus,
+    entry:focus text {
+      border-color: #f9cc6c;
+      color: #e6d9db;  /* Explicit color */
+      box-shadow: 0 0 0 1px #f9cc6c;
+    }
+
+    entry placeholder {
+      color: #948a8b;
+    }
+
+    /* Separators */
+    separator {
+      background-color: #403e41;
+      min-height: 1px;
+      min-width: 1px;
+    }
+
+    /* Global buttons - NO WHITE, GREY ONLY */
+    button {
+      background-color: #403e41;  /* Dark grey */
+      color: #e6d9db;  /* Light beige text */
+      border: 1px solid #403e41;
+      border-radius: 6px;
+      padding: 6px 12px;
+    }
+
+    button:hover {
+      background-color: #4a4748;  /* Slightly lighter grey */
+      color: #f9cc6c;  /* Yellow text */
+      border-color: #f9cc6c;
+    }
+
+    button:active,
+    button:checked {
+      background-color: #f9cc6c;  /* Yellow */
+      color: #1f1a1a;  /* Dark text */
+      border-color: #f9cc6c;
+    }
+
+    button:disabled {
+      background-color: #2c2525;
+      color: #948a8b;  /* Grey text */
+      border-color: #2c2525;
+      opacity: 0.5;
+    }
+
+    /* Context menu - IMPROVED CONTRAST */
+    .xed-window menu,
+    .xed-window .menu,
+    .xed-window menubar,
+    .xed-window popover {
+      background-color: #1f1a1a;  /* Darker background for better contrast */
+      color: #e6d9db;
+      border: 2px solid #f9cc6c;
       border-radius: 10px;
+      padding: 4px;
+    }
+
+    .xed-window menuitem,
+    .xed-window .menuitem,
+    .xed-window modelbutton {
+      background-color: transparent;
+      color: #e6d9db;  /* Explicit foreground color */
+      padding: 8px 12px;
+      border-radius: 6px;
     }
 
     .xed-window menuitem:hover,
-    .xed-window .menuitem:hover {
-      background-color: rgba(249, 204, 108, 0.2);
-      color: #f9cc6c;
+    .xed-window .menuitem:hover,
+    .xed-window modelbutton:hover {
+      background-color: #f9cc6c;  /* Solid yellow background */
+      color: #1f1a1a;  /* Dark text on yellow for maximum contrast */
+      font-weight: bold;
+    }
+
+    .xed-window menuitem:disabled,
+    .xed-window .menuitem:disabled {
+      color: #948a8b;  /* Grey for disabled items */
+      opacity: 0.5;
     }
   '';
 

@@ -31,6 +31,7 @@
     ./programs/btop.nix          # btop system monitor with Ristretto theme
     ./programs/windows-vm.nix    # Windows 11 VM via Docker with RDP
     ./programs/security-tools.nix  # Security audit tools (sqlmap, nikto, etc.)
+    ./programs/nemo.nix          # Nemo file manager with full integration
     ./services/waybar.nix
     ./services/mako.nix
     ./services/swaylock.nix
@@ -73,8 +74,7 @@
     dust              # Better du (disk usage visualizer)
     tldr              # Simplified man pages
 
-    # File management
-    nemo              # GUI file manager (Cinnamon File Manager)
+    # File management (Nemo and related packages moved to programs/nemo.nix)
     xed-editor        # Simple text editor from Linux Mint (pairs well with Nemo)
     yazi
     nnn
@@ -159,20 +159,20 @@
     enable = true;
     defaultApplications = {
       # Text files (xed editor)
-      "text/plain" = "xed.desktop";
-      "text/x-log" = "xed.desktop";
-      "text/x-readme" = "xed.desktop";
-      "text/markdown" = "xed.desktop";
-      "text/x-csrc" = "xed.desktop";
-      "text/x-chdr" = "xed.desktop";
-      "text/x-python" = "xed.desktop";
-      "text/x-shellscript" = "xed.desktop";
-      "application/x-shellscript" = "xed.desktop";
-      "text/x-makefile" = "xed.desktop";
-      "text/x-cmake" = "xed.desktop";
-      "application/json" = "xed.desktop";
-      "application/xml" = "xed.desktop";
-      "text/xml" = "xed.desktop";
+      "text/plain" = "org.x.editor.desktop";
+      "text/x-log" = "org.x.editor.desktop";
+      "text/x-readme" = "org.x.editor.desktop";
+      "text/markdown" = "org.x.editor.desktop";
+      "text/x-csrc" = "org.x.editor.desktop";
+      "text/x-chdr" = "org.x.editor.desktop";
+      "text/x-python" = "org.x.editor.desktop";
+      "text/x-shellscript" = "org.x.editor.desktop";
+      "application/x-shellscript" = "org.x.editor.desktop";
+      "text/x-makefile" = "org.x.editor.desktop";
+      "text/x-cmake" = "org.x.editor.desktop";
+      "application/json" = "org.x.editor.desktop";
+      "application/xml" = "org.x.editor.desktop";
+      "text/xml" = "org.x.editor.desktop";
 
       # File manager
       "inode/directory" = "nemo.desktop";
@@ -185,7 +185,7 @@
       "x-scheme-handler/unknown" = "brave-browser.desktop";
 
       # PDF viewer
-      "application/pdf" = "zathura.desktop";
+      "application/pdf" = "org.pwmt.zathura.desktop";
 
       # Images (imv)
       "image/png" = "imv.desktop";
