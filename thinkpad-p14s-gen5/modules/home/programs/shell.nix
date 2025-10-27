@@ -136,6 +136,12 @@
       theme = "catppuccin-mocha";
       style = "numbers,changes,header";
     };
+    themes = {
+      catppuccin-mocha = {
+        src = inputs.catppuccin-bat;
+        file = "themes/Catppuccin Mocha.tmTheme";
+      };
+    };
   };
 
   # Eza (ls replacement)

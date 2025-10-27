@@ -700,6 +700,7 @@ in
           interval = 300;  # Update every 5 minutes (300 seconds)
           format = "₿ {}";
           tooltip = true;
+          on-click = "${pkgs.xdg-utils}/bin/xdg-open https://mempool.space/";
           signal = 1;  # Use SIGRTMIN+1 for manual refresh
           on-scroll-up = "pkill -RTMIN+1 waybar";  # Force refresh on scroll
           on-scroll-down = "pkill -RTMIN+1 waybar";  # Force refresh on scroll
