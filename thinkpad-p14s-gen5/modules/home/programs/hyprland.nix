@@ -310,12 +310,17 @@ in
         disable_splash_rendering = true;
         mouse_move_enables_dpms = true;
         key_press_enables_dpms = true;
-        vrr = 2;
+        vrr = 2;  # Variable refresh rate (0=off, 1=on, 2=fullscreen only)
         enable_swallow = true;
         swallow_regex = "^(kitty)$";
         force_default_wallpaper = 0;
-        vfr = true;
+        vfr = true;  # Variable frame rate - reduces GPU usage when idle
         focus_on_activate = true;
+      };
+
+      # Render optimizations
+      render = {
+        direct_scanout = true;  # Better fullscreen performance
       };
 
       "$mod" = "SUPER";

@@ -78,6 +78,11 @@
   # AMD P-State EPP provides better performance than acpi-cpufreq
   boot.kernelParams = [
     "initcall_blacklist=acpi_cpufreq_init" # Disable old driver
+
+    # RDNA 3 specific optimizations (Radeon 780M)
+    "amdgpu.ppfeaturemask=0xffffffff"  # Enable all GPU features
+    "amdgpu.gpu_recovery=1"            # Auto-recovery on GPU hang
+    "amdgpu.noretry=0"                 # Retry on timeout
   ];
 
   # NOTE: CPU boost is managed by TLP in services.nix

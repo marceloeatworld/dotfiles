@@ -46,6 +46,24 @@
     # CLI utilities
     gum           # Beautiful shell scripts
 
+    # Modern CLI tools (Rust replacements)
+    yazi          # Terminal file manager (modern, replaces ranger/lf)
+    dust          # du modern (disk usage visualization)
+    duf           # df modern (filesystem display)
+    bottom        # btop alternative (faster, Rust)
+    procs         # ps modern (colored process list)
+    gping         # ping with graph
+    bandwhich     # Network monitor (which process uses bandwidth)
+    dog           # dig modern (DNS queries)
+    tokei         # Lines of code counter (fast)
+    sd            # sed modern (simpler syntax)
+    choose        # cut/awk modern
+    hyperfine     # CLI benchmarking
+    ouch          # Compression/decompression (auto-detects format)
+    zellij        # tmux modern (Rust, better UX)
+    gitui         # TUI Git (alternative to lazygit, faster)
+    gh-dash       # GitHub dashboard TUI
+
     # Nix tools only
     nixpkgs-fmt   # Nix formatter
     nil           # Nix LSP (for editing NixOS configs)

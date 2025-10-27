@@ -7,10 +7,15 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     shellAliases = {
-      # NixOS
-      rebuild = "sudo nixos-rebuild switch --flake /home/marcelo/dotfiles/thinkpad-p14s-gen5#pop";
-      update = "cd /home/marcelo/dotfiles/thinkpad-p14s-gen5 && nix flake update && sudo nixos-rebuild switch --flake .#pop";
-      clean = "sudo nix-collect-garbage -d && nix-collect-garbage -d";
+      # NixOS - Using NH (modern nix helper)
+      rebuild = "nh os switch";  # Replaces nixos-rebuild switch
+      update = "cd /home/marcelo/dotfiles/thinkpad-p14s-gen5 && nix flake update && nh os switch";
+      clean = "nh clean all --keep 5";  # Smarter garbage collection
+
+      # Additional NH commands
+      nb = "nh os boot";       # Build for next boot
+      ntest = "nh os test";    # Test without setting boot default
+      ndiff = "nh os build";   # See changes without applying
       # Modern replacements
       ls = "eza --icons";
       ll = "eza -l --icons";
