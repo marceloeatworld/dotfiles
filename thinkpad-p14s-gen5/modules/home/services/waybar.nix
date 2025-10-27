@@ -94,6 +94,14 @@ let
       low_24h_eur="N/A"
     fi
 
+    # Fetch Bitcoin Dominance from CoinGecko Global API
+    global_data=$(${pkgs.curl}/bin/curl -s --max-time 10 "https://api.coingecko.com/api/v3/global")
+    if [ -n "$global_data" ]; then
+      btc_dominance=$(echo "$global_data" | ${pkgs.jq}/bin/jq -r '.data.market_cap_percentage.btc // "N/A"')
+    else
+      btc_dominance="N/A"
+    fi
+
     # Check price alerts
     if [ -f "$ALERT_FILE" ]; then
       while IFS='=' read -r threshold_type threshold_value; do
@@ -218,6 +226,17 @@ let
       tooltip="$tooltip\n┌─ 💎 MARKET ──────────"
       tooltip="$tooltip\n│ Cap    \$$market_cap_formatted"
       tooltip="$tooltip\n│ Volume \$$volume_formatted"
+      tooltip="$tooltip\n└────"
+    fi
+
+    # Bitcoin Dominance
+    if [ "$btc_dominance" != "N/A" ]; then
+      btc_dom_fmt=$(printf "%.2f" "$btc_dominance")
+      tooltip="$tooltip\n┌─ 📊 DOMINANCE ───────"
+      tooltip="$tooltip\n│ BTC  $btc_dom_fmt%"
+      altcoin_dom=$(echo "100 - $btc_dominance" | ${pkgs.bc}/bin/bc)
+      altcoin_dom_fmt=$(printf "%.2f" "$altcoin_dom")
+      tooltip="$tooltip\n│ ALT  $altcoin_dom_fmt%"
       tooltip="$tooltip\n└────"
     fi
 
@@ -437,6 +456,168 @@ let
       ${pkgs.ddcutil}/bin/ddcutil setvcp 10 "$PERCENT" 2>/dev/null || true
     fi
   '';
+
+  # VPN Status Script
+  vpnStatusScript = pkgs.writeShellScriptBin "vpn-status-waybar" ''
+    #!/usr/bin/env bash
+    # VPN Status Monitor: Detects Proton VPN connection status and country
+
+    # Check if any Proton VPN connection is active
+    vpn_active=$(${pkgs.networkmanager}/bin/nmcli connection show --active | ${pkgs.gnugrep}/bin/grep -i "proton" || true)
+
+    if [ -n "$vpn_active" ]; then
+      # VPN is connected
+      vpn_name=$(echo "$vpn_active" | ${pkgs.gawk}/bin/awk '{print $1}')
+
+      # Try to extract country from connection name
+      # Proton VPN format: "ProtonVPN CH-123" or "Proton VPN NL"
+      country=$(echo "$vpn_name" | ${pkgs.gnugrep}/bin/grep -oP '(?<=[A-Z]{2}-)?\K[A-Z]{2}(?=[-\s]|$)' | head -1 || echo "?")
+
+      # Get connection time
+      device=$(echo "$vpn_active" | ${pkgs.gawk}/bin/awk '{print $4}')
+
+      # Build tooltip
+      tooltip="┌─ 󰖂 VPN CONNECTED ────┐"
+      tooltip="$tooltip\n│ Country: $country"
+      tooltip="$tooltip\n│ Name: $vpn_name"
+      tooltip="$tooltip\n│ Device: $device"
+      tooltip="$tooltip\n└──────────────────────┘"
+      tooltip="$tooltip\n\nClick to disconnect"
+
+      echo "{\"text\": \"󰖂 $country\", \"tooltip\": \"$tooltip\", \"class\": \"connected\"}"
+    else
+      # VPN is disconnected
+      tooltip="󰿆 VPN Disconnected\n\nClick to connect to Proton VPN"
+      echo "{\"text\": \"󰿆\", \"tooltip\": \"$tooltip\", \"class\": \"disconnected\"}"
+    fi
+  '';
+
+  # NixOS Updates Script
+  nixUpdatesScript = pkgs.writeShellScriptBin "nix-updates-waybar" ''
+    #!/usr/bin/env bash
+    # NixOS Updates Monitor: Checks for available flake updates
+
+    FLAKE_DIR="$HOME/dotfiles/thinkpad-p14s-gen5"
+    CACHE_FILE="$HOME/.cache/waybar-nix-updates"
+    CACHE_DURATION=3600  # Cache for 1 hour
+
+    # Check if cache is fresh
+    if [ -f "$CACHE_FILE" ]; then
+      cache_age=$(($(date +%s) - $(stat -c %Y "$CACHE_FILE")))
+      if [ $cache_age -lt $CACHE_DURATION ]; then
+        cat "$CACHE_FILE"
+        exit 0
+      fi
+    fi
+
+    # Check if flake directory exists
+    if [ ! -d "$FLAKE_DIR" ]; then
+      echo '{"text": "󰄬", "tooltip": "Flake directory not found", "class": "ok"}' | tee "$CACHE_FILE"
+      exit 0
+    fi
+
+    cd "$FLAKE_DIR" || exit 1
+
+    # Check for updates (compare current lock with latest)
+    # This is a simplified check - just see if flake.lock is old
+    lock_age=$(($(date +%s) - $(stat -c %Y "flake.lock" 2>/dev/null || echo 0)))
+    days_old=$((lock_age / 86400))
+
+    if [ $days_old -gt 7 ]; then
+      # Flake is more than 7 days old
+      tooltip="┌─ 󰏔 NixOS UPDATES ────┐"
+      tooltip="$tooltip\n│ Last update: $days_old days ago"
+      tooltip="$tooltip\n│"
+      tooltip="$tooltip\n│ Run: nix flake update"
+      tooltip="$tooltip\n└──────────────────────┘"
+      tooltip="$tooltip\n\nClick to open terminal"
+
+      echo "{\"text\": \"󰏔 $days_old\", \"tooltip\": \"$tooltip\", \"class\": \"updates\"}" | tee "$CACHE_FILE"
+    else
+      tooltip="󰄬 System is up to date\n\nLast update: $days_old days ago"
+      echo "{\"text\": \"󰄬\", \"tooltip\": \"$tooltip\", \"class\": \"ok\"}" | tee "$CACHE_FILE"
+    fi
+  '';
+
+  # Systemd Failed Services Script
+  systemdFailedScript = pkgs.writeShellScriptBin "systemd-failed-waybar" ''
+    #!/usr/bin/env bash
+    # Systemd Failed Services Monitor
+
+    # Count failed services
+    failed_count=$(${pkgs.systemd}/bin/systemctl --failed --no-legend --no-pager | wc -l)
+
+    if [ "$failed_count" -gt 0 ]; then
+      # Get list of failed services
+      failed_list=$(${pkgs.systemd}/bin/systemctl --failed --no-legend --no-pager | ${pkgs.gawk}/bin/awk '{print $1}')
+
+      tooltip="┌─ 󰀨 FAILED SERVICES ───┐"
+      tooltip="$tooltip\n│ Count: $failed_count"
+      tooltip="$tooltip\n│"
+      while IFS= read -r service; do
+        tooltip="$tooltip\n│ • $service"
+      done <<< "$failed_list"
+      tooltip="$tooltip\n└───────────────────────┘"
+      tooltip="$tooltip\n\nClick to view details"
+
+      echo "{\"text\": \"󰀨 $failed_count\", \"tooltip\": \"$tooltip\", \"class\": \"warning\"}"
+    else
+      echo "{\"text\": \"\", \"tooltip\": \"󰄬 No failed services\", \"class\": \"ok\"}"
+    fi
+  '';
+
+  # Mako Notifications Script
+  makoScript = pkgs.writeShellScriptBin "mako-waybar" ''
+    #!/usr/bin/env bash
+    # Mako Notifications Counter
+
+    # Count notifications in history
+    notif_count=$(${pkgs.mako}/bin/makoctl history | ${pkgs.jq}/bin/jq '.data[0] | length' 2>/dev/null || echo "0")
+
+    if [ "$notif_count" -gt 0 ]; then
+      # Get last few notifications
+      recent=$(${pkgs.mako}/bin/makoctl history | ${pkgs.jq}/bin/jq -r '.data[0][:3] | .[] | "\(.app_name.data): \(.summary.data)"' 2>/dev/null)
+
+      tooltip="┌─ 󰂚 NOTIFICATIONS ─────┐"
+      tooltip="$tooltip\n│ Unread: $notif_count"
+      tooltip="$tooltip\n│"
+
+      if [ -n "$recent" ]; then
+        while IFS= read -r notif; do
+          # Truncate long notifications
+          truncated=$(echo "$notif" | ${pkgs.coreutils}/bin/cut -c1-35)
+          tooltip="$tooltip\n│ • $truncated"
+        done <<< "$recent"
+      fi
+
+      tooltip="$tooltip\n└───────────────────────┘"
+      tooltip="$tooltip\n\nClick: invoke | Right: dismiss all"
+
+      echo "{\"text\": \"󰂚 $notif_count\", \"tooltip\": \"$tooltip\", \"class\": \"notification\"}"
+    else
+      echo "{\"text\": \"\", \"tooltip\": \"No notifications\", \"class\": \"empty\"}"
+    fi
+  '';
+
+  # World Clocks Script
+  worldClocksScript = pkgs.writeShellScriptBin "world-clocks-waybar" ''
+    #!/usr/bin/env bash
+    # World Clocks: Shows NY and Beijing times in tooltip
+
+    # Get current times
+    local_time=$(TZ="Europe/Lisbon" date "+%H:%M")
+    ny_time=$(TZ="America/New_York" date "+%H:%M")
+    beijing_time=$(TZ="Asia/Shanghai" date "+%H:%M")
+
+    # Build tooltip
+    tooltip="┌─ 🌍 WORLD CLOCKS ─────┐"
+    tooltip="$tooltip\n│ 🇵🇹 Lisbon    $local_time"
+    tooltip="$tooltip\n│ 🇺🇸 New York  $ny_time"
+    tooltip="$tooltip\n│ 🇨🇳 Beijing   $beijing_time"
+    tooltip="$tooltip\n└───────────────────────┘"
+
+    echo "{\"text\": \"🌍\", \"tooltip\": \"$tooltip\", \"class\": \"world-clocks\"}"
+  '';
 in
 {
   # Create scripts in waybar config directory
@@ -453,6 +634,32 @@ in
   # Brightness sync script for syncing internal + external monitors
   home.file.".config/waybar/scripts/brightness-sync.sh" = {
     source = "${brightnessSyncScript}/bin/brightness-sync";
+    executable = true;
+  };
+
+  # New system monitoring scripts
+  home.file.".config/waybar/scripts/vpn-status.sh" = {
+    source = "${vpnStatusScript}/bin/vpn-status-waybar";
+    executable = true;
+  };
+
+  home.file.".config/waybar/scripts/nix-updates.sh" = {
+    source = "${nixUpdatesScript}/bin/nix-updates-waybar";
+    executable = true;
+  };
+
+  home.file.".config/waybar/scripts/systemd-failed.sh" = {
+    source = "${systemdFailedScript}/bin/systemd-failed-waybar";
+    executable = true;
+  };
+
+  home.file.".config/waybar/scripts/mako.sh" = {
+    source = "${makoScript}/bin/mako-waybar";
+    executable = true;
+  };
+
+  home.file.".config/waybar/scripts/world-clocks.sh" = {
+    source = "${worldClocksScript}/bin/world-clocks-waybar";
     executable = true;
   };
 
@@ -510,9 +717,14 @@ in
         modules-left = [ "hyprland/workspaces" "hyprland/submap" "hyprland/window" ];
         modules-center = [ ];
         modules-right = [
+          # Finance modules
           "custom/polymarket"
           "custom/bitcoin"
           "custom/wallets"
+          # System monitoring modules
+          "custom/systemd-failed"
+          "custom/mako"
+          # Hardware modules
           "custom/removable-disks"
           "pulseaudio"
           "disk"
@@ -522,8 +734,10 @@ in
           "backlight"
           "battery"
           "network"
+          "custom/vpn"
           "custom/weather"
           "clock"
+          "custom/nix-updates"
           "tray"
         ];
 
@@ -717,6 +931,44 @@ in
           on-scroll-down = "pkill -RTMIN+3 waybar";  # Force price refresh (EUR/USD only, balances stay cached)
         };
 
+        # System Monitoring Modules
+        "custom/vpn" = {
+          exec = "~/.config/waybar/scripts/vpn-status.sh";
+          return-type = "json";
+          interval = 5;  # Update every 5 seconds
+          format = "{}";
+          tooltip = true;
+          on-click = "protonvpn-app";  # Open Proton VPN GUI
+        };
+
+        "custom/nix-updates" = {
+          exec = "~/.config/waybar/scripts/nix-updates.sh";
+          return-type = "json";
+          interval = 3600;  # Update every hour
+          format = "{}";
+          tooltip = true;
+          on-click = "${pkgs.hyprland}/bin/hyprctl dispatch exec '[float;size 800 600;center]' '${pkgs.kitty}/bin/kitty --hold sh -c \"cd ~/dotfiles/thinkpad-p14s-gen5 && nix flake update\"'";
+        };
+
+        "custom/systemd-failed" = {
+          exec = "~/.config/waybar/scripts/systemd-failed.sh";
+          return-type = "json";
+          interval = 60;  # Update every minute
+          format = "{}";
+          tooltip = true;
+          on-click = "${pkgs.kitty}/bin/kitty --hold systemctl --failed";
+        };
+
+        "custom/mako" = {
+          exec = "~/.config/waybar/scripts/mako.sh";
+          return-type = "json";
+          interval = 5;  # Update every 5 seconds
+          format = "{}";
+          tooltip = true;
+          on-click = "${pkgs.mako}/bin/makoctl invoke";
+          on-click-right = "${pkgs.mako}/bin/makoctl dismiss --all";
+        };
+
         "custom/removable-disks" = {
           exec = "~/.config/waybar/scripts/removable-disks.sh";
           return-type = "json";
@@ -803,6 +1055,10 @@ in
 
       #custom-bitcoin,
       #custom-wallets,
+      #custom-vpn,
+      #custom-nix-updates,
+      #custom-systemd-failed,
+      #custom-mako,
       #pulseaudio,
       #bluetooth,
       #network,
