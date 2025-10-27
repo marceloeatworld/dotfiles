@@ -534,11 +534,6 @@ def main():
     # Build tooltip with visual box-drawing characters (similar to Bitcoin module)
     tooltip_lines = []
 
-    # Header with box
-    tooltip_lines.append("╔════════════════════════════════╗")
-    tooltip_lines.append("║    💼  BITCOIN WALLETS  💼     ║")
-    tooltip_lines.append("╚════════════════════════════════╝")
-    tooltip_lines.append("")
 
     # Total balance in a box
     tooltip_lines.append("┌─ 💰 TOTAL BALANCE ──────────┐")
