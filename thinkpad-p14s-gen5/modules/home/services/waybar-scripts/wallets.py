@@ -531,28 +531,55 @@ def main():
     # Format display text - show in BTC with 2 decimals (rounded)
     btc_display = f"{total_btc:.2f}₿"
 
-    # Build tooltip with individual wallet balances
-    tooltip_lines = [f"₿ Total Balance: {total_btc:.8f} BTC"]
-    tooltip_lines.append(f"💵 USD: ${format_number(total_usd)}")
-    tooltip_lines.append(f"💶 EUR: €{format_number(total_eur)}")
-    tooltip_lines.append("")
-    tooltip_lines.append("─" * 40)
+    # Build tooltip with visual box-drawing characters (similar to Bitcoin module)
+    tooltip_lines = []
+
+    # Header with box
+    tooltip_lines.append("╔════════════════════════════════╗")
+    tooltip_lines.append("║    💼  BITCOIN WALLETS  💼     ║")
+    tooltip_lines.append("╚════════════════════════════════╝")
     tooltip_lines.append("")
 
-    for wallet_id, wallet in sorted(wallets.items()):
-        wallet_usd = wallet['balance'] * usd_price
-        wallet_eur = wallet['balance'] * eur_price
+    # Total balance in a box
+    tooltip_lines.append("┌─ 💰 TOTAL BALANCE ──────────┐")
+    tooltip_lines.append(f"│  BTC  {total_btc:.8f} ₿")
+    tooltip_lines.append(f"│  USD  ${total_usd:,.2f}")
+    tooltip_lines.append(f"│  EUR  €{total_eur:,.2f}")
+    tooltip_lines.append("└─────────────────────────────┘")
+    tooltip_lines.append("")
 
-        tooltip_lines.append(f"📌 {wallet['name']}")
-        tooltip_lines.append(f"   BTC: {wallet['balance']:.8f}")
-        tooltip_lines.append(f"   USD: ${format_number(wallet_usd)}")
-        tooltip_lines.append(f"   EUR: €{format_number(wallet_eur)}")
+    # Individual wallets section
+    if len(wallets) > 1:
+        tooltip_lines.append("┌─ 📊 INDIVIDUAL WALLETS ─────┐")
+        tooltip_lines.append("│")
+
+        for wallet_id, wallet in sorted(wallets.items()):
+            wallet_usd = wallet['balance'] * usd_price
+            wallet_eur = wallet['balance'] * eur_price
+
+            # Wallet name with tree structure
+            tooltip_lines.append(f"│  📌 {wallet['name']}")
+            tooltip_lines.append(f"│  ├─ ₿  {wallet['balance']:.8f} BTC")
+            tooltip_lines.append(f"│  ├─ 💵 ${wallet_usd:,.2f}")
+            tooltip_lines.append(f"│  └─ 💶 €{wallet_eur:,.2f}")
+            tooltip_lines.append("│")
+
+        tooltip_lines.append("└─────────────────────────────┘")
         tooltip_lines.append("")
 
-    tooltip_lines.append("─" * 40)
-    tooltip_lines.append(f"📊 BTC Price: ${usd_price:,.0f} / €{eur_price:,.0f}")
+    # Price reference section
+    tooltip_lines.append("┌─ 📈 BITCOIN PRICE ──────────┐")
+    tooltip_lines.append(f"│  USD  ${usd_price:,.0f}")
+    tooltip_lines.append(f"│  EUR  €{eur_price:,.0f}")
+    tooltip_lines.append("└─────────────────────────────┘")
     tooltip_lines.append("")
-    tooltip_lines.append("🔒 Privacy: addresses derived locally")
+
+    # Privacy note at bottom
+    tooltip_lines.append("┌─ 🔒 PRIVACY ────────────────┐")
+    tooltip_lines.append("│  Addresses derived locally")
+    tooltip_lines.append("│  zpub keys never leave your")
+    tooltip_lines.append("│  machine")
+    tooltip_lines.append("└─────────────────────────────┘")
 
     tooltip = "\n".join(tooltip_lines)
 

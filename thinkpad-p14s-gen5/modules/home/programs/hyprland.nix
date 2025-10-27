@@ -216,7 +216,7 @@ in
 
       input = {
         kb_layout = "fr";
-        kb_options = "compose:ralt";  # Right Alt as compose key
+        kb_variant = "";
         numlock_by_default = true;
         repeat_rate = 40;   # Slightly slower for comfort
         repeat_delay = 600; # Longer delay before repeat
@@ -324,7 +324,7 @@ in
         "$mod, Return, exec, kitty"
         "$mod, B, exec, brave"
         "$mod, E, exec, nemo"
-        "$mod, D, exec, pkill walker || walker"
+        "$mod, D, exec, walker"  # Toggle walker (instant with service)
         "$mod SHIFT, D, exec, walker"
         "$mod, Q, killactive"
         "$mod, F, fullscreen, 0"
