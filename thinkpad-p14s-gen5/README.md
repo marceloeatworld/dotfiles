@@ -577,8 +577,8 @@ All icons stored locally in `assets/icons/` (no internet download needed)
 **Desktop Tools**
 - **Walker** - Application launcher (Ristretto themed)
 - **Waybar** - Status bar with custom modules:
-  - Bitcoin price monitor (CoinGecko API)
-  - Bitcoin wallet balance (privacy-focused zpub derivation)
+  - Bitcoin price monitor (Coinbase + CoinGecko + Mempool.space APIs)
+  - Bitcoin wallet balance (privacy-focused zpub derivation, Coinbase + Mempool.space)
   - Removable disks monitor
 - **Mako** - Notification daemon
 - **SwayOSD** - On-screen display for volume/brightness
@@ -620,10 +620,10 @@ Privacy-focused Bitcoin wallet balance monitor integrated into Waybar.
 - **Your keys never leave your machine** - all derivation happens on your laptop
 - **BIP84 compliant**: Scans both external (receiving) and change (internal) chains
 - **Gap limit scanning**: Finds all used addresses (50 consecutive empty = stop)
-- **Smart caching**: Caches addresses for 24 hours to minimize API calls
+- **Smart caching**: Caches addresses permanently, only scans new addresses incrementally
 - **Mempool.space API**: Checks balances via public blockchain API
 - **Multi-wallet support**: Monitor multiple wallets simultaneously
-- **Real-time prices**: Shows BTC balance with USD/EUR values (CoinGecko API)
+- **Real-time prices**: Shows BTC balance with USD/EUR values (Coinbase API)
 
 ### Setup
 
@@ -647,19 +647,23 @@ WALLET_2_ZPUB="zpub6s..."
    - embit (BIP84 address derivation)
    - requests (API calls)
 
-4. **Force refresh** (bypass cache):
+4. **Update balance** (scan for new addresses):
 ```bash
+# Incremental scan (only checks new addresses after last index)
+~/.config/waybar/scripts/wallets.py --scan
+
+# Full rescan from index 0 (if cache corrupted)
 ~/.config/waybar/scripts/wallets.py --force
 ```
 
 ### How It Works
 
-1. Derives Bitcoin addresses locally from your zpub key
+1. Derives Bitcoin addresses locally from your zpub key using embit library
 2. Scans both external (m/84'/0'/0'/0/x) and change (m/84'/0'/0'/1/x) chains
 3. Checks balance for each address via Mempool.space API
 4. Stops after finding 50 consecutive empty addresses (gap limit)
-5. Caches addresses for 24 hours to reduce API load
-6. Updates balance display in Waybar every 20 minutes
+5. Caches addresses permanently - only new addresses scanned incrementally
+6. Updates price display in Waybar every 5 minutes (balance check: manual via --scan)
 
 **Privacy Note**: Only addresses are shared with Mempool.space API, never your zpub keys. This is the same privacy level as using any Bitcoin block explorer.
 
