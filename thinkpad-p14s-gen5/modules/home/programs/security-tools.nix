@@ -12,8 +12,8 @@
 
     # Additional network security tools
     tcpdump         # Command-line packet analyzer
-    netcat-gnu      # Network utility for reading/writing network connections
     ngrep           # Network grep - search network packets
+    # NOTE: netcat is provided by libressl (nc command available)
 
     # Password wordlists and utilities
     seclists        # Security lists for security testing (wordlists, fuzzing, etc.)
