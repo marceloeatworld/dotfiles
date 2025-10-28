@@ -494,16 +494,21 @@ let
       # Get local VPN IP address
       local_ip=$(${pkgs.iproute2}/bin/ip addr show "$device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep "inet " | ${pkgs.gawk}/bin/awk '{print $2}' | cut -d'/' -f1 || echo "N/A")
 
-      # Get VPN gateway/server (WireGuard peer endpoint or VPN gateway)
-      # Try to get WireGuard endpoint first
-      gateway=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "wireguard.peer-routes" | ${pkgs.gawk}/bin/awk '{print $2}' | cut -d'/' -f1 || echo "N/A")
-      # If no WireGuard endpoint, try IP4.GATEWAY
-      if [ "$gateway" = "N/A" ]; then
-        gateway=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.GATEWAY" | ${pkgs.gawk}/bin/awk '{print $2}' || echo "N/A")
+      # Get VPN gateway
+      # WireGuard doesn't have a traditional gateway, so we check multiple sources:
+      # 1. Try IP4.GATEWAY first (OpenVPN, etc.)
+      gateway=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.GATEWAY:" | ${pkgs.gawk}/bin/awk '{print $2}')
+
+      # 2. If gateway is "--" or empty (WireGuard case), use DNS server as reference
+      if [ "$gateway" = "--" ] || [ -z "$gateway" ]; then
+        gateway=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.DNS" | ${pkgs.gawk}/bin/awk '{print $2}' | head -1)
+        if [ -z "$gateway" ]; then
+          gateway="N/A"
+        fi
       fi
 
-      # Get public IP (with timeout to avoid hanging)
-      public_ip=$(${pkgs.curl}/bin/curl -s --max-time 2 https://ifconfig.me 2>/dev/null || echo "N/A")
+      # Get public IP (with timeout to avoid hanging) - Using Cloudflare for privacy
+      public_ip=$(${pkgs.curl}/bin/curl -s --max-time 2 https://icanhazip.com 2>/dev/null || echo "N/A")
 
       # Get DNS servers
       dns_servers=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.DNS" | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.coreutils}/bin/tr '\n' ', ' | ${pkgs.gnused}/bin/sed 's/,$//' || echo "N/A")
@@ -546,12 +551,52 @@ let
 
       echo "{\"text\": \"󰖂 $country\", \"tooltip\": \"$tooltip\", \"class\": \"connected\"}"
     else
-      # VPN is disconnected
+      # VPN is disconnected - show local network info
       tooltip="┌─ 󰿆 VPN DISCONNECTED ──"
       tooltip="$tooltip\n│"
-      tooltip="$tooltip\n│ Status: Not connected"
+      tooltip="$tooltip\n│ ⚠️  Not protected by VPN"
       tooltip="$tooltip\n│"
+
+      # Get active network interface (WiFi or Ethernet)
+      active_conn=$(${pkgs.networkmanager}/bin/nmcli -t -f NAME,TYPE,DEVICE connection show --active | ${pkgs.gnugrep}/bin/grep -E "wireless|ethernet" | head -1 || true)
+
+      if [ -n "$active_conn" ]; then
+        conn_name=$(echo "$active_conn" | cut -d: -f1)
+        conn_type=$(echo "$active_conn" | cut -d: -f2)
+        conn_device=$(echo "$active_conn" | cut -d: -f3)
+
+        # Get local IP
+        local_ip=$(${pkgs.iproute2}/bin/ip addr show "$conn_device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep "inet " | ${pkgs.gawk}/bin/awk '{print $2}' | cut -d'/' -f1 || echo "N/A")
+
+        # Get gateway
+        gateway=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gnugrep}/bin/grep default | ${pkgs.gawk}/bin/awk '{print $3}' | head -1 || echo "N/A")
+
+        # Get DNS servers (read from /etc/resolv.conf since systemd-resolved is disabled)
+        dns_servers=$(${pkgs.gnugrep}/bin/grep "^nameserver" /etc/resolv.conf | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.coreutils}/bin/tr '\n' ', ' | ${pkgs.gnused}/bin/sed 's/,$//' || echo "N/A")
+
+        # Connection type icon
+        if [ "$conn_type" = "wireless" ] || [ "$conn_type" = "802-11-wireless" ]; then
+          conn_icon="📶 WiFi"
+        else
+          conn_icon="🔌 Ethernet"
+        fi
+
+        # Get public IP (with timeout) - Using Cloudflare for privacy
+        public_ip=$(${pkgs.curl}/bin/curl -s --max-time 3 https://icanhazip.com 2>/dev/null || echo "N/A")
+
+        tooltip="$tooltip\n│ $conn_icon: $conn_name"
+        tooltip="$tooltip\n│ 🖧  Device:   $conn_device"
+        tooltip="$tooltip\n│ 🏠 Local IP: $local_ip"
+        tooltip="$tooltip\n│ 🚪 Gateway:  $gateway"
+        tooltip="$tooltip\n│ 🔍 DNS:      $dns_servers"
+        tooltip="$tooltip\n│"
+        tooltip="$tooltip\n│ 🌐 Public IP: $public_ip"
+      else
+        tooltip="$tooltip\n│ No active connection"
+      fi
+
       tooltip="$tooltip\n└────────────────────────"
+      tooltip="$tooltip\n\n⚠️  Connect VPN for privacy"
       tooltip="$tooltip\n\nClick to open Proton VPN"
       echo "{\"text\": \"󰿆\", \"tooltip\": \"$tooltip\", \"class\": \"disconnected\"}"
     fi
