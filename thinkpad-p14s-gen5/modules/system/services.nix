@@ -122,4 +122,11 @@
 
     # Models will be stored in /var/lib/ollama
   };
+
+  # BitBox Bridge - Hardware wallet communication bridge
+  # Provides udev rules and WebSocket bridge for BitBox02 hardware wallets
+  services.bitbox-bridge = {
+    enable = true;
+    runOnMount = true;  # Only run when BitBox is plugged in (saves power)
+  };
 }

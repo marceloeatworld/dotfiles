@@ -56,6 +56,12 @@
   # Virt-manager for GUI VM management
   programs.virt-manager.enable = true;
 
+  # AppImage support (NixOS 24.11+)
+  programs.appimage = {
+    enable = true;
+    binfmt = true;  # Allows running AppImages directly without appimage-run
+  };
+
   # Enable KVM nested virtualization
   boot.extraModprobeConfig = ''
     options kvm_amd nested=1

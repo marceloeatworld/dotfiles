@@ -4,9 +4,9 @@
   gtk = {
     enable = true;
 
+    # NO GTK THEME - Use only custom CSS to avoid white elements
     theme = {
-      name = "Gruvbox-Dark-BL";
-      package = pkgs.gruvbox-gtk-theme;
+      name = "Adwaita-dark";  # Minimal dark theme
     };
 
     iconTheme = {
@@ -27,10 +27,13 @@
 
     gtk3.extraConfig = {
       gtk-application-prefer-dark-theme = true;
+      gtk-enable-animations = false;
+      gtk-decoration-layout = "menu:";
     };
 
     gtk4.extraConfig = {
       gtk-application-prefer-dark-theme = true;
+      gtk-decoration-layout = "menu:";
     };
   };
 
@@ -60,6 +63,83 @@
      * Grey: #948a8b
      * Border: #403e41
      */
+
+    /* ============================ */
+    /* DISABLE ALL BACKDROP CHANGES */
+    /* ============================ */
+
+    /* FORCE EVERYTHING to stay same color in backdrop */
+    * {
+      -gtk-icon-effect: none !important;
+    }
+
+    *:backdrop {
+      opacity: 1.0 !important;
+      -gtk-icon-effect: none !important;
+    }
+
+    /* ALL headerbars - NUCLEAR OPTION */
+    headerbar,
+    .titlebar,
+    headerbar:backdrop,
+    .titlebar:backdrop,
+    window:backdrop headerbar,
+    window:backdrop .titlebar {
+      background: #1f1a1a !important;
+      background-color: #1f1a1a !important;
+      background-image: none !important;
+      color: #e6d9db !important;
+      border-color: #403e41 !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    /* ALL buttons everywhere - NUCLEAR OPTION */
+    button,
+    .button,
+    button:backdrop,
+    .button:backdrop,
+    headerbar button,
+    headerbar button:backdrop,
+    .titlebar button,
+    .titlebar button:backdrop,
+    window:backdrop button,
+    window:backdrop headerbar button,
+    window:backdrop .titlebar button {
+      background: #403e41 !important;
+      background-color: #403e41 !important;
+      background-image: none !important;
+      color: #e6d9db !important;
+      border-color: #403e41 !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+      -gtk-icon-shadow: none !important;
+    }
+
+    button:hover,
+    .button:hover {
+      background: #4a4748 !important;
+      background-color: #4a4748 !important;
+      color: #f9cc6c !important;
+    }
+
+    /* ALL labels everywhere */
+    label,
+    .label,
+    label:backdrop,
+    .label:backdrop,
+    *:backdrop label,
+    *:backdrop .label {
+      color: #e6d9db !important;
+      text-shadow: none !important;
+    }
+
+    /* Disable image effects in backdrop */
+    image,
+    image:backdrop {
+      opacity: 1.0 !important;
+      -gtk-icon-effect: none !important;
+    }
 
     /* ============================ */
     /* NEMO FILE MANAGER - SIMPLE   */
@@ -92,6 +172,29 @@
       color: #e6d9db;
       border-bottom: 1px solid #403e41;
       padding: 4px;
+    }
+
+    /* Keep same color when not focused - FORCE IT */
+    .nemo-window:backdrop headerbar,
+    .nemo-window:backdrop toolbar,
+    .nemo-window headerbar:backdrop,
+    .nemo-window toolbar:backdrop {
+      background-color: #1f1a1a !important;
+      color: #e6d9db !important;
+    }
+
+    /* Force all headerbar buttons to stay grey */
+    .nemo-window headerbar button,
+    .nemo-window headerbar button:backdrop,
+    .nemo-window:backdrop headerbar button {
+      background-color: #403e41 !important;
+      color: #e6d9db !important;
+      border: none !important;
+    }
+
+    .nemo-window headerbar button:hover {
+      background-color: #4a4748 !important;
+      color: #f9cc6c !important;
     }
 
     /* Path bar buttons - simple */
@@ -186,6 +289,14 @@
       color: #1f1a1a;
     }
 
+    /* Never white buttons when not focused - FORCE */
+    .nemo-window:backdrop button,
+    .nemo-window button:backdrop {
+      background-color: #403e41 !important;
+      color: #e6d9db !important;
+      border: none !important;
+    }
+
     /* Search bar - clean */
     .nemo-window entry {
       background-color: #1f1a1a;
@@ -234,9 +345,33 @@
     /* Toolbar */
     .xed-window toolbar,
     .xed-window headerbar {
-      background-color: #2c2525;
+      background-color: #1f1a1a;
       color: #e6d9db;
       border-bottom: 1px solid #403e41;
+    }
+
+    /* Keep same color when not focused - FORCE IT */
+    .xed-window:backdrop toolbar,
+    .xed-window:backdrop headerbar,
+    .xed-window toolbar:backdrop,
+    .xed-window headerbar:backdrop {
+      background-color: #1f1a1a !important;
+      color: #e6d9db !important;
+    }
+
+    /* Force all headerbar buttons to stay grey */
+    .xed-window headerbar button,
+    .xed-window headerbar button:backdrop,
+    .xed-window:backdrop headerbar button {
+      background-color: #403e41 !important;
+      color: #e6d9db !important;
+      border: 1px solid #403e41 !important;
+    }
+
+    .xed-window headerbar button:hover {
+      background-color: #4a4748 !important;
+      color: #f9cc6c !important;
+      border-color: #f9cc6c !important;
     }
 
     /* Text view (editor area) */
@@ -294,6 +429,14 @@
       background-color: #f9cc6c;  /* Yellow when pressed */
       color: #1f1a1a;  /* Dark text */
       border-color: #f9cc6c;
+    }
+
+    /* Never white buttons when not focused - FORCE */
+    .xed-window:backdrop button,
+    .xed-window button:backdrop {
+      background-color: #403e41 !important;
+      color: #e6d9db !important;
+      border: 1px solid #403e41 !important;
     }
 
     /* Search bar */
@@ -472,6 +615,37 @@
       opacity: 0.5;
     }
 
+    /* Never white buttons when not focused - GLOBAL FORCE */
+    *:backdrop button,
+    button:backdrop,
+    window:backdrop button {
+      background-color: #403e41 !important;
+      color: #e6d9db !important;
+      border: 1px solid #403e41 !important;
+    }
+
+    /* Global headerbars stay same color when not focused - FORCE */
+    headerbar:backdrop,
+    toolbar:backdrop,
+    window:backdrop headerbar,
+    window:backdrop toolbar {
+      background-color: #1f1a1a !important;
+      color: #e6d9db !important;
+    }
+
+    /* Headerbar buttons never white - GLOBAL */
+    headerbar button:backdrop,
+    headerbar button,
+    headerbar:backdrop button {
+      background-color: #403e41 !important;
+      color: #e6d9db !important;
+    }
+
+    headerbar button:hover {
+      background-color: #4a4748 !important;
+      color: #f9cc6c !important;
+    }
+
     /* Context menu - IMPROVED CONTRAST */
     .xed-window menu,
     .xed-window .menu,
@@ -508,8 +682,75 @@
     }
   '';
 
+  # GTK4 CSS - Same rules for GTK4 apps
+  home.file.".config/gtk-4.0/gtk.css".text = ''
+    /* DISABLE ALL BACKDROP CHANGES - GTK4 NUCLEAR OPTION */
+
+    * {
+      -gtk-icon-effect: none;
+    }
+
+    *:backdrop {
+      opacity: 1.0 !important;
+      -gtk-icon-effect: none !important;
+    }
+
+    headerbar,
+    .titlebar,
+    headerbar:backdrop,
+    .titlebar:backdrop,
+    window:backdrop headerbar,
+    window:backdrop .titlebar {
+      background: #1f1a1a !important;
+      background-color: #1f1a1a !important;
+      background-image: none !important;
+      color: #e6d9db !important;
+      border-color: #403e41 !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    button,
+    .button,
+    button:backdrop,
+    .button:backdrop,
+    headerbar button,
+    headerbar button:backdrop,
+    .titlebar button,
+    .titlebar button:backdrop,
+    window:backdrop button {
+      background: #403e41 !important;
+      background-color: #403e41 !important;
+      background-image: none !important;
+      color: #e6d9db !important;
+      border-color: #403e41 !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+      -gtk-icon-shadow: none !important;
+    }
+
+    button:hover {
+      background: #4a4748 !important;
+      background-color: #4a4748 !important;
+      color: #f9cc6c !important;
+    }
+
+    label,
+    .label,
+    label:backdrop,
+    .label:backdrop {
+      color: #e6d9db !important;
+      text-shadow: none !important;
+    }
+
+    image,
+    image:backdrop {
+      opacity: 1.0 !important;
+      -gtk-icon-effect: none !important;
+    }
+  '';
+
   home.packages = with pkgs; [
-    gruvbox-gtk-theme
     yaru-theme           # Yaru-yellow icon theme
     bibata-cursors
   ];

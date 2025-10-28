@@ -13,7 +13,7 @@
         # $1 = interface name
         # $2 = action (up, down, vpn-up, vpn-down)
 
-        PATH=${pkgs.networkmanager}/bin:${pkgs.systemd}/bin:${pkgs.openresolv}/bin:${pkgs.coreutils}/bin:${pkgs.gnugrep}/bin:$PATH
+        PATH=${pkgs.networkmanager}/bin:${pkgs.systemd}/bin:${pkgs.openresolv}/bin:${pkgs.coreutils}/bin:${pkgs.gnugrep}/bin:${pkgs.procps}/bin:$PATH
 
         INTERFACE="$1"
         ACTION="$2"
@@ -41,6 +41,9 @@
                 echo "options edns0" >> /etc/resolv.conf
 
                 logger "VPN-DNS-SWITCH: Configured VPN DNS: $VPN_DNS"
+
+                # Notify Waybar immediately
+                pkill -RTMIN+8 waybar 2>/dev/null || true
               else
                 logger "VPN-DNS-SWITCH: WARNING - No DNS from VPN, keeping dnscrypt-proxy2 active"
               fi
@@ -77,6 +80,9 @@
               systemctl start dnscrypt-proxy2.service
 
               logger "VPN-DNS-SWITCH: Restored Quad9 DNS (127.0.0.1)"
+
+              # Notify Waybar immediately
+              pkill -RTMIN+8 waybar 2>/dev/null || true
             fi
             ;;
         esac

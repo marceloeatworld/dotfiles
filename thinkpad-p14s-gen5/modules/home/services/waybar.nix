@@ -462,32 +462,97 @@ let
     #!/usr/bin/env bash
     # VPN Status Monitor: Detects Proton VPN connection status and country
 
-    # Check if any Proton VPN connection is active
-    vpn_active=$(${pkgs.networkmanager}/bin/nmcli connection show --active | ${pkgs.gnugrep}/bin/grep -i "proton" || true)
+    # Check if any Proton VPN connection is active in NetworkManager (use terse mode)
+    vpn_line=$(${pkgs.networkmanager}/bin/nmcli -t -f NAME,TYPE,DEVICE connection show --active | ${pkgs.gnugrep}/bin/grep -i "proton" || true)
 
-    if [ -n "$vpn_active" ]; then
+    # Double check: verify the VPN interface actually exists and has an IP
+    if [ -n "$vpn_line" ]; then
+      # Extract fields from terse output (delimiter is :)
+      vpn_name=$(echo "$vpn_line" | cut -d: -f1)
+      device=$(echo "$vpn_line" | cut -d: -f3)
+
+      # Verify device exists and has an IP address
+      if ! ${pkgs.iproute2}/bin/ip addr show "$device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "inet "; then
+        # Device doesn't exist or has no IP - VPN is NOT really connected
+        vpn_line=""
+      fi
+    fi
+
+    if [ -n "$vpn_line" ]; then
       # VPN is connected
-      vpn_name=$(echo "$vpn_active" | ${pkgs.gawk}/bin/awk '{print $1}')
 
       # Try to extract country from connection name
-      # Proton VPN format: "ProtonVPN CH-123" or "Proton VPN NL"
-      country=$(echo "$vpn_name" | ${pkgs.gnugrep}/bin/grep -oP '(?<=[A-Z]{2}-)?\K[A-Z]{2}(?=[-\s]|$)' | head -1 || echo "?")
+      # Proton VPN format: "ProtonVPN CH-123" or "Proton VPN NL" or "ProtonVPN PT#20"
+      country=$(echo "$vpn_name" | ${pkgs.gnugrep}/bin/grep -oP '(?<=[A-Z]{2}[#-])?\K[A-Z]{2}(?=[#-]|$)' | head -1 || echo "?")
 
-      # Get connection time
-      device=$(echo "$vpn_active" | ${pkgs.gawk}/bin/awk '{print $4}')
+      # Get detailed connection info using connection name
+      vpn_details=$(${pkgs.networkmanager}/bin/nmcli connection show "$vpn_name" 2>/dev/null)
 
-      # Build tooltip
-      tooltip="┌─ 󰖂 VPN CONNECTED ────┐"
-      tooltip="$tooltip\n│ Country: $country"
-      tooltip="$tooltip\n│ Name: $vpn_name"
-      tooltip="$tooltip\n│ Device: $device"
-      tooltip="$tooltip\n└──────────────────────┘"
-      tooltip="$tooltip\n\nClick to disconnect"
+      # Extract VPN type (WireGuard, OpenVPN, etc.)
+      vpn_type=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "connection.type:" | ${pkgs.gawk}/bin/awk '{print $2}')
+
+      # Get local VPN IP address
+      local_ip=$(${pkgs.iproute2}/bin/ip addr show "$device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep "inet " | ${pkgs.gawk}/bin/awk '{print $2}' | cut -d'/' -f1 || echo "N/A")
+
+      # Get VPN gateway/server (WireGuard peer endpoint or VPN gateway)
+      # Try to get WireGuard endpoint first
+      gateway=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "wireguard.peer-routes" | ${pkgs.gawk}/bin/awk '{print $2}' | cut -d'/' -f1 || echo "N/A")
+      # If no WireGuard endpoint, try IP4.GATEWAY
+      if [ "$gateway" = "N/A" ]; then
+        gateway=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.GATEWAY" | ${pkgs.gawk}/bin/awk '{print $2}' || echo "N/A")
+      fi
+
+      # Get public IP (with timeout to avoid hanging)
+      public_ip=$(${pkgs.curl}/bin/curl -s --max-time 2 https://ifconfig.me 2>/dev/null || echo "N/A")
+
+      # Get DNS servers
+      dns_servers=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.DNS" | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.coreutils}/bin/tr '\n' ', ' | ${pkgs.gnused}/bin/sed 's/,$//' || echo "N/A")
+
+      # Get connection start time and calculate uptime
+      # Use connection.timestamp instead of GENERAL.STATE
+      timestamp=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "^connection.timestamp:" | ${pkgs.gawk}/bin/awk '{print $2}')
+      if [ -n "$timestamp" ] && [ "$timestamp" != "0" ]; then
+        current_time=$(date +%s)
+        uptime_sec=$((current_time - timestamp))
+        if [ $uptime_sec -lt 60 ]; then
+          uptime="''${uptime_sec}s"
+        elif [ $uptime_sec -lt 3600 ]; then
+          uptime="$((uptime_sec / 60))m $((uptime_sec % 60))s"
+        else
+          uptime="$((uptime_sec / 3600))h $((uptime_sec % 3600 / 60))m"
+        fi
+      else
+        uptime="N/A"
+      fi
+
+      # Build detailed tooltip
+      tooltip="┌─ 󰖂 VPN CONNECTED ─────"
+      tooltip="$tooltip\n│"
+      tooltip="$tooltip\n│ 🌍 Country:  $country"
+      tooltip="$tooltip\n│ 📡 Server:   $vpn_name"
+      tooltip="$tooltip\n│ 🔒 Protocol: $vpn_type"
+      tooltip="$tooltip\n│"
+      tooltip="$tooltip\n│ 🖧  Device:   $device"
+      tooltip="$tooltip\n│ 🏠 Local IP: $local_ip"
+      tooltip="$tooltip\n│ 🌐 Public IP: $public_ip"
+      tooltip="$tooltip\n│ 🚪 Gateway:  $gateway"
+      tooltip="$tooltip\n│"
+      tooltip="$tooltip\n│ 🕐 Uptime:   $uptime"
+      if [ "$dns_servers" != "N/A" ]; then
+        tooltip="$tooltip\n│ 🔍 DNS:      $dns_servers"
+      fi
+      tooltip="$tooltip\n└────────────────────────"
+      tooltip="$tooltip\n\nClick to open Proton VPN"
 
       echo "{\"text\": \"󰖂 $country\", \"tooltip\": \"$tooltip\", \"class\": \"connected\"}"
     else
       # VPN is disconnected
-      tooltip="󰿆 VPN Disconnected\n\nClick to connect to Proton VPN"
+      tooltip="┌─ 󰿆 VPN DISCONNECTED ──"
+      tooltip="$tooltip\n│"
+      tooltip="$tooltip\n│ Status: Not connected"
+      tooltip="$tooltip\n│"
+      tooltip="$tooltip\n└────────────────────────"
+      tooltip="$tooltip\n\nClick to open Proton VPN"
       echo "{\"text\": \"󰿆\", \"tooltip\": \"$tooltip\", \"class\": \"disconnected\"}"
     fi
   '';
@@ -734,10 +799,10 @@ in
           "backlight"
           "battery"
           "network"
-          "custom/vpn"
           "custom/weather"
           "clock"
           "custom/nix-updates"
+          "custom/vpn"  # Moved next to updates
           "tray"  # System tray (shows service status like btrbk, next to updates)
         ];
 
@@ -815,11 +880,18 @@ in
         };
 
         "network" = {
+          # Waybar will auto-detect the default route interface
+          # When VPN is active, it switches to the tunnel interface
+          interface-types = [ "wifi" "ethernet" "bridge" "wireguard" "tun" ];  # Include WireGuard & VPN tunnels
+          format = "󰌘 {ifname}";  # Generic format for VPN/tunnel interfaces
           format-wifi = "󰖩 {essid}";
           format-ethernet = "󰈀 {bandwidthDownBytes}";
+          format-linked = "󰌘 {ifname}";  # Interface up but no IP (shouldn't happen)
           format-disconnected = "󰖪";
+          tooltip-format = "{ifname}\nIP: {ipaddr}\nGateway: {gwaddr}\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";  # Generic format for VPN/tunnel
           tooltip-format-wifi = "WiFi: {essid} ({signalStrength}%)\nIP: {ipaddr}\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";
           tooltip-format-ethernet = "Ethernet: {ifname}\nIP: {ipaddr}\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}";
+          tooltip-format-linked = "{ifname} (No IP)\nGateway: {gwaddr}";
           tooltip-format-disconnected = "No network connection";
           on-click = "nm-connection-editor";
           interval = 5;
@@ -935,10 +1007,11 @@ in
         "custom/vpn" = {
           exec = "~/.config/waybar/scripts/vpn-status.sh";
           return-type = "json";
-          interval = 5;  # Update every 5 seconds
+          interval = 2;  # Update every 2 seconds for faster detection
           format = "{}";
           tooltip = true;
           on-click = "protonvpn-app";  # Open Proton VPN GUI
+          signal = 8;  # Use SIGRTMIN+8 for manual refresh
         };
 
         "custom/nix-updates" = {
