@@ -118,11 +118,11 @@ let
 
     STATE_FILE="$HOME/.config/battery-mode-state"
 
-    # Read current mode (default to balanced if file doesn't exist)
+    # Read current mode (default to conservation if file doesn't exist)
     if [ -f "$STATE_FILE" ]; then
       CURRENT_MODE=$(cat "$STATE_FILE")
     else
-      CURRENT_MODE="balanced"
+      CURRENT_MODE="conservation"
     fi
 
     # Determine next mode
@@ -163,7 +163,7 @@ let
 
     # Apply settings using official TLP command
     if command -v tlp &> /dev/null; then
-      pkexec tlp setcharge $START $STOP BAT0
+      sudo tlp setcharge $START $STOP BAT0
 
       if [ $? -eq 0 ]; then
         echo "$NEXT_MODE" > "$STATE_FILE"

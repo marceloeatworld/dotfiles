@@ -81,6 +81,7 @@ nix flake update
 | Key | Action |
 |-----|--------|
 | `SUPER + D` | Walker launcher (Ristretto themed) |
+| `SUPER + Shift + D` | Walker launcher (alternative binding) |
 | `SUPER + Return` | Kitty terminal |
 | `SUPER + B` | Brave browser |
 | `SUPER + E` | Nemo file manager |

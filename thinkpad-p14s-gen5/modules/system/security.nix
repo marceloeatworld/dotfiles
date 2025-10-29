@@ -41,6 +41,19 @@
     });
   '';
 
+  # Sudo rule for TLP battery threshold commands (passwordless)
+  security.sudo.extraRules = [
+    {
+      users = [ "marcelo" ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/tlp";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   # USB Guard for USB device authorization (optional, can be strict)
   # services.usbguard.enable = true;
 }

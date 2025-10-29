@@ -23,8 +23,8 @@
         settings = {
           # Global settings
           timestamp_format = "long";
-          snapshot_preserve = "48h 7d 4w 12m";  # Keep: 48h hourly, 7 daily, 4 weekly, 12 monthly
-          snapshot_preserve_min = "2d";
+          snapshot_preserve = "24h 7d";  # Keep: 24h (all), 7 daily (1 week total)
+          snapshot_preserve_min = "1d";
           target_preserve_min = "no";
 
           # Volume configurations

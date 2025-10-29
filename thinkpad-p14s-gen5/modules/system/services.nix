@@ -37,10 +37,10 @@
       CPU_BOOST_ON_BAT = 0;
 
       # Battery care
-      # Note: Limiting charge to 75-80% prolongs battery lifespan
-      # Change to 95-100 for full charge (not recommended for daily use)
-      START_CHARGE_THRESH_BAT0 = 75;
-      STOP_CHARGE_THRESH_BAT0 = 80;
+      # Note: Conservation mode 55-60% for always-plugged usage (maximizes lifespan)
+      # Change to 75-80 for balanced use, or 95-100 for full charge
+      START_CHARGE_THRESH_BAT0 = 55;
+      STOP_CHARGE_THRESH_BAT0 = 60;
 
       # GPU power management
       RADEON_DPM_PERF_LEVEL_ON_AC = "auto";
