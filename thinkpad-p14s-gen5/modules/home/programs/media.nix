@@ -1,11 +1,11 @@
 # Media applications configuration
-{ pkgs, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 let
-  # PhotoGIMP - Makes GIMP look like Photoshop
+  # PhotoGIMP - Makes GIMP look like Photoshop (GIMP 3.0)
   photogimp = pkgs.fetchzip {
     url = "https://github.com/Diolinux/PhotoGIMP/releases/download/3.0/PhotoGIMP-linux.zip";
-    sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # Will be replaced on first build
+    sha256 = "sha256-vBEMR83ZMV/o8wPR9mm2eZt44CulHxdUuK4Y7O/xwzs=";
     stripRoot = false;
   };
 in
@@ -32,133 +32,143 @@ in
     };
   };
 
-  # PhotoGIMP configuration files
-  home.file.".config/GIMP/2.10" = {
-    source = "${photogimp}/.config/GIMP/2.10";
+  # PhotoGIMP configuration files for GIMP 3.0
+  home.file.".config/GIMP/3.0" = {
+    source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0";
     recursive = true;
   };
 
-  home.file.".local/share/gimp" = {
-    source = "${photogimp}/.local/share/gimp";
-    recursive = true;
-  };
+  # Override with complete Photoshop-style shortcuts (GIMP 3.0 format)
+  home.file.".config/GIMP/3.0/shortcutsrc".text = ''
+    # GIMP 3.0 shortcutsrc - Complete Photoshop-style keyboard shortcuts
+    # Overrides PhotoGIMP defaults with comprehensive Photoshop mappings
 
-  # GIMP configuration - Photoshop-style keyboard shortcuts (override PhotoGIMP shortcuts)
-  home.file.".config/GIMP/2.10/menurc".text = ''
-    ; GIMP menurc - Photoshop-style keyboard shortcuts
-    ; This file maps GIMP actions to Photoshop-compatible shortcuts
+    (file-version 1)
 
-    ; ===== BASIC EDIT OPERATIONS =====
-    (gtk_accel_path "<Actions>/edit/edit-copy" "<Primary>c")
-    (gtk_accel_path "<Actions>/edit/edit-paste" "<Primary>v")
-    (gtk_accel_path "<Actions>/edit/edit-cut" "<Primary>x")
-    (gtk_accel_path "<Actions>/edit/edit-undo" "<Primary>z")
-    (gtk_accel_path "<Actions>/edit/edit-redo" "<Primary>y")
-    (gtk_accel_path "<Actions>/edit/edit-clear" "Delete")
+    # ===== BASIC EDIT OPERATIONS =====
+    (action "edit-copy" "<Primary>c" "Copy")
+    (action "edit-paste" "<Primary>v" "Paste")
+    (action "edit-cut" "<Primary>x" "Cut")
+    (action "edit-undo" "<Primary>z")
+    (action "edit-redo" "<Primary>y")
+    (action "edit-strong-redo" "<Primary><Shift>y")
+    (action "edit-clear" "Delete")
 
-    ; ===== FILE OPERATIONS =====
-    (gtk_accel_path "<Actions>/file/file-new" "<Primary>n")
-    (gtk_accel_path "<Actions>/file/file-open" "<Primary>o")
-    (gtk_accel_path "<Actions>/file/file-save" "<Primary>s")
-    (gtk_accel_path "<Actions>/file/file-save-as" "<Primary><Shift>s")
-    (gtk_accel_path "<Actions>/file/file-export-as" "<Primary><Shift><Alt>s")
-    (gtk_accel_path "<Actions>/file/file-close-all" "<Primary><Shift>w")
-    (gtk_accel_path "<Actions>/file/file-quit" "<Primary>q")
-    (gtk_accel_path "<Actions>/plug-in/file-print-gtk" "<Primary>p")
+    # ===== FILE OPERATIONS =====
+    (action "file-new" "<Primary>n")
+    (action "file-open" "<Primary>o")
+    (action "file-save" "<Primary>s")
+    (action "file-save-as" "<Primary><Shift>s")
+    (action "file-export-as" "<Primary><Shift><Alt>s")
+    (action "file-close-all" "<Primary><Shift>w")
+    (action "file-quit" "<Primary>q")
+    (action "view-close" "<Primary>w")
 
-    ; ===== TRANSFORM & RESIZE =====
-    (gtk_accel_path "<Actions>/tools/tools-transform" "<Primary>t")
-    (gtk_accel_path "<Actions>/tools/tools-scale" "<Primary>t")
-    (gtk_accel_path "<Actions>/image/image-scale" "<Primary><Alt>i")
-    (gtk_accel_path "<Actions>/image/image-canvas-size" "<Primary><Alt>c")
-    (gtk_accel_path "<Actions>/image/image-crop-to-selection" "<Primary><Shift>x")
-    (gtk_accel_path "<Actions>/tools/tools-rotate" "<Primary><Shift>r")
-    (gtk_accel_path "<Actions>/tools/tools-flip" "<Primary><Shift>f")
+    # ===== TRANSFORM & RESIZE =====
+    (action "tools-scale" "<Primary>t")
+    (action "tools-unified-transform" "<Primary>t")
+    (action "image-scale" "<Primary><Alt>i")
+    (action "image-canvas-size" "<Primary><Alt>c")
+    (action "image-crop-to-selection" "<Primary><Shift>x")
+    (action "tools-rotate" "r")
+    (action "tools-flip" "<Primary><Shift>f")
 
-    ; ===== LAYERS =====
-    (gtk_accel_path "<Actions>/layers/layers-new" "<Primary><Shift>n")
-    (gtk_accel_path "<Actions>/layers/layers-duplicate" "<Primary>j")
-    (gtk_accel_path "<Actions>/layers/layers-merge-down" "<Primary>e")
-    (gtk_accel_path "<Actions>/layers/layers-flatten-image" "<Primary><Shift>e")
-    (gtk_accel_path "<Actions>/layers/layers-anchor" "<Primary>h")
-    (gtk_accel_path "<Actions>/layers/layers-delete" "<Primary><Shift>Delete")
-    (gtk_accel_path "<Actions>/layers/layers-raise" "<Primary>bracketright")
-    (gtk_accel_path "<Actions>/layers/layers-lower" "<Primary>bracketleft")
-    (gtk_accel_path "<Actions>/layers/layers-raise-to-top" "<Primary><Shift>bracketright")
-    (gtk_accel_path "<Actions>/layers/layers-lower-to-bottom" "<Primary><Shift>bracketleft")
+    # ===== LAYERS =====
+    (action "layers-new" "<Primary><Shift>n")
+    (action "layers-duplicate" "<Primary>j")
+    (action "layers-merge-down" "<Primary>e")
+    (action "layers-flatten-image" "<Primary><Shift>e")
+    (action "layers-anchor" "<Primary>h")
+    (action "layers-delete" "<Primary><Shift>Delete")
+    (action "layers-raise" "<Primary>bracketright")
+    (action "layers-lower" "<Primary>bracketleft")
+    (action "layers-raise-to-top" "<Primary><Shift>bracketright")
+    (action "layers-lower-to-bottom" "<Primary><Shift>bracketleft")
 
-    ; ===== SELECTION =====
-    (gtk_accel_path "<Actions>/select/select-all" "<Primary>a")
-    (gtk_accel_path "<Actions>/select/select-none" "<Primary>d")
-    (gtk_accel_path "<Actions>/select/select-invert" "<Primary><Shift>i")
-    (gtk_accel_path "<Actions>/select/select-float" "<Primary><Shift>j")
-    (gtk_accel_path "<Actions>/select/select-feather" "<Primary><Alt>d")
-    (gtk_accel_path "<Actions>/select/select-grow" "<Primary><Shift>plus")
-    (gtk_accel_path "<Actions>/select/select-shrink" "<Primary><Shift>minus")
+    # ===== SELECTION =====
+    (action "select-all" "<Primary>a")
+    (action "select-none" "<Primary>d")
+    (action "select-invert" "<Primary><Shift>i")
+    (action "select-float" "<Primary><Shift>j")
+    (action "select-feather" "<Primary><Alt>d")
+    (action "select-grow" "<Primary><Shift>plus")
+    (action "select-shrink" "<Primary><Shift>minus")
 
-    ; ===== COLOR ADJUSTMENTS =====
-    (gtk_accel_path "<Actions>/colors/colors-levels" "<Primary>l")
-    (gtk_accel_path "<Actions>/colors/colors-curves" "<Primary>m")
-    (gtk_accel_path "<Actions>/colors/colors-hue-saturation" "<Primary>u")
-    (gtk_accel_path "<Actions>/colors/colors-color-balance" "<Primary>b")
-    (gtk_accel_path "<Actions>/colors/colors-desaturate" "<Primary><Shift>u")
-    (gtk_accel_path "<Actions>/colors/colors-invert" "<Primary>i")
-    (gtk_accel_path "<Actions>/colors/colors-auto-white-balance" "<Primary><Shift>b")
-    (gtk_accel_path "<Actions>/colors/colors-brightness-contrast" "<Primary><Shift>c")
+    # ===== COLOR ADJUSTMENTS =====
+    (action "filters-levels" "<Primary>l")
+    (action "tools-curves" "<Primary>m")
+    (action "filters-hue-saturation" "<Primary>u")
+    (action "filters-color-balance" "<Primary>b")
+    (action "filters-desaturate" "<Primary><Shift>u")
+    (action "filters-invert-linear" "<Primary>i")
+    (action "filters-brightness-contrast" "<Primary><Shift>c")
 
-    ; ===== FILL & PAINT =====
-    (gtk_accel_path "<Actions>/edit/edit-fill-fg" "<Alt>BackSpace")
-    (gtk_accel_path "<Actions>/edit/edit-fill-bg" "<Primary>BackSpace")
-    (gtk_accel_path "<Actions>/edit/edit-stroke-selection" "<Primary><Shift>BackSpace")
+    # ===== FILL & PAINT =====
+    (action "edit-fill-fg" "<Alt>BackSpace")
+    (action "edit-fill-bg" "<Primary>BackSpace")
+    (action "edit-stroke-selection" "<Primary><Shift>BackSpace")
 
-    ; ===== VIEW & ZOOM =====
-    (gtk_accel_path "<Actions>/view/view-zoom-fit-in" "<Primary>0")
-    (gtk_accel_path "<Actions>/view/view-zoom-1-1" "<Primary>1")
-    (gtk_accel_path "<Actions>/view/view-zoom-in" "<Primary>plus")
-    (gtk_accel_path "<Actions>/view/view-zoom-out" "<Primary>minus")
-    (gtk_accel_path "<Actions>/view/view-fullscreen" "F11")
-    (gtk_accel_path "<Actions>/view/view-show-guides" "<Primary>semicolon")
-    (gtk_accel_path "<Actions>/view/view-show-grid" "<Primary>apostrophe")
-    (gtk_accel_path "<Actions>/view/view-snap-to-guides" "<Primary><Shift>semicolon")
+    # ===== VIEW & ZOOM =====
+    (action "view-zoom-fit-in" "<Primary>0")
+    (action "view-zoom-1-1" "<Primary>1")
+    (action "view-zoom-in" "<Primary>plus")
+    (action "view-zoom-out" "<Primary>minus")
+    (action "view-fullscreen" "F11")
+    (action "view-show-guides" "<Primary>semicolon")
+    (action "view-show-grid" "<Primary>apostrophe")
+    (action "view-snap-to-guides" "<Primary><Shift>semicolon")
 
-    ; ===== TOOLS =====
-    (gtk_accel_path "<Actions>/tools/tools-rect-select" "m")
-    (gtk_accel_path "<Actions>/tools/tools-ellipse-select" "<Shift>m")
-    (gtk_accel_path "<Actions>/tools/tools-free-select" "l")
-    (gtk_accel_path "<Actions>/tools/tools-fuzzy-select" "w")
-    (gtk_accel_path "<Actions>/tools/tools-by-color-select" "<Shift>w")
-    (gtk_accel_path "<Actions>/tools/tools-move" "v")
-    (gtk_accel_path "<Actions>/tools/tools-crop" "c")
-    (gtk_accel_path "<Actions>/tools/tools-rotate" "r")
-    (gtk_accel_path "<Actions>/tools/tools-scale" "s")
-    (gtk_accel_path "<Actions>/tools/tools-paintbrush" "b")
-    (gtk_accel_path "<Actions>/tools/tools-pencil" "<Shift>b")
-    (gtk_accel_path "<Actions>/tools/tools-eraser" "e")
-    (gtk_accel_path "<Actions>/tools/tools-clone" "s")
-    (gtk_accel_path "<Actions>/tools/tools-heal" "j")
-    (gtk_accel_path "<Actions>/tools/tools-text" "t")
-    (gtk_accel_path "<Actions>/tools/tools-bucket-fill" "g")
-    (gtk_accel_path "<Actions>/tools/tools-blend" "<Shift>g")
-    (gtk_accel_path "<Actions>/tools/tools-zoom" "z")
-    (gtk_accel_path "<Actions>/tools/tools-color-picker" "i")
+    # ===== TOOLS (Single Key) =====
+    (action "tools-rect-select" "m")
+    (action "tools-ellipse-select" "m")
+    (action "tools-free-select" "l")
+    (action "tools-fuzzy-select" "w")
+    (action "tools-by-color-select" "<Shift>w")
+    (action "tools-move" "v")
+    (action "tools-crop" "c")
+    (action "tools-paintbrush" "b")
+    (action "tools-pencil" "<Shift>b")
+    (action "tools-eraser" "e")
+    (action "tools-clone" "s")
+    (action "tools-heal" "j")
+    (action "tools-text" "t")
+    (action "tools-bucket-fill" "g")
+    (action "tools-gradient" "<Shift>g")
+    (action "tools-zoom" "z")
+    (action "tools-color-picker" "i")
 
-    ; ===== FILTERS =====
-    (gtk_accel_path "<Actions>/filters/filters-repeat" "<Primary>f")
-    (gtk_accel_path "<Actions>/filters/filters-re-show" "<Primary><Shift>f")
-    (gtk_accel_path "<Actions>/plug-in/plug-in-gauss" "<Primary><Shift><Alt>g")
+    # ===== BRUSH SIZE =====
+    (action "context-brush-radius-increase" "bracketright")
+    (action "context-brush-radius-decrease" "bracketleft")
+    (action "context-brush-hardness-increase" "braceright")
+    (action "context-brush-hardness-decrease" "braceleft")
 
-    ; ===== MISC =====
-    (gtk_accel_path "<Actions>/dialogs/dialogs-preferences" "<Primary>k")
-    (gtk_accel_path "<Actions>/windows/windows-show-display-next" "Tab")
-    (gtk_accel_path "<Actions>/image/image-duplicate" "<Primary><Shift>d")
+    # ===== FILTERS =====
+    (action "filters-repeat" "<Primary>f")
+    (action "filters-reshow" "<Primary><Shift>f")
+
+    # ===== MISC =====
+    (action "dialogs-preferences" "<Primary>k")
+    (action "image-duplicate" "<Primary><Shift>d")
+    (action "dialogs-toolbox" "<Primary>b")
   '';
+
+
+  home.file.".local/share/icons/hicolor" = {
+    source = "${photogimp}/PhotoGIMP-linux/.local/share/icons/hicolor";
+    recursive = true;
+  };
+
+  home.file.".local/share/applications/org.gimp.GIMP.desktop" = {
+    source = "${photogimp}/PhotoGIMP-linux/.local/share/applications/org.gimp.GIMP.desktop";
+  };
 
   # Additional media packages
   home.packages = with pkgs; [
     spotify
     vlc
-    obs-studio   # Screen recording and streaming
-    gimp         # Image editor with Photoshop-style shortcuts
-    inkscape     # Vector graphics
+    obs-studio      # Screen recording and streaming
+    gimp3           # GIMP 3.0.4 with PhotoGIMP (Photoshop-like interface)
+    inkscape        # Vector graphics
   ];
 }
