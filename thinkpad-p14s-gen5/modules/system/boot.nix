@@ -30,8 +30,17 @@
 
     # AMD GPU optimizations for Radeon 780M (RDNA 3)
     "amdgpu.ppfeaturemask=0xffffffff"  # Enable all power features
-    "amdgpu.gpu_recovery=1"            # Enable GPU recovery
+    "amdgpu.gpu_recovery=1"            # Enable GPU recovery on hang
     "amdgpu.tmz=0"                     # Disable TMZ (not needed for iGPU)
+
+    # FIX: DMCUB errors and display freezes (common on kernel 6.12+)
+    # Disables PSR (Panel Self Refresh), PSR-SU, and Panel Replay
+    # Fixes: dc_dmub_srv_log_diagnostic_data errors, flip_done timeouts
+    "amdgpu.dcdebugmask=0x410"
+
+    # Additional stability parameters for AMD display
+    "amdgpu.sg_display=0"              # Fixes screen flickering
+    "amdgpu.noretry=0"                 # Retry on timeout (default)
 
     # Enable AMD SEV (Secure Encrypted Virtualization) if needed
     # "mem_encrypt=on"  # Uncomment for extra VM security

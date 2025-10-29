@@ -21,7 +21,7 @@
     ./programs/nvim.nix
     ./programs/browsers.nix  # Brave with Wayland flags
     ./programs/webapps.nix   # Web apps (WhatsApp, Spotify, etc.)
-    ./programs/desktop-apps.nix  # Desktop entries (IMV, Neovim)
+    ./programs/desktop-apps.nix  # Desktop entries (Neovim)
     ./programs/media.nix
     ./programs/development.nix
     ./programs/walker.nix
@@ -95,8 +95,7 @@
 
     # Media
     mpv
-    imv
-    imagemagick       # Image manipulation CLI
+    # swayimg moved to media.nix
 
     # Documents
     libreoffice-fresh
@@ -187,15 +186,29 @@
       # PDF viewer
       "application/pdf" = "org.pwmt.zathura.desktop";
 
-      # Images (imv)
-      "image/png" = "imv.desktop";
-      "image/jpeg" = "imv.desktop";
-      "image/jpg" = "imv.desktop";
-      "image/gif" = "imv.desktop";
-      "image/webp" = "imv.desktop";
-      "image/bmp" = "imv.desktop";
-      "image/tiff" = "imv.desktop";
-      "image/svg+xml" = "imv.desktop";
+      # Images (swayimg) - All formats including WebP, AVIF, JXL
+      "image/png" = "swayimg.desktop";
+      "image/jpeg" = "swayimg.desktop";
+      "image/jpg" = "swayimg.desktop";
+      "image/gif" = "swayimg.desktop";
+      "image/webp" = "swayimg.desktop";
+      "image/bmp" = "swayimg.desktop";
+      "image/x-bmp" = "swayimg.desktop";
+      "image/tiff" = "swayimg.desktop";
+      "image/svg+xml" = "swayimg.desktop";
+      "image/avif" = "swayimg.desktop";
+      "image/jxl" = "swayimg.desktop";
+      "image/heif" = "swayimg.desktop";
+      "image/heic" = "swayimg.desktop";
+      "image/x-xcf" = "swayimg.desktop";
+      "image/x-portable-pixmap" = "swayimg.desktop";
+      "image/x-portable-graymap" = "swayimg.desktop";
+      "image/x-portable-bitmap" = "swayimg.desktop";
+      "image/x-portable-anymap" = "swayimg.desktop";
+      "image/x-xbitmap" = "swayimg.desktop";
+      "image/x-tga" = "swayimg.desktop";
+      "image/vnd.microsoft.icon" = "swayimg.desktop";
+      "image/x-icon" = "swayimg.desktop";
 
       # Videos (mpv)
       "video/mp4" = "mpv.desktop";

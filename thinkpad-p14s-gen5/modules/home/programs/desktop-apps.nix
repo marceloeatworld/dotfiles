@@ -1,4 +1,4 @@
-# Desktop entries for applications (IMV, Neovim, etc.)
+# Desktop entries for applications (Neovim, etc.)
 { pkgs, ... }:
 
 let
@@ -22,30 +22,6 @@ in
 
   # Desktop entries for desktop applications
   xdg.desktopEntries = {
-    # IMV Image Viewer
-    imv = {
-      name = "Image Viewer";
-      genericName = "Image Viewer";
-      comment = "Fast image viewer for Wayland";
-      exec = "imv %F";
-      icon = "imv";
-      terminal = false;
-      type = "Application";
-      categories = [ "Graphics" "Viewer" ];
-      mimeType = [
-        "image/png"
-        "image/jpeg"
-        "image/jpg"
-        "image/gif"
-        "image/bmp"
-        "image/webp"
-        "image/tiff"
-        "image/x-xcf"
-        "image/x-portable-pixmap"
-        "image/x-xbitmap"
-      ];
-    };
-
     # Neovim with custom launcher
     nvim = {
       name = "Neovim";
@@ -78,14 +54,29 @@ in
 
   # Set default applications for file types
   xdg.mimeApps.defaultApplications = {
-    # Images → IMV
-    "image/png" = "imv.desktop";
-    "image/jpeg" = "imv.desktop";
-    "image/jpg" = "imv.desktop";
-    "image/gif" = "imv.desktop";
-    "image/bmp" = "imv.desktop";
-    "image/webp" = "imv.desktop";
-    "image/tiff" = "imv.desktop";
+    # Images → swayimg (all formats including WebP, AVIF, JXL)
+    "image/png" = "swayimg.desktop";
+    "image/jpeg" = "swayimg.desktop";
+    "image/jpg" = "swayimg.desktop";
+    "image/gif" = "swayimg.desktop";
+    "image/bmp" = "swayimg.desktop";
+    "image/x-bmp" = "swayimg.desktop";
+    "image/webp" = "swayimg.desktop";
+    "image/tiff" = "swayimg.desktop";
+    "image/avif" = "swayimg.desktop";
+    "image/jxl" = "swayimg.desktop";
+    "image/heif" = "swayimg.desktop";
+    "image/heic" = "swayimg.desktop";
+    "image/x-xcf" = "swayimg.desktop";
+    "image/x-portable-pixmap" = "swayimg.desktop";
+    "image/x-portable-graymap" = "swayimg.desktop";
+    "image/x-portable-bitmap" = "swayimg.desktop";
+    "image/x-portable-anymap" = "swayimg.desktop";
+    "image/x-xbitmap" = "swayimg.desktop";
+    "image/x-tga" = "swayimg.desktop";
+    "image/svg+xml" = "swayimg.desktop";
+    "image/vnd.microsoft.icon" = "swayimg.desktop";
+    "image/x-icon" = "swayimg.desktop";
 
     # Text files → Neovim
     "text/plain" = "nvim.desktop";
