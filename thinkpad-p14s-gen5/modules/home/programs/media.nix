@@ -1,6 +1,14 @@
 # Media applications configuration
 { pkgs, ... }:
 
+let
+  # PhotoGIMP - Makes GIMP look like Photoshop
+  photogimp = pkgs.fetchzip {
+    url = "https://github.com/Diolinux/PhotoGIMP/releases/download/3.0/PhotoGIMP-linux.zip";
+    sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # Will be replaced on first build
+    stripRoot = false;
+  };
+in
 {
   # MPV video player
   programs.mpv = {
@@ -24,7 +32,18 @@
     };
   };
 
-  # GIMP configuration - Photoshop-style keyboard shortcuts
+  # PhotoGIMP configuration files
+  home.file.".config/GIMP/2.10" = {
+    source = "${photogimp}/.config/GIMP/2.10";
+    recursive = true;
+  };
+
+  home.file.".local/share/gimp" = {
+    source = "${photogimp}/.local/share/gimp";
+    recursive = true;
+  };
+
+  # GIMP configuration - Photoshop-style keyboard shortcuts (override PhotoGIMP shortcuts)
   home.file.".config/GIMP/2.10/menurc".text = ''
     ; GIMP menurc - Photoshop-style keyboard shortcuts
     ; This file maps GIMP actions to Photoshop-compatible shortcuts
