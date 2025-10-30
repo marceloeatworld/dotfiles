@@ -41,7 +41,7 @@ in
   };
 
   # Additional media packages
-  home.packages = with pkgs; [
+  home.packages = (with pkgs; [
     spotify
     vlc
     obs-studio      # Screen recording and streaming
@@ -52,5 +52,9 @@ in
     imagemagick     # Image manipulation CLI
     exiftool        # Read/write EXIF metadata in images
     mediainfo       # Detailed video/audio file information
-  ];
+    v4l-utils       # Video4Linux utilities (v4l2-ctl, v4l2-compliance, etc.)
+  ]) ++ (with pkgs-unstable; [
+    guvcview        # GTK UVC Viewer - webcam/USB camera viewer and recorder (unstable)
+    musescore       # Music notation editor (unstable - latest version)
+  ]);
 }

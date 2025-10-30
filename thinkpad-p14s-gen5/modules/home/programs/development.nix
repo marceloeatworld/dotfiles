@@ -30,6 +30,7 @@
     nodejs_22
     go
     rustup
+    jdk24             # Java Development Kit 24 (required for Audiveris 5.7.1)
 
     # C++ Development (complete modern toolchain)
     gcc              # GCC 14.3.0 - Primary C++ compiler with C++23 support
@@ -90,8 +91,11 @@
     nix-index     # Search files
 
     # AI/ML tools - Ollama TUI clients
-    aichat        # Ultra lightweight CLI for Ollama (Rust) - Daily use
+    pkgs-unstable.aichat        # Ultra lightweight CLI for Ollama (Rust) - Daily use
     # NOTE: parllama not available in nixpkgs, install via pip if needed:
     # python3 -m pip install --user parllama
+
+    # Reverse Engineering
+    pkgs-unstable.ghidra  # NSA Software Reverse Engineering (SRE) suite - compiled from source (11.4.2)
   ];
 }
