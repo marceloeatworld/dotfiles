@@ -294,7 +294,10 @@
         { "zM", function() require('ufo').closeAllFolds() end, desc = "Close all folds" },
       })
 
-      -- LSP configuration
+      -- LSP configuration (using traditional lspconfig setup for compatibility)
+      -- Disable ALL deprecation warnings (LazyVim setting)
+      vim.g.deprecation_warnings = false
+
       local lspconfig = require('lspconfig')
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
@@ -322,6 +325,13 @@
           ['<C-Space>'] = cmp.mapping.complete(),
           ['<C-e>'] = cmp.mapping.abort(),
           ['<CR>'] = cmp.mapping.confirm({ select = true }),
+          -- Ensure Esc closes completion and returns to normal mode
+          ['<Esc>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.close()
+            end
+            fallback()  -- Always fallback to allow exiting insert mode
+          end, { 'i', 's' }),
           ['<Tab>'] = cmp.mapping(function(fallback)
             if cmp.visible() then
               cmp.select_next_item()
@@ -463,8 +473,11 @@
       -- Better paste
       keymap.set("v", "p", '"_dP', { desc = "Paste without yanking" })
 
-      -- Clear search highlight
-      keymap.set("n", "<Esc>", ":noh<CR>", { desc = "Clear highlights" })
+      -- Ensure Esc works properly in insert mode (exit to normal mode)
+      keymap.set("i", "<Esc>", "<Esc>", { desc = "Exit insert mode" })
+
+      -- Clear search highlight in normal mode (using <Esc><Esc> to avoid conflicts)
+      keymap.set("n", "<Esc>", "<cmd>noh<CR><Esc>", { desc = "Clear highlights" })
 
       -- LSP keymaps
       vim.api.nvim_create_autocmd('LspAttach', {

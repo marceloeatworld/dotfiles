@@ -258,6 +258,13 @@ nix flake update
 **Leader Key:** `Space`
 **Local Leader:** `\`
 
+**🎯 For Beginners:**
+- Neovim has 3 modes: **Normal** (navigation), **Insert** (typing), **Visual** (selection)
+- Always start in **Normal** mode (default)
+- `i` to type → `Ctrl c` to exit → `Space w` to save
+- **Ctrl c** is the standard key to exit Insert mode (always works)
+- Arrow keys work everywhere, but `hjkl` is faster
+
 #### File Navigation (Telescope)
 | Key | Action |
 |-----|--------|
@@ -347,16 +354,55 @@ nix flake update
 #### Editing Basics
 | Key | Mode | Action |
 |-----|------|--------|
-| `i` | Normal | Enter **Insert mode** |
-| `v` | Normal | Enter **Visual mode** |
-| `V` | Normal | Enter **Visual Line mode** |
-| `Esc` | Any | Return to **Normal mode** |
+| `i` | Normal | Enter **Insert mode** (start typing) |
+| `a` | Normal | Enter Insert mode **after cursor** |
+| `o` | Normal | Insert new line **below** and enter Insert mode |
+| `O` | Normal | Insert new line **above** and enter Insert mode |
+| `v` | Normal | Enter **Visual mode** (select text) |
+| `V` | Normal | Enter **Visual Line mode** (select lines) |
+| `Ctrl c` | Insert | **Exit to Normal mode** (standard Vim) |
+| `Esc` | Normal | **Clear search highlights** |
 | `Space w` | Normal | **Save file** |
 | `Space q` | Normal | **Quit** |
 | `:w` | Normal | Save |
 | `:q` | Normal | Quit |
 | `:wq` | Normal | Save and quit |
 | `:q!` | Normal | Quit without saving |
+
+**Mode Workflow:**
+1. **Normal mode** (default) - Navigate and run commands
+2. Press `i` → **Insert mode** - Type text
+3. Press `Ctrl c` → Back to **Normal mode**
+4. Press `Space w` → Save your file
+
+#### Basic Navigation (Normal Mode)
+| Key | Action |
+|-----|--------|
+| `h` / `j` / `k` / `l` | Move **left** / **down** / **up** / **right** |
+| `w` | Jump to **next word** |
+| `b` | Jump to **previous word** |
+| `e` | Jump to **end of word** |
+| `0` | Jump to **start of line** |
+| `$` | Jump to **end of line** |
+| `gg` | Jump to **first line** of file |
+| `G` | Jump to **last line** of file |
+| `Ctrl d` | Scroll **half page down** |
+| `Ctrl u` | Scroll **half page up** |
+| `{` / `}` | Jump to **previous/next paragraph** |
+
+#### Basic Editing (Normal Mode)
+| Key | Action |
+|-----|--------|
+| `x` | **Delete** character under cursor |
+| `dd` | **Delete** current line |
+| `yy` | **Copy** (yank) current line |
+| `p` | **Paste** after cursor |
+| `u` | **Undo** |
+| `Ctrl r` | **Redo** |
+| `r + <char>` | **Replace** character under cursor |
+| `cw` | **Change** word (delete word and enter Insert mode) |
+| `dw` | **Delete** word |
+| `.` | **Repeat** last command |
 
 #### Auto-Completion (nvim-cmp + Copilot)
 | Key | Mode | Action |
@@ -394,16 +440,38 @@ nix flake update
 - Press `Space f` and wait → shows all file commands
 - Press `Space g` and wait → shows all git commands
 
+#### Quick Tips for Learning Vim
+1. **Start simple**: Use `i` to type, `Ctrl c` to exit, `Space w` to save
+2. **Don't use mouse**: Force yourself to use keyboard navigation
+3. **Learn gradually**: Master `hjkl` navigation first, then `w`/`b` word jumping
+4. **Use Which-Key**: Press `Space` and wait - you'll discover commands
+5. **Practice daily**: 10 minutes per day for 1 week = muscle memory
+6. **Use Flash**: Press `s` + 2 letters to jump anywhere instantly
+7. **Trust Copilot**: Let it suggest code while you focus on logic
+
+**Common beginner mistakes:**
+- Trying to type in Normal mode → Press `i` first!
+- Forgetting to exit Insert mode → `Ctrl c` always works
+- Using arrow keys → Learn `hjkl`, it's faster
+- Not saving → `Space w` is your friend
+
 #### Installed LSP Servers
-- **Nix** - `nil_ls`
-- **Lua** - `lua_ls`
-- **Python** - `pyright`
-- **Rust** - `rust_analyzer`
-- **TypeScript/JavaScript** - `tsserver`
-- **Go** - `gopls`
-- **C/C++** - `clangd`
-- **Bash** - `bash-language-server`
-- **HTML/CSS/JSON** - `vscode-langservers-extracted`
+- **Nix** - `nil_ls` (NixOS configurations)
+- **Lua** - `lua_ls` (Neovim config, scripts)
+- **Python** - `pyright` (type checking, completions)
+- **Rust** - `rust_analyzer` (cargo projects)
+- **TypeScript/JavaScript** - `ts_ls` (web development)
+- **Go** - `gopls` (Go projects)
+- **C/C++** - `clangd` (C/C++ projects with C++23 support)
+
+**LSP Features:**
+- Auto-completion (`Ctrl Space`)
+- Go to definition (`gd`)
+- Find references (`gr`)
+- Hover documentation (`K`)
+- Code actions (`Space c a`)
+- Rename symbol (`Space c r`)
+- Format code (`Space c f`)
 
 #### AI Assistant
 - **GitHub Copilot** enabled with auto-trigger
@@ -602,7 +670,21 @@ All icons stored locally in `assets/icons/` (no internet download needed)
 - **Neovim** - LazyVim-style config with 40+ plugins
 - **VS Code** - Alternative editor
 - **GitHub Copilot** - AI pair programming (in Neovim)
-- **LSP Servers** - Nix, Lua, Python, Rust, TypeScript, Go, C/C++, Bash, HTML/CSS/JSON
+- **LSP Servers** - Nix, Lua, Python, Rust, TypeScript, Go, C/C++
+
+**C++ Development Tools**
+- **GCC 14.3.0** - Primary compiler with C++23 support
+- **GDB 16.2** - GNU debugger
+- **CMake** - Build system generator
+- **Ninja** - Fast build system
+- **Valgrind** - Memory leak detection
+- **cppcheck** - Static code analysis
+- **ccache** - Compiler cache (faster rebuilds)
+- **pkg-config** - Library dependency management
+- **Boost** - C++ libraries
+- **clangd LSP** - Code intelligence in Neovim
+
+**Note:** Clang excluded due to `cpp` binary conflict with GCC. Use `nix shell nixpkgs#clang_19 nixpkgs#lldb` for Clang when needed.
 
 **AI & LLM**
 - **Ollama** - Local LLM server (`http://localhost:11434`)

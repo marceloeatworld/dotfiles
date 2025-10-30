@@ -30,10 +30,29 @@
     nodejs_22
     go
     rustup
-    gcc
-    # clang - REMOVED: collision between clang 19 and 14 (gcc is sufficient)
-    gnumake
-    cmake
+
+    # C++ Development (complete modern toolchain)
+    gcc              # GCC 14.3.0 - Primary C++ compiler with C++23 support
+    gdb              # GDB debugger (essential for C++ debugging)
+    gnumake          # Make build system
+    cmake            # CMake build system
+    ninja            # Ninja build system (faster than Make)
+    ccache           # Compiler cache (speeds up recompilation)
+
+    # C++ Code Quality & Analysis
+    valgrind         # Memory leak detection and profiling
+    cppcheck         # Static analysis tool
+
+    # C++ Libraries & Package Management
+    pkg-config       # Library dependency management
+    boost            # Boost C++ libraries (commonly used)
+
+    # NOTE: Clang tools excluded due to cpp collision with GCC
+    # For Clang features, use: nix shell nixpkgs#clang_19 nixpkgs#lldb nixpkgs#clang-tools
+    # Or create a project-specific shell.nix when needed
+
+    # Filesystem & Archive Tools
+    squashfsTools    # SquashFS filesystem tools (unsquashfs, mksquashfs for ISO extraction)
 
     # Tools
     docker-compose
