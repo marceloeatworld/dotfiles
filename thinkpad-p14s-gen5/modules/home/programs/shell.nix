@@ -9,7 +9,7 @@
     shellAliases = {
       # NixOS - Using NH (modern nix helper)
       rebuild = "nh os switch";  # Replaces nixos-rebuild switch
-      update = "cd /home/marcelo/dotfiles/thinkpad-p14s-gen5 && nix flake update && nh os switch";
+      update = "cd $HOME/dotfiles/thinkpad-p14s-gen5 && nix flake update && nh os switch";
       clean = "nh clean all --keep 5";  # Smarter garbage collection
 
       # Additional NH commands
