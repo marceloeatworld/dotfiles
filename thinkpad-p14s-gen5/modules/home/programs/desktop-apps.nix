@@ -17,8 +17,11 @@ let
   '';
 in
 {
-  # Install the launcher script
-  home.packages = [ nvim-launcher ];
+  # Install the launcher script and applications
+  home.packages = [
+    nvim-launcher
+    pkgs-unstable.davinci-resolve  # DaVinci Resolve 19 (free version)
+  ];
 
   # Desktop entries for desktop applications
   xdg.desktopEntries = {

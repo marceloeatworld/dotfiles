@@ -33,6 +33,7 @@
     pamixer
     playerctl
     pulsemixer
+    alsa-utils  # For amixer, alsamixer - needed for speaker override
   ];
 
   # Enable real-time priority for audio processes

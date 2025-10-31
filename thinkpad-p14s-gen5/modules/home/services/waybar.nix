@@ -2,6 +2,47 @@
 { pkgs, config, ... }:
 
 let
+  audioSwitchScript = pkgs.writeShellScriptBin "audio-switch-waybar" ''
+    #!/usr/bin/env bash
+    # Audio output switcher: toggle between internal speakers and headphones (jack)
+    # Even when headphones are physically plugged in
+
+    STATE_FILE="$HOME/.config/audio-output-state"
+
+    # Read current state (0 = headphones/jack, 1 = internal speakers)
+    CURRENT_STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
+
+    if [ "$CURRENT_STATE" = "0" ]; then
+      # Switch to internal speakers (force unmute even with jack plugged)
+      echo "1" > "$STATE_FILE"
+
+      # Method 1: Try to force speaker output via ALSA mixer
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" unmute 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" 100% 2>/dev/null
+
+      # Method 2: Alternative control names
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" unmute 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" 100% 2>/dev/null
+
+      # Method 3: Disable headphone auto-mute
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Auto-Mute Mode" "Disabled" 2>/dev/null
+
+      ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Internal Speakers" -i audio-speakers
+    else
+      # Switch back to headphones (default behavior)
+      echo "0" > "$STATE_FILE"
+
+      # Re-enable auto-mute (normal behavior)
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Auto-Mute Mode" "Enabled" 2>/dev/null
+
+      # Mute speakers (let headphones take over)
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" mute 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" mute 2>/dev/null
+
+      ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Headphones (Jack)" -i audio-headphones
+    fi
+  '';
+
   removableDisksScript = pkgs.writeShellScriptBin "removable-disks-waybar" ''
     #!/usr/bin/env bash
     # List removable USB/external disks and allow ejecting
@@ -779,6 +820,11 @@ in
     executable = true;
   };
 
+  home.file.".config/waybar/scripts/audio-switch.sh" = {
+    source = "${audioSwitchScript}/bin/audio-switch-waybar";
+    executable = true;
+  };
+
   # Wallet configuration template
   home.file.".config/waybar/.env.example" = {
     source = ./waybar-scripts/.env.example;
@@ -954,8 +1000,8 @@ in
             car = "";
             default = [ "" "" "" ];
           };
-          tooltip-format = "Volume: {volume}%\nDevice: {desc}";
-          on-click = "pavucontrol";
+          tooltip-format = "Volume: {volume}%\nDevice: {desc}\n\nClick icon to switch output";
+          on-click = "$HOME/.config/waybar/scripts/audio-switch.sh";
           on-click-right = "pamixer -t";
           on-scroll-up = "pamixer -i 5";
           on-scroll-down = "pamixer -d 5";
