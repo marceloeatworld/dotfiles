@@ -24,6 +24,7 @@
     ./programs/desktop-apps.nix  # Desktop entries (Neovim)
     ./programs/media.nix
     ./programs/development.nix
+    ./programs/yt-dlp.nix
     ./programs/walker.nix
     ./programs/fastfetch.nix
     ./programs/xournalpp.nix
