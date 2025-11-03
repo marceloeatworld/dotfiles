@@ -45,22 +45,26 @@
     let
       system = "x86_64-linux";
 
-      # Create pkgs with unfree packages allowed
-      pkgs = import nixpkgs {
+      # Use unstable as default for latest software versions
+      pkgs = import nixpkgs-unstable {
         inherit system;
         config.allowUnfree = true;
       };
 
-      # Unstable packages
-      pkgs-unstable = import nixpkgs-unstable {
+      # Stable packages (for rare cases where stability is preferred)
+      pkgs-stable = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
       };
+
+      # Keep pkgs-unstable alias for backwards compatibility
+      pkgs-unstable = pkgs;
 
       # Common special args passed to all modules
       specialArgs = {
         inherit inputs;
         inherit pkgs-unstable;
+        inherit pkgs-stable;
       };
     in
     {

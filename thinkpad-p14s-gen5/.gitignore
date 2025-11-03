@@ -17,3 +17,6 @@ result-*
 Thumbs.db
 CLAUDE.md
 .claude
+
+# Certificates (keep private)
+certs/

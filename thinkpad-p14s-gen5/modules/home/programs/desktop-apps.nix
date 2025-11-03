@@ -20,7 +20,9 @@ in
   # Install the launcher script and applications
   home.packages = [
     nvim-launcher
-    pkgs-unstable.davinci-resolve  # DaVinci Resolve 19 (free version)
+    pkgs-unstable.rustdesk-flutter  # RustDesk (unstable version)
+    pkgs.teamspeak_client           # TeamSpeak 3 client
+    pkgs.popsicle                   # USB flasher (System76) - lightweight, GTK native
   ];
 
   # Desktop entries for desktop applications
@@ -248,6 +250,20 @@ in
       terminal = false;
       type = "Application";
       categories = [ "AudioVideo" "Video" ];
+    };
+
+    # === SYSTEM TOOLS ===
+
+    # Popsicle - USB Flasher
+    popsicle = {
+      name = "Popsicle";
+      genericName = "USB Flasher";
+      comment = "Flash multiple USB drives in parallel (System76)";
+      exec = "${pkgs.popsicle}/bin/popsicle-gtk";
+      icon = "usb-creator";
+      terminal = false;
+      type = "Application";
+      categories = [ "System" "Utility" ];
     };
   };
 

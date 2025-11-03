@@ -49,6 +49,12 @@
     VISUAL = "nvim";
     BROWSER = "brave";
     TERMINAL = "kitty";
+
+    # Wayland backend preferences
+    SAL_USE_VCLPLUGIN = "gtk3";  # LibreOffice native Wayland via GTK3
+
+    # AMD GPU ROCm/hashcat support (RDNA 3 iGPU)
+    HSA_OVERRIDE_GFX_VERSION = "11.0.0";  # Required for Radeon 780M GPU acceleration
   };
 
   # Gnome Keyring integration
