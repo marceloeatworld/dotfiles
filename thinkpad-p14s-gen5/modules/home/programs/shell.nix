@@ -1,18 +1,6 @@
 # Shell configuration (ZSH with Starship prompt)
 { pkgs, config, inputs, ... }:
 {
-  # SSH configuration with Kitty terminal compatibility
-  programs.ssh = {
-    enable = true;
-
-    # Force xterm-256color on all remote hosts
-    # Kitty uses xterm-kitty which isn't available on most servers
-    extraConfig = ''
-      # Fix Kitty terminal compatibility
-      SetEnv TERM=xterm-256color
-    '';
-  };
-
   programs.zsh = {
     enable = true;
     enableCompletion = true;

@@ -2,10 +2,6 @@
 { pkgs, ... }:
 
 {
-  # Custom CA certificates
-  security.pki.certificateFiles = [
-    ../../certs/armored-germ.crt
-  ];
   # Enable GnuPG agent
   programs.gnupg.agent = {
     enable = true;

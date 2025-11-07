@@ -5,7 +5,7 @@ let
   audioSwitchScript = pkgs.writeShellScriptBin "audio-switch-waybar" ''
     #!/usr/bin/env bash
     # Audio output switcher: toggle between internal speakers and headphones (jack)
-    # Even when headphones are physically plugged in
+    # Works even when headphones cable is NOT plugged in
 
     STATE_FILE="$HOME/.config/audio-output-state"
 
@@ -16,30 +16,33 @@ let
       # Switch to internal speakers (force unmute even with jack plugged)
       echo "1" > "$STATE_FILE"
 
-      # Method 1: Try to force speaker output via ALSA mixer
+      # Disable Auto-Mute Mode FIRST (critical for forcing speakers when jack is plugged)
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Auto-Mute Mode" "Disabled" 2>/dev/null
+
+      # Force unmute and set volume for speakers
       ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" unmute 2>/dev/null
       ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" 100% 2>/dev/null
 
-      # Method 2: Alternative control names
+      # Alternative control names (some systems use these)
       ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" unmute 2>/dev/null
       ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" 100% 2>/dev/null
 
-      # Method 3: Disable headphone auto-mute
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Auto-Mute Mode" "Disabled" 2>/dev/null
+      # Also unmute Master to ensure audio flows
+      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Master" unmute 2>/dev/null
 
       ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Internal Speakers" -i audio-speakers
     else
-      # Switch back to headphones (default behavior)
+      # Switch back to headphones/jack (default behavior)
       echo "0" > "$STATE_FILE"
 
-      # Re-enable auto-mute (normal behavior)
+      # Re-enable auto-mute (normal behavior - auto-switches based on jack detection)
       ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Auto-Mute Mode" "Enabled" 2>/dev/null
 
-      # Mute speakers (let headphones take over)
+      # Mute speakers (let headphones take over when plugged in)
       ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" mute 2>/dev/null
       ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" mute 2>/dev/null
 
-      ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Headphones (Jack)" -i audio-headphones
+      ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Headphones/Auto (Jack)" -i audio-headphones
     fi
   '';
 
