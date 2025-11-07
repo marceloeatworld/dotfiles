@@ -784,6 +784,126 @@ let
 
     echo "{\"text\": \"🌍\", \"tooltip\": \"$tooltip\", \"class\": \"world-clocks\"}"
   '';
+
+  # Monitor Rotation Display Script - Shows current rotation status
+  monitorRotationScript = pkgs.writeShellScriptBin "monitor-rotation-waybar" ''
+    #!/usr/bin/env bash
+    # Monitor Rotation Display: Shows current rotation status
+
+    STATE_FILE="$HOME/.config/monitor-rotation-state"
+
+    # Read current rotation (default: 0 = normal)
+    CURRENT_ROTATION=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
+
+    # Detect external monitor (HDMI-A-1 or DP-1)
+    EXTERNAL_MONITOR=""
+    if ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -q "HDMI-A-1"; then
+      EXTERNAL_MONITOR="HDMI-A-1"
+    elif ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -q "DP-1"; then
+      EXTERNAL_MONITOR="DP-1"
+    fi
+
+    if [ -z "$EXTERNAL_MONITOR" ]; then
+      # No external monitor - show disabled state
+      echo "{\"text\": \"󰹑\", \"tooltip\": \"No external monitor\", \"class\": \"disabled\"}"
+      exit 0
+    fi
+
+    # Display current rotation status based on state file
+    case "$CURRENT_ROTATION" in
+      0)
+        ICON="󰹑"  # Monitor icon (normal)
+        DESC="0° (Normal)"
+        ;;
+      1)
+        ICON="󰹑"  # Monitor icon (90°)
+        DESC="90° (Portrait)"
+        ;;
+      2)
+        ICON="󰹑"  # Monitor icon (180°)
+        DESC="180° (Inverted)"
+        ;;
+      3)
+        ICON="󰹑"  # Monitor icon (270°)
+        DESC="270° (Portrait Flipped)"
+        ;;
+      *)
+        ICON="󰹑"
+        DESC="0° (Normal)"
+        ;;
+    esac
+
+    # Return current state for Waybar display
+    tooltip="┌─ 󰹑 MONITOR ───────────┐"
+    tooltip="$tooltip\n│ Display: $EXTERNAL_MONITOR"
+    tooltip="$tooltip\n│ Current: $DESC"
+    tooltip="$tooltip\n└───────────────────────┘"
+    tooltip="$tooltip\n\nClick to rotate 90°"
+
+    echo "{\"text\": \"$ICON\", \"tooltip\": \"$tooltip\", \"class\": \"active\"}"
+  '';
+
+  # Monitor Rotation Action Script - Performs the actual rotation
+  monitorRotateAction = pkgs.writeShellScriptBin "monitor-rotate-action" ''
+    #!/usr/bin/env bash
+    # Monitor Rotation Action: Rotates the external monitor by 90°
+
+    STATE_FILE="$HOME/.config/monitor-rotation-state"
+
+    # Read current rotation (default: 0 = normal)
+    CURRENT_ROTATION=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
+
+    # Detect external monitor (HDMI-A-1 or DP-1)
+    EXTERNAL_MONITOR=""
+    if ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -q "HDMI-A-1"; then
+      EXTERNAL_MONITOR="HDMI-A-1"
+    elif ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -q "DP-1"; then
+      EXTERNAL_MONITOR="DP-1"
+    fi
+
+    if [ -z "$EXTERNAL_MONITOR" ]; then
+      ${pkgs.libnotify}/bin/notify-send "Monitor Rotation" "No external monitor detected" -i video-display
+      exit 1
+    fi
+
+    # Determine next rotation (cycle: 0 -> 90 -> 180 -> 270 -> 0)
+    case "$CURRENT_ROTATION" in
+      0)
+        NEXT_ROTATION="1"  # 90° clockwise
+        TRANSFORM="1"
+        DESC="90° (Portrait)"
+        ;;
+      1)
+        NEXT_ROTATION="2"  # 180° upside-down
+        TRANSFORM="2"
+        DESC="180° (Inverted)"
+        ;;
+      2)
+        NEXT_ROTATION="3"  # 270° counter-clockwise
+        TRANSFORM="3"
+        DESC="270° (Portrait Flipped)"
+        ;;
+      3)
+        NEXT_ROTATION="0"  # 0° normal
+        TRANSFORM="0"
+        DESC="0° (Normal)"
+        ;;
+      *)
+        NEXT_ROTATION="0"
+        TRANSFORM="0"
+        DESC="0° (Normal)"
+        ;;
+    esac
+
+    # Apply rotation using Hyprland
+    ${pkgs.hyprland}/bin/hyprctl keyword monitor "$EXTERNAL_MONITOR,transform,$TRANSFORM"
+
+    # Save state
+    echo "$NEXT_ROTATION" > "$STATE_FILE"
+
+    # Send notification
+    ${pkgs.libnotify}/bin/notify-send "Monitor Rotation" "$EXTERNAL_MONITOR: $DESC" -i video-display
+  '';
 in
 {
   # Create scripts in waybar config directory
@@ -826,6 +946,16 @@ in
 
   home.file.".config/waybar/scripts/world-clocks.sh" = {
     source = "${worldClocksScript}/bin/world-clocks-waybar";
+    executable = true;
+  };
+
+  home.file.".config/waybar/scripts/monitor-rotation.sh" = {
+    source = "${monitorRotationScript}/bin/monitor-rotation-waybar";
+    executable = true;
+  };
+
+  home.file.".config/waybar/scripts/monitor-rotate-action.sh" = {
+    source = "${monitorRotateAction}/bin/monitor-rotate-action";
     executable = true;
   };
 
@@ -897,6 +1027,7 @@ in
           "custom/mako"
           # Hardware modules
           "custom/removable-disks"
+          "custom/monitor-rotation"
           "pulseaudio"
           "disk"
           "cpu"
@@ -1157,6 +1288,16 @@ in
           on-click = "nemo";  # Open file manager
         };
 
+        "custom/monitor-rotation" = {
+          exec = "~/.config/waybar/scripts/monitor-rotation.sh";
+          return-type = "json";
+          interval = 10;  # Update every 10 seconds
+          format = "{}";
+          tooltip = true;
+          on-click = "~/.config/waybar/scripts/monitor-rotate-action.sh && pkill -RTMIN+9 waybar";
+          signal = 9;  # Use SIGRTMIN+9 for manual refresh
+        };
+
         "tray" = {
           spacing = 10;
           icon-size = 18;
@@ -1238,6 +1379,7 @@ in
       #custom-nix-updates,
       #custom-systemd-failed,
       #custom-mako,
+      #custom-monitor-rotation,
       #pulseaudio,
       #bluetooth,
       #network,
@@ -1281,6 +1423,23 @@ in
         margin: 0 1px;
         background: rgba(173, 218, 120, 0.2);
         color: #adda78;
+      }
+
+      #custom-monitor-rotation {
+        padding: 0 8px;
+        margin: 0 1px;
+        background: rgba(173, 218, 120, 0.2);
+        color: #adda78;
+        transition: all 0.2s ease;
+      }
+
+      #custom-monitor-rotation:hover {
+        background: rgba(173, 218, 120, 0.3);
+      }
+
+      #custom-monitor-rotation.disabled {
+        background: rgba(64, 62, 65, 0.85);
+        color: #665c54;
       }
 
       #custom-weather,
