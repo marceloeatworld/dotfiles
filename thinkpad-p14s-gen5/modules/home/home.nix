@@ -33,6 +33,8 @@
     ./programs/windows-vm.nix    # Windows 11 VM via Docker with RDP
     ./programs/security-tools.nix  # Security audit tools (sqlmap, nikto, etc.)
     ./programs/nemo.nix          # Nemo file manager with full integration
+    ./programs/teamspeak.nix     # TeamSpeak 6 Beta 3.2
+    ./programs/kimi-cli.nix      # Kimi CLI agent (sandboxed with firejail)
     ./services/waybar.nix
     ./services/mako.nix
     ./services/swaylock.nix
