@@ -73,9 +73,10 @@ def get_requests():
 
 
 def ensure_dependencies():
-    """Ensure embit is installed in venv using uv, install if needed"""
+    """Ensure embit is installed in venv, install if needed"""
     venv_dir = Path.home() / ".local/share/waybar-bitcoin-venv"
     python_bin = venv_dir / "bin" / "python3"
+    pip_bin = venv_dir / "bin" / "pip"
 
     # Dynamically find site-packages directory (handles any Python version)
     def add_venv_to_path():
@@ -95,24 +96,25 @@ def ensure_dependencies():
         import requests
         return True
     except ImportError:
-        print("Installing embit with uv (fast Python package manager)...", file=sys.stderr)
+        print("Installing embit and requests...", file=sys.stderr)
         try:
-            # Create venv with uv if doesn't exist
+            # Create venv with system Python if doesn't exist
             if not venv_dir.exists():
+                print("Creating Python virtual environment...", file=sys.stderr)
                 subprocess.check_call([
-                    "uv", "venv", str(venv_dir)
+                    sys.executable, "-m", "venv", str(venv_dir)
                 ], stderr=subprocess.DEVNULL)
 
-            # Install embit and requests with uv (much faster than pip)
+            # Install embit and requests with pip
             subprocess.check_call([
-                "uv", "pip", "install",
+                str(pip_bin), "install",
                 "--quiet", "embit", "requests"
-            ], env={**os.environ, "VIRTUAL_ENV": str(venv_dir)})
+            ])
 
             # Add to path
             add_venv_to_path()
 
-            print("✓ embit installed with uv", file=sys.stderr)
+            print("✓ embit and requests installed", file=sys.stderr)
             return True
         except Exception as e:
             print(f"Failed to install embit: {e}", file=sys.stderr)
