@@ -54,7 +54,6 @@ in
     mediainfo       # Detailed video/audio file information
     v4l-utils       # Video4Linux utilities (v4l2-ctl, v4l2-compliance, etc.)
   ]) ++ (with pkgs-unstable; [
-    guvcview        # GTK UVC Viewer - webcam/USB camera viewer and recorder (unstable)
     musescore       # Music notation editor (unstable - latest version)
   ]);
 }

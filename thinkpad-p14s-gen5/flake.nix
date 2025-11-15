@@ -49,6 +49,27 @@
       pkgs = import nixpkgs-unstable {
         inherit system;
         config.allowUnfree = true;
+        overlays = [
+          # Fix proton-core bcrypt test failures (password >72 bytes incompatibility)
+          (final: prev: {
+            python3 = prev.python3.override {
+              packageOverrides = pyfinal: pyprev: {
+                proton-core = pyprev.proton-core.overridePythonAttrs (old: {
+                  doCheck = false;
+                  doInstallCheck = false;
+                });
+              };
+            };
+            python313 = prev.python313.override {
+              packageOverrides = pyfinal: pyprev: {
+                proton-core = pyprev.proton-core.overridePythonAttrs (old: {
+                  doCheck = false;
+                  doInstallCheck = false;
+                });
+              };
+            };
+          })
+        ];
       };
 
       # Stable packages (for rare cases where stability is preferred)

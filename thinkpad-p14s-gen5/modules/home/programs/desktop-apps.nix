@@ -20,7 +20,7 @@ in
   # Install the launcher script and applications
   home.packages = [
     nvim-launcher
-    pkgs-unstable.rustdesk-flutter  # RustDesk (unstable version)
+    pkgs.rustdesk-flutter           # RustDesk (stable version - unstable has FFmpeg build issues)
     pkgs.teamspeak_client           # TeamSpeak 3 client
     pkgs.popsicle                   # USB flasher (System76) - lightweight, GTK native
   ];
@@ -236,20 +236,6 @@ in
       terminal = false;
       type = "Application";
       categories = [ "System" "Security" ];
-    };
-
-    # === MEDIA TOOLS ===
-
-    # guvcview - Webcam Viewer
-    guvcview = {
-      name = "guvcview";
-      genericName = "Webcam Viewer";
-      comment = "GTK UVC Viewer - webcam and USB camera viewer and recorder";
-      exec = "${pkgs-unstable.guvcview}/bin/guvcview";
-      icon = "camera-web";
-      terminal = false;
-      type = "Application";
-      categories = [ "AudioVideo" "Video" ];
     };
 
     # === SYSTEM TOOLS ===

@@ -34,6 +34,7 @@
     ./programs/security-tools.nix  # Security audit tools (sqlmap, nikto, etc.)
     ./programs/nemo.nix          # Nemo file manager with full integration
     ./programs/teamspeak.nix     # TeamSpeak 6 Beta 3.2
+    ./programs/protonvpn.nix     # ProtonVPN GUI with bcrypt test fix
     ./services/waybar.nix
     ./services/mako.nix
     ./services/swaylock.nix
@@ -118,7 +119,7 @@
     keepassxc
     jq                # JSON processor (essential for CLI work)
     bc                # Calculator (used by Bitcoin price script)
-    pkgs-unstable.protonvpn-gui     # Proton VPN with GUI (unstable for latest version)
+    # Proton VPN - override moved to programs/protonvpn.nix to fix bcrypt test failures
 
     # Windows VM dependencies
     freerdp           # RDP client for Windows VM
