@@ -12,9 +12,9 @@
   ];
 
   # Development packages
-  # VS Code - installed without Nix configuration (use GitHub account sync instead)
+  # VS Code - installed with Nix configuration
   home.packages = with pkgs; [
-    # VS Code with native Wayland support
+    # VS Code (stable version) with native Wayland support
     (vscode.override {
       commandLineArgs = [
         "--enable-features=UseOzonePlatform,WaylandWindowDecorations"

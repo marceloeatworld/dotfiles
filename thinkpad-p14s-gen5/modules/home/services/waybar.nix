@@ -1095,11 +1095,11 @@ in
             warning = 30;
             critical = 15;
           };
-          format = " {capacity}%";
-          format-charging = " {capacity}%";
-          format-plugged = " {capacity}%";
-          format-alt = " {time}";
-          format-icons = [ "" "" "" "" "" ];
+          format = "{icon} {capacity}%";
+          format-charging = "󰂄 {capacity}%";
+          format-plugged = "󰚥 {capacity}%";
+          format-alt = "{icon} {time}";
+          format-icons = [ "󰂎" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
           tooltip-format = "{timeTo}\nPower: {power}W";
         };
 
@@ -1136,15 +1136,15 @@ in
 
         "pulseaudio" = {
           format = "{icon} {volume}%";
-          format-muted = " ";
+          format-muted = "󰖁 ";
           format-icons = {
-            headphone = "";
-            hands-free = "";
-            headset = "";
-            phone = "";
-            portable = "";
-            car = "";
-            default = [ "" "" "" ];
+            headphone = "󰋋";
+            hands-free = "󱡏";
+            headset = "󰋎";
+            phone = "󰏲";
+            portable = "󰦢";
+            car = "󰄋";
+            default = [ "󰕿" "󰖀" "󰕾" ];
           };
           tooltip-format = "Volume: {volume}%\nDevice: {desc}\n\nClick icon to switch output";
           on-click = "$HOME/.config/waybar/scripts/audio-switch.sh";
@@ -1185,8 +1185,8 @@ in
 
         "backlight" = {
           device = "amdgpu_bl1";  # AMD Radeon 780M backlight (was intel_backlight)
-          format = " {percent}%";
-          format-icons = [ "" "" "" "" "" "" "" "" "" ];
+          format = "{icon} {percent}%";
+          format-icons = [ "󰃞" "󰃟" "󰃠" "󱩎" "󱩏" "󱩐" "󱩑" "󱩒" "󱩓" "󱩔" "󰛨" ];
           tooltip-format = "Brightness: {percent}%\nScroll to adjust (syncs both screens)";
           on-scroll-up = "~/.config/waybar/scripts/brightness-sync.sh 5%+";
           on-scroll-down = "~/.config/waybar/scripts/brightness-sync.sh 5%-";
