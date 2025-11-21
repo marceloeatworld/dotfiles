@@ -1,5 +1,5 @@
 # Hyprland - FIXED gestures
-{ pkgs, pkgs-unstable, ... }:
+{ pkgs, pkgs-unstable, inputs, ... }:
 
 let
   bluelight-toggle = pkgs.writeShellScriptBin "bluelight-toggle" ''
@@ -180,9 +180,10 @@ in
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
-    package = pkgs.hyprland;
+    package = inputs.hyprland.packages.${pkgs.system}.hyprland;
 
     settings = {
+      "debug:disable_logs" = false;
       monitor = [
         "HDMI-A-1,1920x1080@60,0x0,1"
         "DP-1,1920x1080@60,0x0,1"
@@ -225,13 +226,18 @@ in
         touchpad = {
           natural_scroll = true;  # Natural scrolling enabled
           disable_while_typing = true;
-          tap-to-click = true;
+          tap_to_click = true;
           clickfinger_behavior = true;
           scroll_factor = 0.4;  # Slower, more precise scrolling
           middle_button_emulation = true;
         };
 
         sensitivity = 0;
+      };
+
+      gestures = {
+        workspace_swipe = true;
+        workspace_swipe_fingers = 3;
       };
 
       general = {
@@ -254,7 +260,6 @@ in
           enabled = true;
           size = 5;
           passes = 2;
-          new_optimizations = true;
           xray = true;
           ignore_opacity = true;
         };
@@ -297,7 +302,6 @@ in
         pseudotile = true;
         preserve_split = true;
         smart_split = true;
-        smart_resizing = true;
       };
 
       master = {
@@ -411,26 +415,24 @@ in
       ];
 
       windowrule = [
-        "float, class:^(pavucontrol)$"
-        "float, class:^(nm-connection-editor)$"
-        "float, class:^(blueman-manager)$"
-        "float, title:^(Picture-in-Picture)$"
-        "pin, title:^(Picture-in-Picture)$"
+        "float,class:^(pavucontrol)$"
+        "float,class:^(nm-connection-editor)$"
+        "float,class:^(blueman-manager)$"
       ];
 
       windowrulev2 = [
         # Opacity rules
-        "opacity 0.95 0.95,class:^(kitty)$"
-        "opacity 0.95 0.95,class:^(thunar)$"
-        "opacity 0.95 0.95,class:^(nemo)$"
-        "suppressevent maximize, class:.*"
-        "opacity 0.97 0.92,class:.*"
+        "opacity 0.95,class:^(kitty)$"
+        "opacity 0.95,class:^(thunar)$"
+        "opacity 0.95,class:^(nemo)$"
+        "suppressevent maximize,class:.*"
+        "opacity 0.97,class:.*"
         "tile,class:^(Brave-browser)$"
-        "opacity 1.0 0.97,class:^(Brave-browser)$"
-        "opacity 1.0 1.0,title:^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$"
+        "opacity 1.0,class:^(Brave-browser)$"
+        "opacity 1.0,title:^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$"
         "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
-        "opacity 1.0 0.95,class:^(code-url-handler)$"
-        "opacity 1.0 0.95,class:^(jetbrains-.*)$"
+        "opacity 1.0,class:^(code-url-handler)$"
+        "opacity 1.0,class:^(jetbrains-.*)$"
 
         # Picture-in-Picture
         "float,title:^(Picture-in-Picture)$"

@@ -35,6 +35,7 @@
     ./programs/nemo.nix          # Nemo file manager with full integration
     ./programs/teamspeak.nix     # TeamSpeak 6 Beta 3.2
     ./programs/protonvpn.nix     # ProtonVPN GUI with bcrypt test fix
+    ./programs/ofxemotibit.nix   # ofxEmotiBit dependencies and setup scripts
     ./services/waybar.nix
     ./services/mako.nix
     ./services/swaylock.nix
@@ -114,6 +115,9 @@
     joplin-desktop    # Note-taking (replaces Obsidian)
     gnome-calculator  # Calculator app
     xournalpp         # PDF annotation
+
+    # 3D Graphics
+    blender           # 3D Creation/Animation/Publishing System (unstable: 4.4.3)
 
     # Misc
     keepassxc

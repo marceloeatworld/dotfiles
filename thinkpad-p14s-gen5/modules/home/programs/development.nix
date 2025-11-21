@@ -1,5 +1,5 @@
 # Development tools configuration
-{ pkgs, pkgs-unstable, ... }:
+{ pkgs, pkgs-unstable, config, ... }:
 
 {
   # NPM configuration for NixOS
@@ -10,6 +10,18 @@
   home.sessionPath = [
     "$HOME/.npm-global/bin"
   ];
+
+  # Home activation scripts
+  home.activation.installGeminiCLI = config.lib.dag.entryAfter ["writeBoundary"] ''
+    $DRY_RUN_CMD ${pkgs.bash}/bin/bash -c "
+      if ! ${pkgs.nodejs_22}/bin/npm list -g @google/gemini-cli &>/dev/null; then
+        echo 'Installing Gemini CLI globally...'
+        ${pkgs.nodejs_22}/bin/npm install -g @google/gemini-cli
+      else
+        echo 'Gemini CLI already installed'
+      fi
+    "
+  '';
 
   # Development packages
   # VS Code - installed with Nix configuration
