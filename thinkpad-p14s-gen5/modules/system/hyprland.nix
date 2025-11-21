@@ -8,7 +8,8 @@
     withUWSM = true;  # Universal Wayland Session Manager - recommended
     xwayland.enable = true;
 
-    # Use Hyprland from the flake for latest version
+    # Use flake version (required for plugins and latest features)
+    # IMPORTANT: Both NixOS and Home Manager must use the SAME source!
     package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   };

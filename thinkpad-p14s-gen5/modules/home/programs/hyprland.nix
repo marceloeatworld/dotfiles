@@ -180,6 +180,7 @@ in
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
+    # MUST use the same package as NixOS module (from flake input)
     package = inputs.hyprland.packages.${pkgs.system}.hyprland;
 
     settings = {
