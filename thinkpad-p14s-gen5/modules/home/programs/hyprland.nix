@@ -415,44 +415,146 @@ in
         ", XF86MonBrightnessDown, exec, brightnessctl set 5%- && notify-send -t 500 'Brightness' \"$(brightnessctl get)\""
       ];
 
-      # Hyprland 0.48+ deprecated windowrule v1 syntax, use windowrulev2
-      windowrulev2 = [
-        # Float windows
-        "float,class:^(pavucontrol)$"
-        "float,class:^(nm-connection-editor)$"
-        "float,class:^(blueman-manager)$"
-
-
-        # Opacity rules
-        "opacity 0.95,class:^(kitty)$"
-        "opacity 0.95,class:^(thunar)$"
-        "opacity 0.95,class:^(nemo)$"
-        "suppressevent maximize,class:.*"
-        "opacity 0.97,class:.*"
-        "tile,class:^(Brave-browser)$"
-        "opacity 1.0,class:^(Brave-browser)$"
-        "opacity 1.0,title:^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$"
-        "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
-        "opacity 1.0,class:^(code-url-handler)$"
-        "opacity 1.0,class:^(jetbrains-.*)$"
-
-        # Picture-in-Picture
-        "float,title:^(Picture-in-Picture)$"
-        "pin,title:^(Picture-in-Picture)$"
-        "size 640 360,title:^(Picture-in-Picture)$"
-        "move 100%-650 100%-370,title:^(Picture-in-Picture)$"
-
-        # Walker launcher
-        "float,class:^(walker)$"
-        "center(1),class:^(walker)$"
-        "size 800 600,class:^(walker)$"
-        "stayfocused,class:^(walker)$"
-
-        # Touchpad scroll adjustments
-        "scrolltouchpad 1.5,class:^(kitty)$"
-        "scrolltouchpad 1.5,class:^(Alacritty)$"
-      ];
     };
+
+    # Hyprland 0.52.0 uses block syntax for window rules
+    # The inline syntax no longer works, so we use extraConfig
+    extraConfig = ''
+      # Float windows
+      windowrule {
+        name = float-pavucontrol
+        match:class = ^(pavucontrol)$
+        float = true
+      }
+      windowrule {
+        name = float-nm-editor
+        match:class = ^(nm-connection-editor)$
+        float = true
+      }
+      windowrule {
+        name = float-blueman
+        match:class = ^(blueman-manager)$
+        float = true
+      }
+
+      # Opacity rules
+      windowrule {
+        name = opacity-kitty
+        match:class = ^(kitty)$
+        opacity = 0.95
+      }
+      windowrule {
+        name = opacity-thunar
+        match:class = ^(thunar)$
+        opacity = 0.95
+      }
+      windowrule {
+        name = opacity-nemo
+        match:class = ^(nemo)$
+        opacity = 0.95
+      }
+      windowrule {
+        name = suppress-maximize-all
+        match:class = .*
+        suppress_event = maximize
+      }
+      windowrule {
+        name = opacity-default
+        match:class = .*
+        opacity = 0.97
+      }
+      windowrule {
+        name = tile-brave
+        match:class = ^(Brave-browser)$
+        tile = true
+      }
+      windowrule {
+        name = opacity-brave
+        match:class = ^(Brave-browser)$
+        opacity = 1.0
+      }
+      windowrule {
+        name = opacity-media
+        match:title = ^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$
+        opacity = 1.0
+      }
+      windowrule {
+        name = nofocus-xwayland
+        match:class = ^$
+        match:title = ^$
+        match:xwayland = true
+        match:float = true
+        match:fullscreen = false
+        match:pin = false
+        no_focus = true
+      }
+      windowrule {
+        name = opacity-vscode
+        match:class = ^(code-url-handler)$
+        opacity = 1.0
+      }
+      windowrule {
+        name = opacity-jetbrains
+        match:class = ^(jetbrains-.*)$
+        opacity = 1.0
+      }
+
+      # Picture-in-Picture
+      windowrule {
+        name = pip-float
+        match:title = ^(Picture-in-Picture)$
+        float = true
+      }
+      windowrule {
+        name = pip-pin
+        match:title = ^(Picture-in-Picture)$
+        pin = true
+      }
+      windowrule {
+        name = pip-size
+        match:title = ^(Picture-in-Picture)$
+        size = 640 360
+      }
+      windowrule {
+        name = pip-move
+        match:title = ^(Picture-in-Picture)$
+        move = 100%-650 100%-370
+      }
+
+      # Walker launcher
+      windowrule {
+        name = walker-float
+        match:class = ^(walker)$
+        float = true
+      }
+      windowrule {
+        name = walker-center
+        match:class = ^(walker)$
+        center = 1
+      }
+      windowrule {
+        name = walker-size
+        match:class = ^(walker)$
+        size = 800 600
+      }
+      windowrule {
+        name = walker-focus
+        match:class = ^(walker)$
+        stay_focused = true
+      }
+
+      # Touchpad scroll adjustments
+      windowrule {
+        name = scroll-kitty
+        match:class = ^(kitty)$
+        scroll_touchpad = 1.5
+      }
+      windowrule {
+        name = scroll-alacritty
+        match:class = ^(Alacritty)$
+        scroll_touchpad = 1.5
+      }
+    '';
   };
 
   home.packages = with pkgs; [
