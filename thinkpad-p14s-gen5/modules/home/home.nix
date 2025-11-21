@@ -35,7 +35,6 @@
     ./programs/nemo.nix          # Nemo file manager with full integration
     ./programs/teamspeak.nix     # TeamSpeak 6 Beta 3.2
     ./programs/protonvpn.nix     # ProtonVPN GUI with bcrypt test fix
-    ./programs/ofxemotibit.nix   # ofxEmotiBit dependencies and setup scripts
     ./services/waybar.nix
     ./services/mako.nix
     ./services/swaylock.nix
