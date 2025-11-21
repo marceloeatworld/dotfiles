@@ -226,7 +226,7 @@ in
         touchpad = {
           natural_scroll = true;  # Natural scrolling enabled
           disable_while_typing = true;
-          tap_to_click = true;
+          tap-to-click = true;  # Fixed: use hyphens instead of underscores
           clickfinger_behavior = true;
           scroll_factor = 0.4;  # Slower, more precise scrolling
           middle_button_emulation = true;
@@ -235,10 +235,10 @@ in
         sensitivity = 0;
       };
 
-      gestures = {
-        workspace_swipe = true;
-        workspace_swipe_fingers = 3;
-      };
+      # Hyprland 0.51+ uses new gesture syntax
+      gesture = [
+        "3, horizontal, workspace"  # 3-finger horizontal swipe for workspace switching
+      ];
 
       general = {
         gaps_in = 0;
@@ -414,13 +414,14 @@ in
         ", XF86MonBrightnessDown, exec, brightnessctl set 5%- && notify-send -t 500 'Brightness' \"$(brightnessctl get)\""
       ];
 
-      windowrule = [
+      # Hyprland 0.48+ deprecated windowrule v1 syntax, use windowrulev2
+      windowrulev2 = [
+        # Float windows
         "float,class:^(pavucontrol)$"
         "float,class:^(nm-connection-editor)$"
         "float,class:^(blueman-manager)$"
-      ];
 
-      windowrulev2 = [
+
         # Opacity rules
         "opacity 0.95,class:^(kitty)$"
         "opacity 0.95,class:^(thunar)$"
