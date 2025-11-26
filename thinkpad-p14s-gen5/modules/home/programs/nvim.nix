@@ -29,7 +29,7 @@
 
       # Icons and visuals
       nvim-web-devicons
-      lualine-nvim         # Statusline
+      # lualine-nvim       # Statusline - DISABLED: rockspec hash mismatch in nixpkgs (upstream changed)
       bufferline-nvim      # Buffer line
       indent-blankline-nvim  # Indent guides
       which-key-nvim       # Keybinding popup
@@ -192,15 +192,22 @@
       })
       vim.cmd([[colorscheme monokai-pro]])
 
-      -- Lualine setup
-      require('lualine').setup({
-        options = {
-          theme = 'monokai-pro',
-          icons_enabled = true,
-          component_separators = { left = "", right = ""},
-          section_separators = { left = "", right = ""},
+      -- Lualine setup (installed via lazy.nvim due to nixpkgs rockspec hash mismatch)
+      require("lazy").setup({
+        { "nvim-lualine/lualine.nvim",
+          dependencies = { "nvim-tree/nvim-web-devicons" },
+          config = function()
+            require('lualine').setup({
+              options = {
+                theme = 'monokai-pro',
+                icons_enabled = true,
+                component_separators = { left = "", right = ""},
+                section_separators = { left = "", right = ""},
+              },
+            })
+          end,
         },
-      })
+      }, { performance = { rtp = { reset = false } } })
 
       -- Neo-tree (File explorer)
       require("neo-tree").setup({

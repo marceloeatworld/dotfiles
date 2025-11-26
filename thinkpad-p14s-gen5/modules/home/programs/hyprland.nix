@@ -521,6 +521,23 @@ in
         move = 100%-650 100%-370
       }
 
+      # YouTube webapp - floating on the right
+      windowrule {
+        name = youtube-float
+        match:class = ^(brave-youtube\.com__-Default)$
+        float = true
+      }
+      windowrule {
+        name = youtube-size
+        match:class = ^(brave-youtube\.com__-Default)$
+        size = 960 720
+      }
+      windowrule {
+        name = youtube-move
+        match:class = ^(brave-youtube\.com__-Default)$
+        move = 100%-970 10
+      }
+
       # Walker launcher
       windowrule {
         name = walker-float
