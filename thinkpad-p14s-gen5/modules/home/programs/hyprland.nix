@@ -302,7 +302,9 @@ in
       dwindle = {
         pseudotile = true;
         preserve_split = true;
-        smart_split = true;
+        smart_split = false;  # Disable auto split direction
+        force_split = 2;  # Always split to the right (horizontal/landscape)
+        split_width_multiplier = 1.5;  # Prefer horizontal splits
       };
 
       master = {

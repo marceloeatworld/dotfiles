@@ -101,6 +101,7 @@
     curl
     speedtest-cli
     avahi             # Local network discovery (mDNS)
+    transmission_4-gtk  # Torrent client (GTK interface)
 
     # Media
     mpv

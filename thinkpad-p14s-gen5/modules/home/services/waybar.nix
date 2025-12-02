@@ -898,6 +898,10 @@ let
     # Apply rotation using Hyprland
     ${pkgs.hyprland}/bin/hyprctl keyword monitor "$EXTERNAL_MONITOR,transform,$TRANSFORM"
 
+    # Fix duplicate cursor bug by reloading cursor theme
+    sleep 0.3
+    ${pkgs.hyprland}/bin/hyprctl setcursor Bibata-Modern-Classic 24
+
     # Save state
     echo "$NEXT_ROTATION" > "$STATE_FILE"
 
