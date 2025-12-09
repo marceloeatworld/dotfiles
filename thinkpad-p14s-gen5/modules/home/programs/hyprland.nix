@@ -184,7 +184,7 @@ in
     package = inputs.hyprland.packages.${pkgs.system}.hyprland;
 
     settings = {
-      "debug:disable_logs" = false;
+      "debug:disable_logs" = true;
       monitor = [
         "HDMI-A-1,1920x1080@60,0x0,1"
         "DP-1,1920x1080@60,0x0,1"
