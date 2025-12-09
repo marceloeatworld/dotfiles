@@ -9,10 +9,10 @@
   # Enable 32-bit graphics support (required for Steam and 32-bit games)
   hardware.graphics.enable32Bit = true;
 
-  # Enable Hyprland with UWSM (recommended for NixOS 24.11)
+  # Enable Hyprland (without UWSM - recommended for most users per official docs)
   programs.hyprland = {
     enable = true;
-    withUWSM = true;  # Universal Wayland Session Manager - recommended
+    withUWSM = false;  # UWSM disabled - "for the majority of users, it's recommended to use Hyprland without it"
     xwayland.enable = true;
 
     # Use flake version (required for plugins and latest features)

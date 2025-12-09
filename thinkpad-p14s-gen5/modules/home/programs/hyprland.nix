@@ -213,8 +213,8 @@ in
     xwayland.enable = true;
     # MUST use the same package as NixOS module (from flake input)
     package = inputs.hyprland.packages.${pkgs.system}.hyprland;
-    # Disable home-manager systemd integration - conflicts with UWSM
-    systemd.enable = false;
+    # Enable home-manager systemd integration (UWSM disabled)
+    systemd.enable = true;
 
     settings = {
       "debug:disable_logs" = true;
