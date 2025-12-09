@@ -26,13 +26,12 @@
   # Development packages
   # VS Code - installed with Nix configuration
   home.packages = with pkgs; [
-    # VS Code (stable version) with native Wayland support
-    (vscode.override {
-      commandLineArgs = [
-        "--enable-features=UseOzonePlatform,WaylandWindowDecorations"
-        "--ozone-platform=wayland"
-      ];
-    })  # All settings and extensions are managed through GitHub account sync
+    # VS Code (FHS version) with native Wayland support
+    # FHS version provides better compatibility with binary extensions
+    (vscode.fhs.overrideAttrs (oldAttrs: {
+      buildInputs = oldAttrs.buildInputs or [];
+    }))  # All settings and extensions are managed through GitHub account sync
+    # Note: Wayland flags are set via ~/.config/code-flags.conf
     # Version control
     git
     git-lfs

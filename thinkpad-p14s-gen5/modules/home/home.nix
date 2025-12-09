@@ -152,6 +152,12 @@
     # Do NOT install fonts in home.packages - use fonts.packages instead
   ];
 
+  # VS Code Wayland flags (for vscode.fhs)
+  home.file.".config/code-flags.conf".text = ''
+    --enable-features=UseOzonePlatform,WaylandWindowDecorations
+    --ozone-platform=wayland
+  '';
+
   # XDG user directories
   xdg.userDirs = {
     enable = true;

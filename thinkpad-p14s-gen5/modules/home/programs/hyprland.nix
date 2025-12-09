@@ -182,6 +182,8 @@ in
     xwayland.enable = true;
     # MUST use the same package as NixOS module (from flake input)
     package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    # Disable home-manager systemd integration - conflicts with UWSM
+    systemd.enable = false;
 
     settings = {
       "debug:disable_logs" = true;
@@ -199,21 +201,16 @@ in
         "hyprpaper"
         "wl-paste --type text --watch cliphist store"
         "wl-paste --type image --watch cliphist store"
-        "walker --gapplication-service"
+        # walker is started by systemd (runAsService = true in walker.nix)
         "hypridle"
       ];
 
+      # Cursor and GDK settings (system-level has the rest via environment.sessionVariables)
       env = [
         "XCURSOR_SIZE,24"
         "HYPRCURSOR_SIZE,24"
         "GDK_BACKEND,wayland,x11,*"
-        "QT_QPA_PLATFORM,wayland;xcb"
-        "SDL_VIDEODRIVER,wayland"
-        "MOZ_ENABLE_WAYLAND,1"
         "ELECTRON_OZONE_PLATFORM_HINT,wayland"
-        "XDG_SESSION_TYPE,wayland"
-        "XDG_CURRENT_DESKTOP,Hyprland"
-        "XDG_SESSION_DESKTOP,Hyprland"
       ];
 
       input = {
@@ -237,9 +234,9 @@ in
       };
 
       # Hyprland 0.51+ uses new gesture syntax
-      gesture = [
-        "3, horizontal, workspace"  # 3-finger horizontal swipe for workspace switching
-      ];
+      gestures = {
+        gesture = "3, horizontal, workspace";  # 3-finger horizontal swipe for workspace switching
+      };
 
       general = {
         gaps_in = 0;

@@ -17,7 +17,7 @@
   # XDG Desktop Portal configuration
   xdg.portal = {
     enable = true;
-    wlr.enable = true;
+    wlr.enable = false;  # Disabled - use Hyprland's own portal instead
     xdgOpenUsePortal = false;  # Disabled - hyprland portal doesn't fully support OpenURI
     extraPortals = with pkgs; [
       xdg-desktop-portal-gtk
