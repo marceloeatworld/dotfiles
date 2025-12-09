@@ -1,19 +1,14 @@
 # Hyprland Wayland Compositor Configuration
 { pkgs, inputs, ... }:
 
-let
-  # Use Hyprland's nixpkgs for Mesa to avoid version mismatch
-  # This fixes lag and FPS drops in games/Blender when using Hyprland flake
-  pkgs-hyprland = inputs.hyprland.inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system};
-in
 {
-  # Synchronize Mesa version with Hyprland to prevent driver mismatch
-  # Critical for AMD GPUs - prevents graphical glitches and performance issues
-  hardware.graphics = {
-    package = pkgs-hyprland.mesa;
-    enable32Bit = true;  # Required for Steam and 32-bit games
-    package32 = pkgs-hyprland.pkgsi686Linux.mesa;
-  };
+  # NOTE: Mesa synchronization with Hyprland disabled - causes Kitty/OpenGL crashes
+  # If you need it for games, re-enable, but it may break terminal emulators
+  # hardware.graphics.package = inputs.hyprland.inputs.nixpkgs.legacyPackages.${pkgs.system}.mesa;
+
+  # Enable 32-bit graphics support (required for Steam and 32-bit games)
+  hardware.graphics.enable32Bit = true;
+
   # Enable Hyprland with UWSM (recommended for NixOS 24.11)
   programs.hyprland = {
     enable = true;

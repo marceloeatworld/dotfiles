@@ -1,7 +1,81 @@
-# Terminal emulator configuration - WITH MOUSE COPY FIXED
+# Terminal emulator configuration - Kitty (primary) + Alacritty (backup)
 { pkgs, ... }:
 
 {
+  # ============================================
+  # ALACRITTY - Backup terminal (simple, fast)
+  # ============================================
+  programs.alacritty = {
+    enable = true;
+    settings = {
+      # Window
+      window = {
+        padding = { x = 14; y = 14; };
+        decorations = "none";
+        opacity = 0.95;
+      };
+
+      # Font
+      font = {
+        normal = { family = "JetBrainsMono Nerd Font"; style = "Regular"; };
+        size = 10;
+      };
+
+      # Cursor
+      cursor = {
+        style = { shape = "Block"; blinking = "Off"; };
+      };
+
+      # Ristretto color scheme
+      colors = {
+        primary = {
+          background = "#2c2525";
+          foreground = "#e6d9db";
+        };
+        cursor = {
+          text = "#2c2525";
+          cursor = "#c3b7b8";
+        };
+        selection = {
+          text = "#e6d9db";
+          background = "#403e41";
+        };
+        normal = {
+          black = "#72696a";
+          red = "#fd6883";
+          green = "#adda78";
+          yellow = "#f9cc6c";
+          blue = "#f38d70";
+          magenta = "#a8a9eb";
+          cyan = "#85dacc";
+          white = "#e6d9db";
+        };
+        bright = {
+          black = "#948a8b";
+          red = "#ff8297";
+          green = "#c8e292";
+          yellow = "#fcd675";
+          blue = "#f8a788";
+          magenta = "#bebffd";
+          cyan = "#9bf1e1";
+          white = "#f1e5e7";
+        };
+      };
+
+      # Keyboard bindings
+      keyboard.bindings = [
+        { key = "V"; mods = "Control|Shift"; action = "Paste"; }
+        { key = "C"; mods = "Control|Shift"; action = "Copy"; }
+        { key = "Plus"; mods = "Control"; action = "IncreaseFontSize"; }
+        { key = "Minus"; mods = "Control"; action = "DecreaseFontSize"; }
+        { key = "Key0"; mods = "Control"; action = "ResetFontSize"; }
+      ];
+    };
+  };
+
+  # ============================================
+  # KITTY - Primary terminal
+  # ============================================
   programs.kitty = {
     enable = true;
 
@@ -28,11 +102,11 @@
 
       # Window
       window_padding_width = 14;
-      window_padding_height = 14;
+      # window_padding_height removed in kitty 0.42+
       hide_window_decorations = true;
       confirm_os_window_close = 0;
       background_opacity = "0.95";
-      resize_draw_strategy = "static";
+      # resize_draw_strategy removed in kitty 0.42+
 
       # Tab bar (Ristretto theme)
       tab_bar_style = "powerline";
@@ -61,7 +135,7 @@
       # Remote control & instance
       allow_remote_control = true;
       listen_on = "unix:/tmp/kitty";
-      single_instance = true;
+      # single_instance removed in kitty 0.42+
 
       # ========================================
       # MOUSE & CLIPBOARD - NEW/FIXED
@@ -89,14 +163,8 @@
       # Clipboard control (allow kitty to access clipboard)
       clipboard_control = "write-clipboard write-primary read-clipboard read-primary";
       
-      # Rectangle select modifier (hold this + drag to select rectangle)
-      rectangle_select_modifiers = "ctrl+alt";
-      
-      # Terminal select modifier (hold this + click to select from cursor to click)
-      terminal_select_modifiers = "shift";
-      
-      # Clear selection when you start typing
-      clear_selection_on_paste = true;
+      # rectangle_select_modifiers, terminal_select_modifiers, clear_selection_on_paste
+      # removed in kitty 0.42+
     };
 
     # Keyboard shortcuts
