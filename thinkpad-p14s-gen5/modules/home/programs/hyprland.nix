@@ -111,6 +111,37 @@ let
     notify-send -t 2000 "$TITLE" "$DESC" -i "$ICON"
   '';
 
+  # Toggle performance mode (blur/shadows/animations)
+  perf-mode = pkgs.writeShellScriptBin "perf-mode" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    STATE_FILE="$HOME/.config/perf-mode-state"
+
+    # Read current state
+    if [ -f "$STATE_FILE" ]; then
+      CURRENT=$(cat "$STATE_FILE")
+    else
+      CURRENT="quality"
+    fi
+
+    if [ "$CURRENT" = "quality" ]; then
+      # Switch to performance mode (disable effects)
+      hyprctl keyword decoration:blur:enabled false
+      hyprctl keyword decoration:shadow:enabled false
+      hyprctl keyword animations:enabled false
+      echo "performance" > "$STATE_FILE"
+      notify-send -t 2000 "Performance Mode" "Effects disabled for battery/GPU savings" -i "battery-good"
+    else
+      # Switch to quality mode (enable effects)
+      hyprctl keyword decoration:blur:enabled true
+      hyprctl keyword decoration:shadow:enabled true
+      hyprctl keyword animations:enabled true
+      echo "quality" > "$STATE_FILE"
+      notify-send -t 2000 "Quality Mode" "Visual effects enabled" -i "video-display"
+    fi
+  '';
+
   battery-mode = pkgs.writeShellScriptBin "battery-mode" ''
     #!/usr/bin/env bash
     # Battery charge mode selector for ThinkPad (requires sudo privileges)
@@ -390,6 +421,7 @@ in
         "$mod, C, exec, hyprpicker -a"
         "$mod, N, exec, ${bluelight-toggle}/bin/bluelight-toggle"
         "$mod, M, exec, ${battery-mode}/bin/battery-mode"
+        "$mod SHIFT, M, exec, ${perf-mode}/bin/perf-mode"
         ", Print, exec, grim -g \"$(slurp)\" - | wl-copy && notify-send 'Screenshot' 'Copied to clipboard'"
         "$mod, Print, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png && notify-send 'Screenshot' 'Saved to Pictures/Screenshots'"
         "SHIFT, Print, exec, grim - | wl-copy && notify-send 'Screenshot' 'Full screen copied'"
@@ -587,5 +619,6 @@ in
     pkgs-unstable.hyprsunset  # v0.3.3+ with SIGTERM/SIGINT fixes
     bluelight-toggle
     battery-mode
+    perf-mode
   ];
 }

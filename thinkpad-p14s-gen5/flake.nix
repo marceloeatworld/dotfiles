@@ -125,6 +125,7 @@
           ./modules/system/ddcutil.nix  # DDC/CI support for external monitor brightness control
           ./modules/system/security-tools.nix  # Security audit tools (nmap, wireshark, aircrack-ng, hashcat)
           ./modules/system/nh.nix  # NH - Modern Nix Helper
+          ./modules/system/performance.nix  # Zram, ananicy-cpp, earlyoom, gamemode
 
           # Home Manager
           home-manager.nixosModules.home-manager
