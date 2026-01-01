@@ -11,7 +11,7 @@
 
 let
   version = "2.0.76";
-  hash = "sha256-46IqiGJZrZM4vVcanZj/vY4uxFH3/4LxNA+Qb6iIHDk=";
+  hash = "sha256-/KOZNv+OkxDI5MaDPWRVNBuSrNkjF3hfD3c+50ORudk=";
 in
 claude-code.overrideAttrs (oldAttrs: {
   inherit version;

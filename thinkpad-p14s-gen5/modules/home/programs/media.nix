@@ -10,14 +10,109 @@ let
   };
 in
 {
-  # MPV video player
+  # MPV video player - Full configuration
   programs.mpv = {
     enable = true;
     config = {
+      # Video output
       profile = "gpu-hq";
       hwdec = "auto-safe";
-      vo = "gpu";
+      vo = "gpu-next";
       gpu-context = "wayland";
+      gpu-api = "vulkan";
+
+      # Quality
+      scale = "ewa_lanczos";
+      cscale = "ewa_lanczos";
+      video-sync = "display-resample";
+      interpolation = true;
+      tscale = "oversample";
+
+      # Audio
+      volume = 100;
+      volume-max = 150;
+      audio-pitch-correction = true;
+
+      # Subtitles
+      sub-auto = "fuzzy";
+      sub-font = "JetBrainsMono Nerd Font";
+      sub-font-size = 40;
+      sub-color = "#FFFFFF";
+      sub-border-color = "#000000";
+      sub-border-size = 2;
+      sub-shadow-offset = 1;
+      sub-shadow-color = "#000000";
+      sub-spacing = 0.5;
+
+      # OSD
+      osd-level = 1;
+      osd-duration = 2500;
+      osd-font = "JetBrainsMono Nerd Font";
+      osd-font-size = 32;
+      osd-color = "#e6d9db";
+      osd-border-color = "#2c2421";
+      osd-border-size = 2;
+      osd-bar-align-y = 0.9;
+
+      # Screenshot
+      screenshot-format = "png";
+      screenshot-png-compression = 8;
+      screenshot-template = "~/Pictures/Screenshots/mpv-%F-%P";
+
+      # Cache
+      cache = true;
+      demuxer-max-bytes = "150MiB";
+      demuxer-max-back-bytes = "75MiB";
+
+      # Misc
+      keep-open = true;
+      save-position-on-quit = true;
+      autofit-larger = "90%x90%";
+      cursor-autohide = 1000;
+      force-window = "immediate";
+    };
+
+    bindings = {
+      # Playback
+      "SPACE" = "cycle pause";
+      "m" = "cycle mute";
+      "UP" = "add volume 5";
+      "DOWN" = "add volume -5";
+      "LEFT" = "seek -5";
+      "RIGHT" = "seek 5";
+      "Shift+LEFT" = "seek -60";
+      "Shift+RIGHT" = "seek 60";
+      "[" = "add speed -0.1";
+      "]" = "add speed 0.1";
+      "BS" = "set speed 1.0";
+
+      # Subtitles
+      "v" = "cycle sub-visibility";
+      "j" = "cycle sub";
+      "J" = "cycle sub down";
+
+      # Screenshot
+      "s" = "screenshot";
+      "S" = "screenshot video";
+
+      # Fullscreen
+      "f" = "cycle fullscreen";
+      "ESC" = "set fullscreen no";
+
+      # Playlist
+      ">" = "playlist-next";
+      "<" = "playlist-prev";
+      "l" = "ab-loop";
+      "L" = "cycle-values loop-file inf no";
+
+      # Audio
+      "a" = "cycle audio";
+
+      # Aspect ratio
+      "A" = "cycle-values video-aspect-override 16:9 4:3 2.35:1 -1";
+
+      # Rotate
+      "r" = "cycle-values video-rotate 90 180 270 0";
     };
   };
 
@@ -33,11 +128,43 @@ in
     transparency = grid
   '';
 
-  # PhotoGIMP - Copy ALL config files for complete Photoshop style
-  home.file.".config/GIMP/3.0" = {
-    source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0";
-    recursive = true;
-    force = true;  # Overwrite existing files without backing up
+  # PhotoGIMP - Only symlink static assets (themes, fonts, shortcuts, etc.)
+  # GIMP needs to write to gimprc, sessionrc, pluginrc, etc. so we don't symlink those
+  home.file = {
+    # Keyboard shortcuts (Photoshop-style)
+    ".config/GIMP/3.0/shortcutsrc".source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/shortcutsrc";
+    # Tool presets and options
+    ".config/GIMP/3.0/toolrc".source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/toolrc";
+    ".config/GIMP/3.0/tool-options" = {
+      source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/tool-options";
+      recursive = true;
+    };
+    # Templates
+    ".config/GIMP/3.0/templaterc".source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/templaterc";
+    # Theme styling
+    ".config/GIMP/3.0/theme.css".source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/theme.css";
+    # Splash screens
+    ".config/GIMP/3.0/splashes" = {
+      source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/splashes";
+      recursive = true;
+    };
+    # Fonts
+    ".config/GIMP/3.0/fonts" = {
+      source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/fonts";
+      recursive = true;
+    };
+    # Gradients
+    ".config/GIMP/3.0/gradients" = {
+      source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/gradients";
+      recursive = true;
+    };
+    # Filters
+    ".config/GIMP/3.0/filters" = {
+      source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/filters";
+      recursive = true;
+    };
+    # Tags (brush/pattern organization)
+    ".config/GIMP/3.0/tags.xml".source = "${photogimp}/PhotoGIMP-linux/.config/GIMP/3.0/tags.xml";
   };
 
   # Additional media packages

@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  # Override TeamSpeak to beta3.2
+  # Override TeamSpeak 6 to beta3.2 (official TeamSpeak servers)
   teamspeak6-beta = pkgs.teamspeak6-client.overrideAttrs (oldAttrs: rec {
     version = "6.0.0-beta3.2";
 
@@ -13,6 +13,7 @@ let
 in
 {
   home.packages = [
-    teamspeak6-beta
+    pkgs.teamspeak3  # TeamSpeak 3 client (stable, from nixpkgs)
+    teamspeak6-beta        # TeamSpeak 6 (beta, from official servers)
   ];
 }

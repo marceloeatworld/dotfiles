@@ -18,6 +18,14 @@ vscode.overrideAttrs (oldAttrs: {
     name = "vscode-${version}.tar.gz";
   };
 
+  # Ignore missing deps for Microsoft auth extension (optional, browser-based auth)
+  autoPatchelfIgnoreMissingDeps = (oldAttrs.autoPatchelfIgnoreMissingDeps or []) ++ [
+    "libcurl.so.4"
+    "libcrypto.so.3"
+    "libwebkit2gtk-4.1.so.0"
+    "libsoup-3.0.so.0"
+  ];
+
   meta = oldAttrs.meta // {
     description = "Visual Studio Code - Latest (${version})";
   };

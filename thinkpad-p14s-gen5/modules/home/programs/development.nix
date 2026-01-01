@@ -26,11 +26,9 @@
   # Development packages
   # VS Code - Latest version from Microsoft (updated via overlays/vscode-latest.nix)
   home.packages = with pkgs; [
-    # VS Code Latest (FHS version) - Always the newest release from Microsoft
-    # FHS version provides better compatibility with binary extensions
-    # To update: edit overlays/vscode-latest.nix (version + sha256)
-    vscode.fhs  # All settings and extensions are managed through GitHub account sync
-    # Note: Wayland flags are set via ~/.config/code-flags.conf
+    # VS Code Latest - Always the newest release from Microsoft
+    # To update: run update-apps or edit overlays/vscode-latest.nix
+    vscode  # All settings and extensions are managed through GitHub account sync
     # Version control
     git
     git-lfs

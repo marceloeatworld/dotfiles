@@ -39,6 +39,7 @@
     ./programs/yt-dlp.nix         # YouTube downloader
     ./programs/nemo.nix           # Nemo file manager
     ./programs/xournalpp.nix      # PDF annotation
+    ./programs/zathura.nix        # PDF viewer (Ristretto theme)
 
     # ── Communication ──
     ./programs/teamspeak.nix      # TeamSpeak 6
@@ -122,7 +123,7 @@
 
     # Documents
     libreoffice-fresh
-    zathura
+    # zathura moved to programs/zathura.nix
 
     # Productivity
     joplin-desktop    # Note-taking (replaces Obsidian)

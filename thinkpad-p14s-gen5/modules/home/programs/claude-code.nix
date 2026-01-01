@@ -238,6 +238,42 @@ let
     };
     # Extended thinking
     alwaysThinkingEnabled = true;
+    # Hooks configuration - security hooks for file access control
+    hooks = {
+      # PreToolUse hooks run before tool execution
+      PreToolUse = [
+        {
+          # Hook for Read tool - blocks sensitive file access
+          matcher = "Read";
+          hooks = [
+            {
+              type = "command";
+              command = "python3 $HOME/.claude/hooks/protect_sensitive_files.py";
+            }
+          ];
+        }
+        {
+          # Hook for Edit tool - blocks sensitive file modification
+          matcher = "Edit";
+          hooks = [
+            {
+              type = "command";
+              command = "python3 $HOME/.claude/hooks/protect_sensitive_files.py";
+            }
+          ];
+        }
+        {
+          # Hook for Write tool - blocks sensitive file creation
+          matcher = "Write";
+          hooks = [
+            {
+              type = "command";
+              command = "python3 $HOME/.claude/hooks/protect_sensitive_files.py";
+            }
+          ];
+        }
+      ];
+    };
   };
 
   # Agent: Code Reviewer (Laravel-focused)

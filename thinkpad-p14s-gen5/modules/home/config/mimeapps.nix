@@ -86,6 +86,28 @@
       "video/3gpp2" = "mpv.desktop";
 
       # ============================================
+      # AUDIO → mpv
+      # ============================================
+      "audio/mpeg" = "mpv.desktop";
+      "audio/mp3" = "mpv.desktop";
+      "audio/x-mp3" = "mpv.desktop";
+      "audio/flac" = "mpv.desktop";
+      "audio/x-flac" = "mpv.desktop";
+      "audio/ogg" = "mpv.desktop";
+      "audio/x-vorbis+ogg" = "mpv.desktop";
+      "audio/wav" = "mpv.desktop";
+      "audio/x-wav" = "mpv.desktop";
+      "audio/aac" = "mpv.desktop";
+      "audio/mp4" = "mpv.desktop";
+      "audio/x-m4a" = "mpv.desktop";
+      "audio/x-aac" = "mpv.desktop";
+      "audio/opus" = "mpv.desktop";
+      "audio/webm" = "mpv.desktop";
+      "audio/x-aiff" = "mpv.desktop";
+      "audio/aiff" = "mpv.desktop";
+      "audio/x-ms-wma" = "mpv.desktop";
+
+      # ============================================
       # ARCHIVES → file-roller (via Nemo)
       # ============================================
       "application/x-compressed-tar" = "org.gnome.FileRoller.desktop";

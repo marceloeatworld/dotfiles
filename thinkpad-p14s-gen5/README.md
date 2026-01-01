@@ -219,9 +219,17 @@ nix flake update
 **NixOS System**
 | Alias | Command | Description |
 |-------|---------|-------------|
-| `rebuild` | `nh os switch` | Rebuild and switch system |
-| `update` | `nix flake update && nh os switch` | Update flake inputs and rebuild |
+| `rebuild` | `nh os switch` | Rebuild system |
+| `update` | `nix flake update && update-overlays && nh os switch` | Full update (flake + apps) |
+| `update-apps` | `update-overlays && nh os switch` | Update VS Code & Claude Code |
 | `clean` | `nh clean all --keep 5` | Clean old generations |
+
+**Auto-update functions:**
+| Function | Description |
+|----------|-------------|
+| `update-vscode` | Check/update VS Code from Microsoft API |
+| `update-claude-code` | Check/update Claude Code from npm registry |
+| `update-overlays` | Update both VS Code and Claude Code |
 
 **File Listing (Modern Tools)**
 | Alias | Command | Description |

@@ -349,7 +349,8 @@ in
         swallow_regex = "^(com.mitchellh.ghostty|Alacritty)$";
         force_default_wallpaper = 0;
         vfr = true;  # Variable frame rate - reduces GPU usage when idle
-        focus_on_activate = true;
+        focus_on_activate = false;  # Prevent windows from stealing focus
+        new_window_takes_over_fullscreen = 2;  # 0=behind, 1=over, 2=unfullscreen
       };
 
       # Render optimizations
@@ -454,48 +455,64 @@ in
       ];
 
       # Window rules - Hyprland 0.52 inline syntax
-      # Format: windowrule = RULE, match:CONDITION VALUE
       windowrule = [
-        # Float windows - System tools
+        # === GENERIC RULES ===
+        "suppressevent maximize, class:.*"
+
+        # === FLOAT WINDOWS ===
+        # System tools & dialogs
         "float, class:^(hyprpwcenter)$"
         "float, class:^(hyprsysteminfo)$"
         "float, class:^(hyprpolkitagent)$"
         "float, class:^(nm-connection-editor)$"
         "float, class:^(blueman-manager)$"
+        "float, class:^(pavucontrol)$"
+        "float, class:^(org.gnome.Calculator)$"
+        "float, class:^(file-roller)$"
+        "float, class:^(xdg-desktop-portal-gtk)$"
+        "float, class:^(org.gnome.FileRoller)$"
+        "float, class:^(confirm)$"
+        "float, class:^(dialog)$"
+        "float, class:^(download)$"
+        "float, class:^(notification)$"
+        "float, class:^(error)$"
+        "float, class:^(splash)$"
+        "float, title:^(Open File)$"
+        "float, title:^(Save File)$"
+        "float, title:^(Open Folder)$"
+        "float, title:^(Confirm)$"
+        "float, title:^(File Operation Progress)$"
 
-        # Opacity rules for terminals
+        # === OPACITY RULES ===
+        # Terminals - slight transparency
         "opacity 0.95, class:^(com.mitchellh.ghostty)$"
         "opacity 0.95, class:^(Alacritty)$"
+
+        # File managers - slight transparency
         "opacity 0.95, class:^(thunar)$"
         "opacity 0.95, class:^(nemo)$"
 
-        # Suppress maximize for all windows
-        "suppressevent maximize, class:.*"
-
-        # Default opacity for all windows
-        "opacity 0.97, class:.*"
-
-        # Brave browser - tiled and full opacity
+        # Browsers - full opacity (important for video)
         "tile, class:^(Brave-browser)$"
         "opacity 1.0 override, class:^(Brave-browser)$"
+        "opacity 1.0 override, class:^(firefox)$"
+        "opacity 1.0 override, class:^(chromium)$"
 
         # Media content - full opacity
         "opacity 1.0 override, title:^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$"
 
-        # XWayland ghost windows - no focus
-        "nofocus, class:^$, title:^$, xwayland:1, floating:1, fullscreen:0, pinned:0"
-
-        # VS Code - full opacity
+        # IDEs - full opacity
         "opacity 1.0 override, class:^(code-url-handler)$"
-
-        # JetBrains IDEs - full opacity
+        "opacity 1.0 override, class:^(Code)$"
         "opacity 1.0 override, class:^(jetbrains-.*)$"
 
+        # === SPECIAL WINDOWS ===
         # Picture-in-Picture
         "float, title:^(Picture-in-Picture)$"
         "pin, title:^(Picture-in-Picture)$"
         "size 640 360, title:^(Picture-in-Picture)$"
         "move 100%-650 100%-370, title:^(Picture-in-Picture)$"
+        "opacity 1.0 override, title:^(Picture-in-Picture)$"
 
         # YouTube webapp - floating on the right
         "float, class:^(brave-youtube\\.com__-Default)$"
@@ -506,6 +523,10 @@ in
         "float, class:^(hyprlauncher)$"
         "center, class:^(hyprlauncher)$"
         "stayfocused, class:^(hyprlauncher)$"
+
+        # Prevent idle when watching video
+        "idleinhibit fullscreen, class:.*"
+        "idleinhibit focus, class:^(mpv|vlc)$"
       ];
 
     };

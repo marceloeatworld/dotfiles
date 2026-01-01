@@ -16,14 +16,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    catppuccin-bat = {
-      url = "github:catppuccin/bat";
-      flake = false;
-    };
-    catppuccin-starship = {
-      url = "github:catppuccin/starship";
-      flake = false;
-    };
+    # NOTE: catppuccin-bat and catppuccin-starship removed
+    # Using custom Ristretto theme defined in shell.nix for consistency
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, disko, ... } @ inputs:
@@ -56,10 +50,14 @@
           })
           # VS Code Latest - Always use the latest version from Microsoft
           # Update: overlays/vscode-latest.nix (version + sha256)
-          (final: prev: {
-            vscode = import ./overlays/vscode-latest.nix {
+          (final: prev: let
+            # Import version info from overlay file
+            vscodeInfo = import ./overlays/vscode-latest.nix {
               inherit (prev) lib fetchurl vscode;
             };
+          in {
+            vscode = vscodeInfo;
+            vscode-fhs = (prev.vscode.fhs.override { vscode = vscodeInfo; });
           })
           # Claude Code Latest - Always use latest from npm (official Anthropic source)
           # Update: overlays/claude-code-latest.nix (version + hash)
@@ -93,6 +91,44 @@
         inherit system specialArgs;
 
         modules = [
+          # Configure nixpkgs for this system
+          {
+            nixpkgs.config.allowUnfree = true;
+            nixpkgs.overlays = [
+              # Fix proton-core bcrypt test failures
+              (final: prev: {
+                python3 = prev.python3.override {
+                  packageOverrides = pyfinal: pyprev: {
+                    proton-core = pyprev.proton-core.overridePythonAttrs (old: {
+                      doCheck = false;
+                      doInstallCheck = false;
+                    });
+                  };
+                };
+                python313 = prev.python313.override {
+                  packageOverrides = pyfinal: pyprev: {
+                    proton-core = pyprev.proton-core.overridePythonAttrs (old: {
+                      doCheck = false;
+                      doInstallCheck = false;
+                    });
+                  };
+                };
+              })
+              # VS Code Latest
+              (final: prev: {
+                vscode = import ./overlays/vscode-latest.nix {
+                  inherit (prev) lib fetchurl vscode;
+                };
+              })
+              # Claude Code Latest
+              (final: prev: {
+                claude-code = import ./overlays/claude-code-latest.nix {
+                  inherit (prev) lib fetchurl claude-code;
+                };
+              })
+            ];
+          }
+
           # Disko for declarative disk partitioning
           disko.nixosModules.disko
           ./hosts/thinkpad/disko-config.nix
