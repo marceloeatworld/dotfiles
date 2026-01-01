@@ -27,13 +27,12 @@
   # NixOS 25.05: hardware.pulseaudio renamed to services.pulseaudio
   services.pulseaudio.enable = false;
 
-  # ALSA utils
+  # Audio tools
   environment.systemPackages = with pkgs; [
-    pavucontrol
-    pamixer
-    playerctl
-    pulsemixer
-    alsa-utils  # For amixer, alsamixer - needed for speaker override
+    hyprpwcenter  # Official Hyprland PipeWire control center (GUI)
+    pamixer       # CLI volume control (used by scripts)
+    playerctl     # Media player control (play/pause/next)
+    alsa-utils    # For amixer, alsamixer - needed for speaker override
   ];
 
   # Enable real-time priority for audio processes

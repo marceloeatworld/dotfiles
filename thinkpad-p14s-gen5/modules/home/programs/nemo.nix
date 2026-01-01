@@ -20,7 +20,7 @@
   dconf.settings = {
     # Nemo preferences
     "org/nemo/preferences" = {
-      # Use Kitty as default terminal
+      # Default folder view
       default-folder-viewer = "list-view";
 
       # Show hidden files
@@ -44,9 +44,9 @@
       context-menus-show-all = true;
     };
 
-    # Configure Kitty as default terminal for Nemo "Open in Terminal"
+    # Configure Ghostty as default terminal for Nemo "Open in Terminal"
     "org/cinnamon/desktop/default-applications/terminal" = {
-      exec = "kitty";
+      exec = "ghostty";
       exec-arg = "";
     };
 
@@ -76,13 +76,13 @@
     };
   };
 
-  # Configure Nemo to use Kitty as terminal
+  # Configure Nemo to use Ghostty as terminal
   # This action appears when right-clicking in empty space OR on folders
   home.file.".config/nemo/actions/open-terminal.nemo_action".text = ''
     [Nemo Action]
     Name=Open Terminal Here
-    Comment=Open Kitty terminal in this folder
-    Exec=kitty --working-directory=%F
+    Comment=Open Ghostty terminal in this folder
+    Exec=ghostty --working-directory=%F
     Icon-Name=utilities-terminal
     Selection=any
     Extensions=dir;
@@ -94,8 +94,8 @@
   home.file.".config/nemo/actions/open-terminal-background.nemo_action".text = ''
     [Nemo Action]
     Name=Open Terminal Here
-    Comment=Open Kitty terminal in current folder
-    Exec=kitty
+    Comment=Open Ghostty terminal in current folder
+    Exec=ghostty
     Icon-Name=utilities-terminal
     Selection=None
     Extensions=any;
@@ -112,12 +112,12 @@
     Extensions=txt;md;conf;log;sh;py;js;json;xml;html;css;nix;
   '';
 
-  # Open files with Neovim in Kitty
+  # Open files with Neovim in Ghostty
   home.file.".config/nemo/actions/edit-with-nvim.nemo_action".text = ''
     [Nemo Action]
     Name=Edit with Neovim
     Comment=Open file with Neovim in terminal
-    Exec=kitty nvim %F
+    Exec=ghostty nvim %F
     Icon-Name=nvim
     Selection=any
     Extensions=txt;md;conf;log;sh;py;js;json;xml;html;css;nix;
@@ -149,32 +149,5 @@
   # Note: EDITOR variable is set to "nvim" in home.nix for terminal use
   # Xed is configured as default for GUI file associations in xdg.mimeApps
 
-  # MIME associations for archive files AND override text files to use xed
-  xdg.mimeApps = {
-    defaultApplications = {
-      # Text files - FORCE xed as default (override nvim)
-      "text/plain" = "org.x.editor.desktop";
-      "text/x-log" = "org.x.editor.desktop";
-      "text/markdown" = "org.x.editor.desktop";
-      "text/x-python" = "org.x.editor.desktop";
-      "text/x-shellscript" = "org.x.editor.desktop";
-      "application/x-shellscript" = "org.x.editor.desktop";
-      "application/json" = "org.x.editor.desktop";
-      "application/xml" = "org.x.editor.desktop";
-
-      # Archives (file-roller)
-      "application/x-compressed-tar" = "org.gnome.FileRoller.desktop";
-      "application/x-tar" = "org.gnome.FileRoller.desktop";
-      "application/x-bzip" = "org.gnome.FileRoller.desktop";
-      "application/x-bzip2" = "org.gnome.FileRoller.desktop";
-      "application/x-gzip" = "org.gnome.FileRoller.desktop";
-      "application/x-xz" = "org.gnome.FileRoller.desktop";
-      "application/zip" = "org.gnome.FileRoller.desktop";
-      "application/x-zip" = "org.gnome.FileRoller.desktop";
-      "application/x-zip-compressed" = "org.gnome.FileRoller.desktop";
-      "application/x-7z-compressed" = "org.gnome.FileRoller.desktop";
-      "application/x-rar" = "org.gnome.FileRoller.desktop";
-      "application/x-rar-compressed" = "org.gnome.FileRoller.desktop";
-    };
-  };
+  # NOTE: MIME types are centralized in ../config/mimeapps.nix
 }

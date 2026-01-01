@@ -12,38 +12,54 @@
   # Let Home Manager install and manage itself
   programs.home-manager.enable = true;
 
-  # Import module configurations
+  # Import module configurations (organized by category)
   imports = [
-    ./programs/hyprland.nix
-    ./programs/terminal.nix
-    ./programs/shell.nix
-    ./programs/git.nix
-    ./programs/nvim.nix
-    ./programs/browsers.nix  # Brave with Wayland flags
-    ./programs/webapps.nix   # Web apps (WhatsApp, Spotify, etc.)
-    ./programs/desktop-apps.nix  # Desktop entries (Neovim)
-    ./programs/media.nix
-    ./programs/development.nix
-    ./programs/yt-dlp.nix
-    ./programs/walker.nix
-    ./programs/fastfetch.nix
-    ./programs/xournalpp.nix
-    ./programs/uwsm.nix
-    ./programs/btop.nix          # btop system monitor with Ristretto theme
-    ./programs/windows-vm.nix    # Windows 11 VM via Docker with RDP
-    ./programs/security-tools.nix  # Security audit tools (sqlmap, nikto, etc.)
-    ./programs/nemo.nix          # Nemo file manager with full integration
-    ./programs/teamspeak.nix     # TeamSpeak 6 Beta 3.2
-    ./programs/protonvpn.nix     # ProtonVPN GUI with bcrypt test fix
-    ./services/waybar.nix
-    ./services/mako.nix
-    ./services/swaylock.nix
-    ./services/swayosd.nix
-    ./config/gtk.nix
-    ./config/qt.nix
-    ./config/fontconfig.nix
-    ./config/webapp-icons.nix    # Custom icons for web apps
-    ./config/hyprpaper.nix       # Wallpaper configuration
+    # ── Desktop & Window Manager ──
+    ./programs/hyprland.nix       # Hyprland config, keybindings, animations
+    ./programs/hyprlauncher.nix   # Application launcher
+    ./programs/uwsm.nix           # Universal Wayland Session Manager
+
+    # ── Terminal & Shell ──
+    ./programs/terminal.nix       # Ghostty + Alacritty terminals
+    ./programs/shell.nix          # Zsh + Starship prompt
+    ./programs/btop.nix           # System monitor (Ristretto theme)
+    ./programs/fastfetch.nix      # System info display
+
+    # ── Development ──
+    ./programs/nvim.nix           # Neovim with LazyVim
+    ./programs/git.nix            # Git + delta diff viewer
+    ./programs/development.nix    # VS Code, languages, tools
+
+    # ── Applications ──
+    ./programs/browsers.nix       # Brave with Wayland flags
+    ./programs/webapps.nix        # Web apps (WhatsApp, Spotify, etc.)
+    ./programs/desktop-apps.nix   # Desktop entries for apps
+    ./programs/media.nix          # Media players (mpv, swayimg)
+    ./programs/yt-dlp.nix         # YouTube downloader
+    ./programs/nemo.nix           # Nemo file manager
+    ./programs/xournalpp.nix      # PDF annotation
+
+    # ── Communication ──
+    ./programs/teamspeak.nix      # TeamSpeak 6
+    ./programs/protonvpn.nix      # ProtonVPN GUI
+
+    # ── Utilities ──
+    ./programs/windows-vm.nix     # Windows 11 VM (Docker + RDP)
+    ./programs/security-tools.nix # Security tools aliases & docs
+
+    # ── Services ──
+    ./services/waybar.nix         # Status bar + custom scripts
+    ./services/mako.nix           # Notifications
+    ./services/hyprlock.nix       # Screen locker
+    ./services/swayosd.nix        # Volume/brightness OSD
+
+    # ── Configuration ──
+    ./config/gtk.nix              # GTK theme (Adwaita-dark)
+    ./config/qt.nix               # Qt theme
+    ./config/fontconfig.nix       # Font configuration
+    ./config/webapp-icons.nix     # Custom icons for web apps
+    ./config/hyprpaper.nix        # Wallpaper configuration
+    ./config/mimeapps.nix         # File associations (centralized)
   ];
 
   # Session variables
@@ -51,7 +67,7 @@
     EDITOR = "nvim";
     VISUAL = "nvim";
     BROWSER = "brave";
-    TERMINAL = "kitty";
+    TERMINAL = "ghostty";
 
     # Wayland backend preferences
     SAL_USE_VCLPLUGIN = "gtk3";  # LibreOffice native Wayland via GTK3
@@ -67,11 +83,10 @@
   };
 
   # Basic user packages
+  # NOTE: btop is in btop.nix, fastfetch is in fastfetch.nix
   home.packages = with pkgs; [
     # System utilities
-    htop
-    btop
-    fastfetch
+    hyprsysteminfo  # Official Hyprland system info (GUI)
     tree
     ripgrep
     fd
@@ -136,18 +151,10 @@
     # API testing
     bruno             # Open source API client (Postman alternative, no login required)
 
-    # Wayland specific
-    wl-clipboard
-    wl-clipboard-x11
-    grim
-    slurp
-    wf-recorder
-    hyprpicker
+    # Wayland specific (core tools in system/hyprland.nix)
+    hyprpicker        # Color picker for Hyprland
     swayosd           # Beautiful OSD for volume/brightness
-    # hyprsunset - REMOVED: installed via hyprland.nix with pkgs-unstable (v0.3.3)
     satty             # Screenshot annotation
-    # xdg-desktop-portal-hyprland - REMOVED: already configured in system/hyprland.nix
-    # xdg-desktop-portal-gtk - REMOVED: already configured in system/hyprland.nix
     blueman           # Bluetooth manager GUI
 
     # NOTE: Fonts are installed system-wide in modules/system/fonts.nix
@@ -175,82 +182,5 @@
     publicShare = "${config.home.homeDirectory}/Public";
   };
 
-  # XDG MIME types
-  xdg.mimeApps = {
-    enable = true;
-    defaultApplications = {
-      # Text files (xed editor)
-      "text/plain" = "org.x.editor.desktop";
-      "text/x-log" = "org.x.editor.desktop";
-      "text/x-readme" = "org.x.editor.desktop";
-      "text/markdown" = "org.x.editor.desktop";
-      "text/x-csrc" = "org.x.editor.desktop";
-      "text/x-chdr" = "org.x.editor.desktop";
-      "text/x-python" = "org.x.editor.desktop";
-      "text/x-shellscript" = "org.x.editor.desktop";
-      "application/x-shellscript" = "org.x.editor.desktop";
-      "text/x-makefile" = "org.x.editor.desktop";
-      "text/x-cmake" = "org.x.editor.desktop";
-      "application/json" = "org.x.editor.desktop";
-      "application/xml" = "org.x.editor.desktop";
-      "text/xml" = "org.x.editor.desktop";
-
-      # File manager
-      "inode/directory" = "nemo.desktop";
-
-      # Web browser
-      "text/html" = "brave-browser.desktop";
-      "x-scheme-handler/http" = "brave-browser.desktop";
-      "x-scheme-handler/https" = "brave-browser.desktop";
-      "x-scheme-handler/about" = "brave-browser.desktop";
-      "x-scheme-handler/unknown" = "brave-browser.desktop";
-
-      # PDF viewer
-      "application/pdf" = "org.pwmt.zathura.desktop";
-
-      # Images (swayimg) - All formats including WebP, AVIF, JXL
-      "image/png" = "swayimg.desktop";
-      "image/jpeg" = "swayimg.desktop";
-      "image/jpg" = "swayimg.desktop";
-      "image/gif" = "swayimg.desktop";
-      "image/webp" = "swayimg.desktop";
-      "image/bmp" = "swayimg.desktop";
-      "image/x-bmp" = "swayimg.desktop";
-      "image/tiff" = "swayimg.desktop";
-      "image/svg+xml" = "swayimg.desktop";
-      "image/avif" = "swayimg.desktop";
-      "image/jxl" = "swayimg.desktop";
-      "image/heif" = "swayimg.desktop";
-      "image/heic" = "swayimg.desktop";
-      "image/x-xcf" = "swayimg.desktop";
-      "image/x-portable-pixmap" = "swayimg.desktop";
-      "image/x-portable-graymap" = "swayimg.desktop";
-      "image/x-portable-bitmap" = "swayimg.desktop";
-      "image/x-portable-anymap" = "swayimg.desktop";
-      "image/x-xbitmap" = "swayimg.desktop";
-      "image/x-tga" = "swayimg.desktop";
-      "image/vnd.microsoft.icon" = "swayimg.desktop";
-      "image/x-icon" = "swayimg.desktop";
-
-      # Videos (mpv)
-      "video/mp4" = "mpv.desktop";
-      "video/x-matroska" = "mpv.desktop";
-      "video/webm" = "mpv.desktop";
-      "video/avi" = "mpv.desktop";
-      "video/x-msvideo" = "mpv.desktop";
-      "video/quicktime" = "mpv.desktop";
-      "video/mpeg" = "mpv.desktop";
-      "video/x-flv" = "mpv.desktop";
-      "video/x-ms-wmv" = "mpv.desktop";
-      "video/ogg" = "mpv.desktop";
-      "video/3gpp" = "mpv.desktop";
-      "video/3gpp2" = "mpv.desktop";
-
-      # Web app protocol handlers
-      "x-scheme-handler/whatsapp" = "whatsapp-web.desktop";
-      "x-scheme-handler/spotify" = "spotify-web.desktop";
-      "x-scheme-handler/discord" = "discord-web.desktop";
-      "x-scheme-handler/mailto" = "protonmail-web.desktop";
-    };
-  };
+  # NOTE: MIME types are centralized in ./config/mimeapps.nix
 }

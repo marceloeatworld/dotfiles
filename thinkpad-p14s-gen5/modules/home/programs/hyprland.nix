@@ -1,5 +1,5 @@
-# Hyprland - FIXED gestures
-{ pkgs, pkgs-unstable, inputs, ... }:
+# Hyprland - Using nixpkgs version (stable, pre-compiled)
+{ pkgs, pkgs-unstable, ... }:
 
 let
   bluelight-toggle = pkgs.writeShellScriptBin "bluelight-toggle" ''
@@ -211,8 +211,7 @@ in
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
-    # MUST use the same package as NixOS module (from flake input)
-    package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    # Using nixpkgs package (stable, pre-compiled) - no custom package needed
     # Disable home-manager systemd integration - conflicts with UWSM
     systemd.enable = false;
 
@@ -232,7 +231,7 @@ in
         "hyprpaper"
         "wl-paste --type text --watch cliphist store"
         "wl-paste --type image --watch cliphist store"
-        # walker is started by systemd (runAsService = true in walker.nix)
+        "hyprlauncher -d"  # Start hyprlauncher daemon
         "hypridle"
       ];
 
@@ -347,7 +346,7 @@ in
         key_press_enables_dpms = true;
         vrr = 2;  # Variable refresh rate (0=off, 1=on, 2=fullscreen only)
         enable_swallow = true;
-        swallow_regex = "^(kitty)$";
+        swallow_regex = "^(com.mitchellh.ghostty|Alacritty)$";
         force_default_wallpaper = 0;
         vfr = true;  # Variable frame rate - reduces GPU usage when idle
         focus_on_activate = true;
@@ -361,11 +360,12 @@ in
       "$mod" = "SUPER";
 
       bind = [
-        "$mod, Return, exec, kitty"
+        "$mod, Return, exec, ghostty"
         "$mod, B, exec, brave"
         "$mod, E, exec, nemo"
-        "$mod, D, exec, walker"  # Toggle walker (instant with service)
-        "$mod SHIFT, D, exec, walker"
+        "$mod, A, exec, hyprpwcenter"  # Audio control (Official Hyprland)
+        "$mod, D, exec, hyprlauncher"  # Toggle hyprlauncher (instant with daemon)
+        "$mod SHIFT, D, exec, hyprlauncher"
         "$mod, Q, killactive"
         "$mod, F, fullscreen, 0"
         "$mod SHIFT, F, fullscreen, 1"
@@ -413,7 +413,7 @@ in
         "$mod ALT, L, movetoworkspace, +1"
         "$mod, S, togglespecialworkspace, magic"
         "$mod SHIFT, S, movetoworkspace, special:magic"
-        "$mod, V, exec, cliphist list | walker --dmenu | cliphist decode | wl-copy"
+        "$mod, V, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy"
         "$mod SHIFT, V, exec, cliphist wipe"
         "$mod, Escape, exec, hyprlock"
         "$mod SHIFT, Escape, exec, systemctl poweroff"
@@ -434,16 +434,23 @@ in
         "$mod, mouse:273, resizewindow"
       ];
 
+      # Audio/Brightness controls using SwayOSD (native OSD)
       bindl = [
-        ", XF86AudioMute, exec, pamixer -t && notify-send -t 1000 'Audio' \"$(pamixer --get-mute &> /dev/null && echo 'Muted' || echo 'Unmuted')\""
-        ", XF86AudioMicMute, exec, pamixer --default-source -t && notify-send -t 1000 'Microphone' \"$(pamixer --default-source --get-mute &> /dev/null && echo 'Muted' || echo 'Unmuted')\""
+        ", XF86AudioMute, exec, swayosd-client --output-volume mute-toggle"
+        ", XF86AudioMicMute, exec, swayosd-client --input-volume mute-toggle"
+        # Media controls
+        ", XF86AudioPlay, exec, playerctl play-pause"
+        ", XF86AudioPause, exec, playerctl play-pause"
+        ", XF86AudioNext, exec, playerctl next"
+        ", XF86AudioPrev, exec, playerctl previous"
+        ", XF86AudioStop, exec, playerctl stop"
       ];
 
       bindle = [
-        ", XF86AudioRaiseVolume, exec, pamixer -i 5 && notify-send -t 500 'Volume' \"$(pamixer --get-volume)%\""
-        ", XF86AudioLowerVolume, exec, pamixer -d 5 && notify-send -t 500 'Volume' \"$(pamixer --get-volume)%\""
-        ", XF86MonBrightnessUp, exec, brightnessctl set 5%+ && notify-send -t 500 'Brightness' \"$(brightnessctl get)\""
-        ", XF86MonBrightnessDown, exec, brightnessctl set 5%- && notify-send -t 500 'Brightness' \"$(brightnessctl get)\""
+        ", XF86AudioRaiseVolume, exec, swayosd-client --output-volume raise"
+        ", XF86AudioLowerVolume, exec, swayosd-client --output-volume lower"
+        ", XF86MonBrightnessUp, exec, swayosd-client --brightness raise"
+        ", XF86MonBrightnessDown, exec, swayosd-client --brightness lower"
       ];
 
     };
@@ -451,10 +458,22 @@ in
     # Hyprland 0.52.0 uses block syntax for window rules
     # The inline syntax no longer works, so we use extraConfig
     extraConfig = ''
-      # Float windows
+      # Float windows - Audio controls
       windowrule {
-        name = float-pavucontrol
-        match:class = ^(pavucontrol)$
+        name = float-hyprpwcenter
+        match:class = ^(hyprpwcenter)$
+        float = true
+      }
+
+      # Float windows - System tools
+      windowrule {
+        name = float-hyprsysteminfo
+        match:class = ^(hyprsysteminfo)$
+        float = true
+      }
+      windowrule {
+        name = float-hyprpolkitagent
+        match:class = ^(hyprpolkitagent)$
         float = true
       }
       windowrule {
@@ -468,10 +487,15 @@ in
         float = true
       }
 
-      # Opacity rules
+      # Opacity rules for terminals
       windowrule {
-        name = opacity-kitty
-        match:class = ^(kitty)$
+        name = opacity-ghostty
+        match:class = ^(com.mitchellh.ghostty)$
+        opacity = 0.95
+      }
+      windowrule {
+        name = opacity-alacritty
+        match:class = ^(Alacritty)$
         opacity = 0.95
       }
       windowrule {
@@ -569,32 +593,27 @@ in
         move = 100%-970 10
       }
 
-      # Walker launcher
+      # Hyprlauncher
       windowrule {
-        name = walker-float
-        match:class = ^(walker)$
+        name = hyprlauncher-float
+        match:class = ^(hyprlauncher)$
         float = true
       }
       windowrule {
-        name = walker-center
-        match:class = ^(walker)$
+        name = hyprlauncher-center
+        match:class = ^(hyprlauncher)$
         center = 1
       }
       windowrule {
-        name = walker-size
-        match:class = ^(walker)$
-        size = 800 600
-      }
-      windowrule {
-        name = walker-focus
-        match:class = ^(walker)$
+        name = hyprlauncher-focus
+        match:class = ^(hyprlauncher)$
         stay_focused = true
       }
 
-      # Touchpad scroll adjustments
+      # Touchpad scroll adjustments for terminals
       windowrule {
-        name = scroll-kitty
-        match:class = ^(kitty)$
+        name = scroll-ghostty
+        match:class = ^(com.mitchellh.ghostty)$
         scroll_touchpad = 1.5
       }
       windowrule {
@@ -605,20 +624,18 @@ in
     '';
   };
 
+  # Hyprland-specific packages (core Wayland tools are in system/hyprland.nix)
   home.packages = with pkgs; [
-    hyprpaper
-    hypridle
-    hyprlock
-    brightnessctl
-    cliphist
-    wl-clipboard
-    grim
-    slurp
-    libnotify
-    pamixer
-    pkgs-unstable.hyprsunset  # v0.3.3+ with SIGTERM/SIGINT fixes
-    bluelight-toggle
-    battery-mode
-    perf-mode
+    hyprpaper                 # Wallpaper daemon
+    hypridle                  # Idle daemon
+    hyprlock                  # Screen locker
+    cliphist                  # Clipboard history manager
+    brightnessctl             # Brightness control (for hypridle dim)
+    pamixer                   # Volume control CLI (for scripts)
+    pkgs-unstable.hyprsunset  # Blue light filter (v0.3.3+ with SIGTERM/SIGINT fixes)
+    bluelight-toggle          # Custom toggle script
+    battery-mode              # Battery charge mode script
+    perf-mode                 # Performance mode toggle
+    wofi                      # dmenu-like picker for clipboard history
   ];
 }

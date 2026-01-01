@@ -1,24 +1,17 @@
 # Hyprland Wayland Compositor Configuration
-{ pkgs, inputs, ... }:
+{ pkgs, ... }:
 
 {
-  # NOTE: Mesa synchronization with Hyprland disabled - causes Kitty/OpenGL crashes
-  # If you need it for games, re-enable, but it may break terminal emulators
-  # hardware.graphics.package = inputs.hyprland.inputs.nixpkgs.legacyPackages.${pkgs.system}.mesa;
-
   # Enable 32-bit graphics support (required for Steam and 32-bit games)
   hardware.graphics.enable32Bit = true;
 
-  # Enable Hyprland with UWSM (recommended for NixOS 24.11)
+  # Enable Hyprland with UWSM (recommended for NixOS 25.11)
+  # Using nixpkgs version for stability and pre-compiled binaries
   programs.hyprland = {
     enable = true;
     withUWSM = true;  # Universal Wayland Session Manager - recommended
     xwayland.enable = true;
-
-    # Use flake version (required for plugins and latest features)
-    # IMPORTANT: Both NixOS and Home Manager must use the SAME source!
-    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-    portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+    # Using nixpkgs package (no flake) - stable, pre-compiled
   };
 
   # XDG Desktop Portal configuration
@@ -68,15 +61,15 @@
   # Enable polkit for privilege escalation
   security.polkit.enable = true;
 
-  # Polkit authentication agent
-  systemd.user.services.polkit-gnome-authentication-agent-1 = {
-    description = "polkit-gnome-authentication-agent-1";
+  # Polkit authentication agent (Official Hyprland - uses hyprtoolkit theme)
+  systemd.user.services.hyprpolkitagent = {
+    description = "Hyprland Polkit Authentication Agent";
     wantedBy = [ "graphical-session.target" ];
     wants = [ "graphical-session.target" ];
     after = [ "graphical-session.target" ];
     serviceConfig = {
       Type = "simple";
-      ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+      ExecStart = "${pkgs.hyprpolkitagent}/bin/hyprpolkitagent";
       Restart = "on-failure";
       RestartSec = 1;
       TimeoutStopSec = 10;

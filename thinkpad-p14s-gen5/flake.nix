@@ -16,21 +16,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    hyprland.url = "github:hyprwm/Hyprland";
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.hyprland.follows = "hyprland";
-    };
-    hypr-contrib.url = "github:hyprwm/contrib";
-    hyprpicker.url = "github:hyprwm/hyprpicker";
-    
-    
-    elephant.url = "github:abenz1267/elephant";
-    walker = {
-      url = "github:abenz1267/walker";
-      inputs.elephant.follows = "elephant";
-    };
-    
     catppuccin-bat = {
       url = "github:catppuccin/bat";
       flake = false;
@@ -41,7 +26,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, hyprland, disko, ... } @ inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, disko, ... } @ inputs:
     let
       system = "x86_64-linux";
 
@@ -67,6 +52,13 @@
                   doInstallCheck = false;
                 });
               };
+            };
+          })
+          # VS Code Latest - Always use the latest version from Microsoft
+          # Update: overlays/vscode-latest.nix (version + sha256)
+          (final: prev: {
+            vscode = import ./overlays/vscode-latest.nix {
+              inherit (prev) lib fetchurl vscode;
             };
           })
         ];

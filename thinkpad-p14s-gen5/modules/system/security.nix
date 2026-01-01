@@ -15,8 +15,8 @@
 
   # PAM configuration
   security.pam.services = {
-    # Allow swaylock to unlock
-    swaylock = {};
+    # Allow hyprlock to unlock (Official Hyprland screen locker)
+    hyprlock = {};
 
     # Fingerprint authentication (disabled - not available)
     # login.fprintAuth = true;

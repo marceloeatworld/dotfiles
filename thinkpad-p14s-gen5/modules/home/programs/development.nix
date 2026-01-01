@@ -24,13 +24,12 @@
   '';
 
   # Development packages
-  # VS Code - installed with Nix configuration
+  # VS Code - Latest version from Microsoft (updated via overlays/vscode-latest.nix)
   home.packages = with pkgs; [
-    # VS Code (FHS version) with native Wayland support
+    # VS Code Latest (FHS version) - Always the newest release from Microsoft
     # FHS version provides better compatibility with binary extensions
-    (vscode.fhs.overrideAttrs (oldAttrs: {
-      buildInputs = oldAttrs.buildInputs or [];
-    }))  # All settings and extensions are managed through GitHub account sync
+    # To update: edit overlays/vscode-latest.nix (version + sha256)
+    vscode.fhs  # All settings and extensions are managed through GitHub account sync
     # Note: Wayland flags are set via ~/.config/code-flags.conf
     # Version control
     git

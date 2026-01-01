@@ -1,5 +1,6 @@
 # Security tools system configuration
-# Provides system-level permissions and configurations for security audit tools
+# ALL security tools consolidated here (packages + permissions)
+# Home module (programs/security-tools.nix) contains only aliases and documentation
 { pkgs, pkgs-unstable, config, ... }:
 
 {
@@ -12,24 +13,31 @@
   # Add user to wireshark group for packet capture permissions
   users.users.marcelo.extraGroups = [ "wireshark" ];
 
-  # Install system-wide security tools that benefit from system integration
+  # Install ALL security tools system-wide
   environment.systemPackages = (with pkgs; [
-    # Network analysis
+    # ============================================
+    # NETWORK ANALYSIS
+    # ============================================
     nmap           # Network scanner and security auditing
     zenmap         # Zenmap GUI for nmap
+    tcpdump        # Command-line packet analyzer
+    ngrep          # Network grep - search network packets
 
-    # Wireless security - Core tools
-    aircrack-ng    # WiFi security auditing suite (WEP/WPA/WPA2/WPA3) - v1.7
-    wifite2        # Automated wireless attack tool (v2.7.0)
+    # ============================================
+    # WIRELESS SECURITY
+    # ============================================
+    # Core tools
+    aircrack-ng    # WiFi security auditing suite (WEP/WPA/WPA2/WPA3)
+    wifite2        # Automated wireless attack tool
 
-    # Wireless security - WPS attacks
+    # WPS attacks
     reaverwps      # WPS cracking tool (Reaver)
     pixiewps       # PixieDust WPS attack
 
-    # Wireless security - Monitoring & Analysis
+    # Monitoring & Analysis
     kismet         # Wireless network detector and sniffer
 
-    # Wireless security - Additional tools
+    # Additional tools
     mdk4           # WiFi DoS/stress testing tool
     cowpatty       # WPA-PSK dictionary attack
 
@@ -37,25 +45,52 @@
     hostapd        # Create rogue access points
     dnsmasq        # DHCP/DNS server for fake AP
 
-    # Password cracking with GPU support
+    # ============================================
+    # PASSWORD CRACKING
+    # ============================================
     hashcat-utils  # Utilities for hashcat
     john           # John the Ripper password cracker
+
+    # ============================================
+    # WEB APPLICATION TESTING
+    # ============================================
+    sqlmap         # Automatic SQL injection and database takeover
+    nikto          # Web server scanner
+    dirb           # Web content scanner
+    hydra          # Network authentication cracker
+
+    # ============================================
+    # DATA ANALYSIS & CRYPTO
+    # ============================================
+    cyberchef      # Cyber Swiss Army Knife - web-based data analysis
+
+    # ============================================
+    # RECONNAISSANCE
+    # ============================================
+    whois          # Domain information lookup
+    dnsutils       # dig, nslookup, etc.
+
+    # ============================================
+    # SSL/TLS TESTING
+    # ============================================
+    testssl        # Test SSL/TLS encryption
+    sslscan        # SSL/TLS scanner
+
+    # ============================================
+    # WORDLISTS
+    # ============================================
+    seclists       # Security lists for security testing
+    crunch         # Wordlist generator
   ]) ++ (with pkgs-unstable; [
     # UNSTABLE versions (newer features!)
-    hcxtools       # Convert captures to hashcat format (v7.0.1 - NEWER!)
-    hcxdumptool    # Capture PMKID without handshake (v7.0.1 - NEWER!)
-    bettercap      # Modern MITM framework (v2.41.4 - NEWER!)
-    hashcat        # GPU-accelerated password cracker (v7.1.2 - MUCH NEWER!)
+    hcxtools       # Convert captures to hashcat format
+    hcxdumptool    # Capture PMKID without handshake
+    bettercap      # Modern MITM framework
+    hashcat        # GPU-accelerated password cracker
   ]);
 
   # Enable OpenCL for AMD GPU (Radeon 780M) - Required for hashcat GPU acceleration
   hardware.graphics.extraPackages = with pkgs; [
     rocmPackages.clr.icd      # ROCm OpenCL ICD for AMD GPUs
   ];
-
-  # Optional: Enable monitoring capabilities for aircrack-ng
-  # Uncomment if you need to put WiFi adapters in monitor mode
-  # boot.extraModprobeConfig = ''
-  #   options cfg80211 ieee80211_regdom=PT
-  # '';
 }

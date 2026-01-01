@@ -1,38 +1,8 @@
-# Security audit and penetration testing tools
-# Home-manager configuration for security tools
+# Security tools aliases and documentation
+# NOTE: All packages are installed in modules/system/security-tools.nix
 { pkgs, ... }:
 
 {
-  home.packages = with pkgs; [
-    # Data analysis & crypto
-    cyberchef       # Cyber Swiss Army Knife - web-based data analysis tool
-
-    # SQL injection testing
-    sqlmap          # Automatic SQL injection and database takeover tool
-
-    # Additional network security tools
-    tcpdump         # Command-line packet analyzer
-    ngrep           # Network grep - search network packets
-    # NOTE: netcat is provided by libressl (nc command available)
-
-    # Password wordlists and utilities
-    seclists        # Security lists for security testing (wordlists, fuzzing, etc.)
-    crunch          # Wordlist generator
-
-    # Additional pentesting utilities
-    nikto           # Web server scanner
-    dirb            # Web content scanner
-    hydra           # Network authentication cracker
-
-    # Reconnaissance
-    whois           # Domain information lookup
-    dnsutils        # dig, nslookup, etc.
-
-    # SSL/TLS testing
-    testssl         # Test SSL/TLS encryption
-    sslscan         # SSL/TLS scanner
-  ];
-
   # Create helpful aliases for common security tasks
   programs.zsh.shellAliases = {
     # Nmap shortcuts

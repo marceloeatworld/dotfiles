@@ -8,14 +8,45 @@
     syntaxHighlighting.enable = true;
     shellAliases = {
       # NixOS - Using NH (modern nix helper)
-      rebuild = "nh os switch";  # Replaces nixos-rebuild switch
-      update = "cd $HOME/dotfiles/thinkpad-p14s-gen5 && nix flake update && nh os switch";
+      rebuild = "update-vscode; nh os switch";  # Auto-updates VS Code before rebuild
+      update = "cd $HOME/dotfiles/thinkpad-p14s-gen5 && nix flake update && update-vscode && nh os switch";
       clean = "nh clean all --keep 5";  # Smarter garbage collection
 
       # Additional NH commands
       nb = "nh os boot";       # Build for next boot
       ntest = "nh os test";    # Test without setting boot default
       ndiff = "nh os build";   # See changes without applying
+
+      # VS Code auto-update (fetches latest, updates overlay, rebuilds)
+      update-vscode = ''
+        set -e
+        OVERLAY="$HOME/dotfiles/thinkpad-p14s-gen5/overlays/vscode-latest.nix"
+
+        echo "Fetching latest VS Code version..."
+        LATEST=$(curl -sI "https://code.visualstudio.com/sha/download?build=stable&os=linux-x64" | grep -i location | sed -n 's/.*\/\([0-9.]*\)\/.*/\1/p' | tr -d '\r')
+        CURRENT=$(grep 'version = ' "$OVERLAY" | sed 's/.*"\(.*\)".*/\1/')
+
+        echo "Current: $CURRENT"
+        echo "Latest:  $LATEST"
+
+        if [ "$CURRENT" = "$LATEST" ]; then
+          echo "Already up to date!"
+          exit 0
+        fi
+
+        echo ""
+        echo "Downloading VS Code $LATEST and computing hash..."
+        HASH=$(nix-prefetch-url "https://update.code.visualstudio.com/$LATEST/linux-x64/stable" 2>/dev/null)
+        SRI=$(nix hash convert --hash-algo sha256 --to sri "$HASH")
+
+        echo "Updating $OVERLAY..."
+        sed -i "s/version = \".*\"/version = \"$LATEST\"/" "$OVERLAY"
+        sed -i "s|sha256 = \".*\"|sha256 = \"$SRI\"|" "$OVERLAY"
+
+        echo ""
+        echo "Updated to VS Code $LATEST"
+      '';
+
       # Modern replacements
       ls = "eza --icons";
       ll = "eza -l --icons";

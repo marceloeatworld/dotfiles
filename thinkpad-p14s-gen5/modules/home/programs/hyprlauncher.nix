@@ -1,5 +1,5 @@
 # Hyprlauncher - Official Hyprland launcher
-# Uses hyprtoolkit for theming (Ristretto theme)
+# Monokai Pro Ristretto theme (matching btop, ghostty, system)
 { pkgs, ... }:
 
 {
@@ -8,33 +8,34 @@
     hyprlauncher
   ];
 
-  # Hyprtoolkit theme configuration (used by hyprlauncher)
-  # Ristretto color palette
+  # Hyprtoolkit theme configuration (used by hyprlauncher and other hypr apps)
+  # Monokai Pro Ristretto - matching btop, ghostty, waybar
   xdg.configFile."hypr/hyprtoolkit.conf".text = ''
-    # Hyprtoolkit Theme - Ristretto
-    # This theme is shared by all hyprtoolkit-based apps (hyprlauncher, etc.)
+    # Hyprtoolkit Theme - Monokai Pro Ristretto
 
-    # Background colors
-    background = FF2C2525
-    base = FF2C2525
-    alternate_base = FF403E41
+    # Background colors (from btop main_bg)
+    background = 0xFF2c2421
+    base = 0xFF2c2421
+    alternate_base = 0xFF3d2f2a
 
-    # Text colors
-    text = FFE6D9DB
-    bright_text = FFF1E5E7
+    # Text colors (from btop main_fg)
+    text = 0xFFe6d9db
+    bright_text = 0xFFf1e5e7
 
-    # Accent colors (Ristretto yellow/gold)
-    accent = FFFABD2F
-    accent_secondary = FFF9CC6C
+    # Accent colors - Ristretto yellow/gold
+    accent = 0xFFf9cc6c
+    accent_secondary = 0xFFadda78
 
-    # Typography
+    # Typography (matching GTK theme)
+    font_family = Noto Sans
+    font_family_monospace = CaskaydiaMono Nerd Font
     font_size = 12
     h1_size = 18
     h2_size = 15
     h3_size = 13
     small_font_size = 10
 
-    # Icons
+    # Icons (matching GTK icon theme)
     icon_theme = Yaru-yellow
   '';
 
@@ -42,23 +43,16 @@
   xdg.configFile."hypr/hyprlauncher.conf".text = ''
     # Hyprlauncher Configuration
 
-    # General
     grab_focus = true
-
-    # Cache (remember frequently used apps)
     cache:enabled = true
+    window_size = 550 350
 
-    # UI
-    window_size = 500 300
-
-    # Finders
     default_finder = desktop
     desktop_prefix =
     unicode_prefix = .
     math_prefix = =
     font_prefix = '
 
-    # Desktop finder options
     desktop_icons = true
     desktop_launch_prefix =
   '';

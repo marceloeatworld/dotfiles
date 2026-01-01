@@ -9,6 +9,20 @@ let
 
     STATE_FILE="$HOME/.config/audio-output-state"
 
+    # Auto-detect the sound card (find card with Speaker control)
+    CARD=""
+    for c in 0 1 2 3; do
+      if ${pkgs.alsa-utils}/bin/amixer -c "$c" scontrols 2>/dev/null | grep -q "Speaker\|Internal Speaker"; then
+        CARD="$c"
+        break
+      fi
+    done
+
+    if [ -z "$CARD" ]; then
+      ${pkgs.libnotify}/bin/notify-send -u critical "Audio Error" "No sound card with speaker control found" -i dialog-error
+      exit 1
+    fi
+
     # Read current state (0 = headphones/jack, 1 = internal speakers)
     CURRENT_STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
 
@@ -17,18 +31,18 @@ let
       echo "1" > "$STATE_FILE"
 
       # Disable Auto-Mute Mode FIRST (critical for forcing speakers when jack is plugged)
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Auto-Mute Mode" "Disabled" 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Auto-Mute Mode" "Disabled" 2>/dev/null
 
       # Force unmute and set volume for speakers
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" unmute 2>/dev/null
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" 100% 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Speaker" unmute 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Speaker" 100% 2>/dev/null
 
       # Alternative control names (some systems use these)
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" unmute 2>/dev/null
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" 100% 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Internal Speaker" unmute 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Internal Speaker" 100% 2>/dev/null
 
       # Also unmute Master to ensure audio flows
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Master" unmute 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Master" unmute 2>/dev/null
 
       ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Internal Speakers" -i audio-speakers
     else
@@ -36,11 +50,11 @@ let
       echo "0" > "$STATE_FILE"
 
       # Re-enable auto-mute (normal behavior - auto-switches based on jack detection)
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Auto-Mute Mode" "Enabled" 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Auto-Mute Mode" "Enabled" 2>/dev/null
 
       # Mute speakers (let headphones take over when plugged in)
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Speaker" mute 2>/dev/null
-      ${pkgs.alsa-utils}/bin/amixer -c 1 sset "Internal Speaker" mute 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Speaker" mute 2>/dev/null
+      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Internal Speaker" mute 2>/dev/null
 
       ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Headphones/Auto (Jack)" -i audio-headphones
     fi
@@ -1022,29 +1036,34 @@ in
         modules-left = [ "hyprland/workspaces" "hyprland/submap" "hyprland/window" ];
         modules-center = [ ];
         modules-right = [
-          # Finance modules
+          # Finance (leftmost - less critical)
           "custom/polymarket"
           "custom/bitcoin"
           "custom/wallets"
-          # System monitoring modules
+          # System alerts (visible when issues)
           "custom/systemd-failed"
           "custom/mako"
-          # Hardware modules
+          # Hardware (frequently checked)
           "custom/removable-disks"
-          "custom/monitor-rotation"
           "pulseaudio"
-          "disk"
+          "backlight"
+          # System stats
           "cpu"
           "memory"
           "temperature"
-          "backlight"
-          "battery"
+          "disk"
+          # Connectivity
+          "bluetooth"
           "network"
+          "custom/vpn"
+          # Environment
           "custom/weather"
+          "battery"
+          "custom/monitor-rotation"
+          # Time & status (rightmost - always visible)
           "clock"
           "custom/nix-updates"
-          "custom/vpn"  # Moved next to updates
-          "tray"  # System tray (shows service status like btrbk, next to updates)
+          "tray"
         ];
 
         "hyprland/workspaces" = {
@@ -1150,11 +1169,11 @@ in
             car = "󰄋";
             default = [ "󰕿" "󰖀" "󰕾" ];
           };
-          tooltip-format = "Volume: {volume}%\nDevice: {desc}\n\nClick icon to switch output";
+          tooltip-format = "Volume: {volume}%\nDevice: {desc}\n\nClick: Switch output | Right-click: Mute | Scroll: Adjust";
           on-click = "$HOME/.config/waybar/scripts/audio-switch.sh";
-          on-click-right = "pamixer -t";
-          on-scroll-up = "pamixer -i 5";
-          on-scroll-down = "pamixer -d 5";
+          on-click-right = "swayosd-client --output-volume mute-toggle";
+          on-scroll-up = "swayosd-client --output-volume raise";
+          on-scroll-down = "swayosd-client --output-volume lower";
         };
 
         "disk" = {
@@ -1167,14 +1186,14 @@ in
         "cpu" = {
           format = "󰻠 {usage}%";
           tooltip-format = "CPU Usage: {usage}%\nLoad: {load}";
-          on-click = "kitty --class btop -e btop";
+          on-click = "ghostty -e btop";
           interval = 2;
         };
 
         "memory" = {
           format = "󰍛 {percentage}%";
           tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB\nAvailable: {avail:0.1f}GB\nSwap: {swapUsed:0.1f}GB / {swapTotal:0.1f}GB";
-          on-click = "kitty --class btop -e btop";
+          on-click = "ghostty -e btop";
           interval = 5;
         };
 
@@ -1184,7 +1203,7 @@ in
           format = "{icon} {temperatureC}°C";
           format-icons = [ "󰔏" "󱃃" "󰸁" ];
           tooltip-format = "Temperature: {temperatureC}°C";
-          on-click = "kitty --class btop -e btop";
+          on-click = "ghostty -e btop";
         };
 
         "backlight" = {
@@ -1261,7 +1280,7 @@ in
           interval = 3600;  # Update every hour
           format = "{}";
           tooltip = true;
-          on-click = "${pkgs.hyprland}/bin/hyprctl dispatch exec '[float;size 800 600;center]' '${pkgs.kitty}/bin/kitty --hold sh -c \"cd ~/dotfiles/thinkpad-p14s-gen5 && nix flake update\"'";
+          on-click = "${pkgs.hyprland}/bin/hyprctl dispatch exec '[float;size 800 600;center]' 'ghostty --wait-after-command -e sh -c \"cd ~/dotfiles/thinkpad-p14s-gen5 && nix flake update\"'";
         };
 
         "custom/systemd-failed" = {
@@ -1270,7 +1289,7 @@ in
           interval = 60;  # Update every minute
           format = "{}";
           tooltip = true;
-          on-click = "${pkgs.kitty}/bin/kitty --hold systemctl --failed";
+          on-click = "ghostty --wait-after-command -e systemctl --failed";
         };
 
         "custom/mako" = {
@@ -1446,13 +1465,37 @@ in
         color: #665c54;
       }
 
-      #custom-weather,
-      #custom-polymarket {
+      #custom-weather {
         padding: 0 8px;
         margin: 0 1px;
         background: rgba(64, 62, 65, 0.85);
         border-radius: 6px;
         color: #e6d9db;
+      }
+
+      #custom-polymarket {
+        padding: 0 8px;
+        margin: 0 1px;
+        background: rgba(149, 128, 255, 0.2);
+        border-radius: 6px;
+        color: #9580ff;
+      }
+
+      #bluetooth {
+        padding: 0 8px;
+        margin: 0 1px;
+        background: rgba(64, 62, 65, 0.85);
+        border-radius: 6px;
+        color: #85d3f2;
+      }
+
+      #bluetooth.connected {
+        color: #adda78;
+      }
+
+      #bluetooth.off,
+      #bluetooth.disabled {
+        color: #665c54;
       }
 
       #pulseaudio.muted {
@@ -1476,6 +1519,47 @@ in
         color: #fd6883;
       }
 
+      /* VPN states */
+      #custom-vpn.connected {
+        background: rgba(173, 218, 120, 0.2);
+        color: #adda78;
+      }
+
+      #custom-vpn.disconnected {
+        background: rgba(253, 104, 131, 0.15);
+        color: #fd6883;
+      }
+
+      /* Nix updates */
+      #custom-nix-updates.ok {
+        color: #adda78;
+      }
+
+      #custom-nix-updates.updates {
+        background: rgba(249, 204, 108, 0.2);
+        color: #f9cc6c;
+      }
+
+      /* Systemd failed services */
+      #custom-systemd-failed.warning {
+        background: rgba(253, 104, 131, 0.2);
+        color: #fd6883;
+      }
+
+      #custom-systemd-failed.ok {
+        color: #665c54;
+      }
+
+      /* Mako notifications */
+      #custom-mako.notification {
+        background: rgba(133, 211, 242, 0.2);
+        color: #85d3f2;
+      }
+
+      #custom-mako.empty {
+        color: #665c54;
+      }
+
       tooltip {
         background: rgba(44, 37, 37, 0.95);
         border: 2px solid rgba(249, 204, 108, 0.5);
@@ -1485,11 +1569,12 @@ in
     '';
   };
 
+  # Waybar dependencies (other tools installed elsewhere)
+  # - brightnessctl: in hyprland.nix (for hypridle)
+  # - btop: in btop.nix (with Ristretto theme)
+  # - blueman: in home.nix
+  # - hyprpwcenter: in system/sound.nix (replaced pavucontrol)
   home.packages = with pkgs; [
-    pavucontrol
-    blueman
-    networkmanagerapplet
-    brightnessctl
-    btop
+    networkmanagerapplet    # Network manager tray applet
   ];
 }

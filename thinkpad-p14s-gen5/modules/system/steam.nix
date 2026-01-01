@@ -15,20 +15,6 @@
     ];
   };
 
+  # Note: GameMode is configured in performance.nix (with notifications)
   # Note: hardware.graphics configured in hardware-configuration.nix
-
-  # Gaming performance optimizations
-  programs.gamemode = {
-    enable = true;  # Automatic performance mode when gaming
-    settings = {
-      general = {
-        renice = 10;  # Lower nice value for games
-      };
-      gpu = {
-        apply_gpu_optimisations = "accept-responsibility";
-        gpu_device = 0;
-        amd_performance_level = "high";  # Max performance for Radeon 780M
-      };
-    };
-  };
 }

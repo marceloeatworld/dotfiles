@@ -2,6 +2,9 @@
 { pkgs, ... }:
 
 {
+  # Create netdev group (required by Avahi D-Bus configuration)
+  users.groups.netdev = {};
+
   # Define user account
   users.users.marcelo = {
     isNormalUser = true;

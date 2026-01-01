@@ -5,23 +5,23 @@ let
   # Editor launcher for Neovim
   nvim-launcher = pkgs.writeShellScriptBin "nvim-launcher" ''
     #!/usr/bin/env bash
-    # Launch Neovim in a new Kitty window
+    # Launch Neovim in a new Ghostty window
 
     if [ -n "$1" ]; then
       # If file is provided, open it
-      exec kitty -e nvim "$@"
+      exec ghostty -e nvim "$@"
     else
       # Otherwise, just launch nvim
-      exec kitty -e nvim
+      exec ghostty -e nvim
     fi
   '';
 in
 {
   # Install the launcher script and applications
+  # NOTE: TeamSpeak 6 is in teamspeak.nix (removed TS3 duplicate)
   home.packages = [
     nvim-launcher
     pkgs.rustdesk-flutter           # RustDesk (stable version - unstable has FFmpeg build issues)
-    pkgs.teamspeak3                 # TeamSpeak 3 client
     pkgs.popsicle                   # USB flasher (System76) - lightweight, GTK native
   ];
 
@@ -147,7 +147,7 @@ in
       name = "Kismet";
       genericName = "Wireless Network Detector";
       comment = "Wireless network detector, sniffer, and intrusion detection system";
-      exec = "kitty -e sudo kismet";
+      exec = "ghostty -e sudo kismet";
       icon = "kismet";
       terminal = false;
       type = "Application";
@@ -159,7 +159,7 @@ in
       name = "Hashcat";
       genericName = "Password Recovery";
       comment = "Advanced GPU-accelerated password recovery tool";
-      exec = "kitty -e hashcat --help";
+      exec = "ghostty -e hashcat --help";
       icon = "dialog-password";
       terminal = false;
       type = "Application";
@@ -171,7 +171,7 @@ in
       name = "Aircrack-ng";
       genericName = "WiFi Security Auditing";
       comment = "Complete suite of tools to assess WiFi network security";
-      exec = "kitty -e aircrack-ng --help";
+      exec = "ghostty -e aircrack-ng --help";
       icon = "network-wireless";
       terminal = false;
       type = "Application";
@@ -183,7 +183,7 @@ in
       name = "Wifite2";
       genericName = "Automated WiFi Auditing";
       comment = "Automated wireless attack tool for WEP/WPA/WPS";
-      exec = "kitty -e sudo wifite --help";
+      exec = "ghostty -e sudo wifite --help";
       icon = "network-wireless-signal-excellent";
       terminal = false;
       type = "Application";
@@ -195,7 +195,7 @@ in
       name = "Bettercap";
       genericName = "Network Attack Framework";
       comment = "Complete, modular, portable MITM framework";
-      exec = "kitty -e sudo bettercap --help";
+      exec = "ghostty -e sudo bettercap --help";
       icon = "network-wired";
       terminal = false;
       type = "Application";
@@ -207,7 +207,7 @@ in
       name = "SQLMap";
       genericName = "SQL Injection Testing";
       comment = "Automatic SQL injection and database takeover tool";
-      exec = "kitty -e sqlmap --help";
+      exec = "ghostty -e sqlmap --help";
       icon = "database";
       terminal = false;
       type = "Application";
@@ -219,7 +219,7 @@ in
       name = "Nikto";
       genericName = "Web Server Scanner";
       comment = "Web server vulnerability scanner";
-      exec = "kitty -e nikto --help";
+      exec = "ghostty -e nikto --help";
       icon = "web-browser";
       terminal = false;
       type = "Application";
@@ -231,7 +231,7 @@ in
       name = "John the Ripper";
       genericName = "Password Cracker";
       comment = "Fast password cracker for various hash types";
-      exec = "kitty -e john";
+      exec = "ghostty -e john";
       icon = "dialog-password";
       terminal = false;
       type = "Application";
@@ -253,36 +253,5 @@ in
     };
   };
 
-  # Set default applications for file types
-  xdg.mimeApps.defaultApplications = {
-    # Images → swayimg (all formats including WebP, AVIF, JXL)
-    "image/png" = "swayimg.desktop";
-    "image/jpeg" = "swayimg.desktop";
-    "image/jpg" = "swayimg.desktop";
-    "image/gif" = "swayimg.desktop";
-    "image/bmp" = "swayimg.desktop";
-    "image/x-bmp" = "swayimg.desktop";
-    "image/webp" = "swayimg.desktop";
-    "image/tiff" = "swayimg.desktop";
-    "image/avif" = "swayimg.desktop";
-    "image/jxl" = "swayimg.desktop";
-    "image/heif" = "swayimg.desktop";
-    "image/heic" = "swayimg.desktop";
-    "image/x-xcf" = "swayimg.desktop";
-    "image/x-portable-pixmap" = "swayimg.desktop";
-    "image/x-portable-graymap" = "swayimg.desktop";
-    "image/x-portable-bitmap" = "swayimg.desktop";
-    "image/x-portable-anymap" = "swayimg.desktop";
-    "image/x-xbitmap" = "swayimg.desktop";
-    "image/x-tga" = "swayimg.desktop";
-    "image/svg+xml" = "swayimg.desktop";
-    "image/vnd.microsoft.icon" = "swayimg.desktop";
-    "image/x-icon" = "swayimg.desktop";
-
-    # Text files → Neovim
-    "text/plain" = "nvim.desktop";
-    "text/x-makefile" = "nvim.desktop";
-    "text/x-shellscript" = "nvim.desktop";
-    "application/x-shellscript" = "nvim.desktop";
-  };
+  # NOTE: MIME types are centralized in ../config/mimeapps.nix
 }
