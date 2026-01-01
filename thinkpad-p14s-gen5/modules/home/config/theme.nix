@@ -60,38 +60,39 @@ let
     };
 
     # ── Neobrutalist ───────────────────────────────────────────────────────
-    # Minimal, high-contrast, bold design with sharp edges
+    # Neobrutalist style inspired by Tavus design
+    # Sharp edges, solid shadows, warm cream/beige palette with Catppuccin accents
     neobrutalist = {
       name = "Neobrutalist";
-      description = "Minimal high-contrast bold design";
+      description = "Tavus-inspired neobrutalist with Catppuccin accents";
       icon = "◼";
       colors = {
-        # Base - Pure black/white for maximum contrast
-        background = "#0a0a0a";
-        backgroundAlt = "#121212";
-        surface = "#1a1a1a";
-        foreground = "#f5f5f5";
-        foregroundDim = "#a0a0a0";
-        # Accents - Bold, saturated, unapologetic
-        red = "#ff3333";
-        orange = "#ff6600";
-        yellow = "#ffcc00";
-        green = "#00cc66";
-        cyan = "#00cccc";
-        blue = "#3399ff";
-        magenta = "#cc33ff";
-        # UI - Stark contrasts
-        border = "#333333";
-        selection = "#2a2a2a";
-        comment = "#666666";
+        # Base - Warm dark with cream undertones (Tavus-inspired)
+        background = "#1a1720";      # Deep purple-black (slate-like)
+        backgroundAlt = "#221f2b";   # Slightly lighter (from Tavus CSS)
+        surface = "#2a2735";         # Surface for cards/panels
+        foreground = "#F3EEE7";      # Warm cream text (Tavus)
+        foregroundDim = "#92897a";   # Muted warm gray (Tavus)
+        # Accents - Catppuccin Mocha pastels (soft but vibrant)
+        red = "#f38ba8";             # Catppuccin Red
+        orange = "#fab387";          # Catppuccin Peach
+        yellow = "#f9e2af";          # Catppuccin Yellow
+        green = "#a6e3a1";           # Catppuccin Green
+        cyan = "#94e2d5";            # Catppuccin Teal
+        blue = "#89b4fa";            # Catppuccin Blue
+        magenta = "#cba6f7";         # Catppuccin Mauve
+        # UI - Strong borders for neobrutalist feel
+        border = "#3d3a47";          # Visible border
+        selection = "#45475a";       # Catppuccin Surface1
+        comment = "#6c7086";         # Catppuccin Overlay0
         # Terminal bright variants
-        brightBlack = "#555555";
-        brightWhite = "#ffffff";
+        brightBlack = "#585b70";     # Catppuccin Surface2
+        brightWhite = "#F7F4EF";     # Warm white (Tavus)
       };
       fonts = {
         mono = "JetBrainsMono Nerd Font";
         monoSize = 11;
-        sans = "Inter";
+        sans = "Inter";              # Clean geometric sans (similar to Suisse Intl)
         sansSize = 11;
       };
     };

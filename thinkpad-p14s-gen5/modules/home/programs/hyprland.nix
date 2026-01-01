@@ -1,5 +1,11 @@
 # Hyprland - Using nixpkgs version (stable, pre-compiled)
-{ pkgs, pkgs-unstable, ... }:
+{ config, pkgs, pkgs-unstable, ... }:
+
+let
+  theme = config.theme;
+  # Helper to strip # from hex colors for Hyprland rgb() format
+  stripHash = color: builtins.substring 1 6 color;
+in
 
 let
   bluelight-toggle = pkgs.writeShellScriptBin "bluelight-toggle" ''
@@ -276,31 +282,31 @@ in
         resize_on_border = true;
         allow_tearing = false;
 
-        # Ristretto theme colors
-        "col.active_border" = "rgb(e6d9db)";
-        "col.inactive_border" = "rgba(44252580)";
+        # Border colors from theme
+        "col.active_border" = "rgb(${stripHash theme.colors.foreground})";
+        "col.inactive_border" = "rgba(${stripHash theme.colors.border}80)";
       };
 
       decoration = {
-        rounding = 3;
+        # Neobrutalist: sharp corners (0) or minimal rounding (2)
+        rounding = 2;
 
+        # Neobrutalist: no blur - flat, raw aesthetic
         blur = {
-          enabled = true;
-          size = 5;
-          passes = 2;
-          xray = true;
-          ignore_opacity = true;
+          enabled = false;
         };
 
+        # Neobrutalist: solid sharp shadow (like CSS 1px 1px 0px 0px)
         shadow = {
           enabled = true;
-          range = 15;
-          render_power = 3;
-          color = "rgba(1a1a1aee)";
+          range = 4;
+          render_power = 4;
+          offset = "2 2";
+          color = "rgba(000000cc)";
         };
 
         active_opacity = 1.0;
-        inactive_opacity = 0.96;
+        inactive_opacity = 0.98;
         fullscreen_opacity = 1.0;
       };
 
