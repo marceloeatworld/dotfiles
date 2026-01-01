@@ -12,7 +12,7 @@
     # Base fonts
     liberation_ttf         # Liberation Sans, Serif, Mono (default serif/sans)
     noto-fonts             # Noto Sans (used by GTK)
-    noto-fonts-emoji       # Emoji support
+    noto-fonts-color-emoji # Emoji support
     noto-fonts-cjk-sans    # CJK (Chinese/Japanese/Korean) support
 
     # Icon fonts

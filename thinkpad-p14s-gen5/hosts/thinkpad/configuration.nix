@@ -43,6 +43,12 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # Allow insecure packages (qtwebengine-5.15.19 required by some Qt5 apps)
+  # TODO: Remove when upstream apps migrate to Qt6
+  nixpkgs.config.permittedInsecurePackages = [
+    "qtwebengine-5.15.19"
+  ];
+
   # System packages
   environment.systemPackages = with pkgs; [
     vim
@@ -54,6 +60,16 @@
     usbutils
     pciutils
   ];
+
+  # Enable nix-ld for running unpatched dynamic binaries
+  programs.nix-ld.enable = true;
+
+  # Create /bin/bash symlink for scripts expecting it (common on NixOS)
+  # Required for plugins like claude-code ralph-wiggum hooks
+  system.activationScripts.binbash = ''
+    mkdir -p /bin
+    ln -sf ${pkgs.bash}/bin/bash /bin/bash
+  '';
 
   # Enable documentation
   documentation.enable = true;

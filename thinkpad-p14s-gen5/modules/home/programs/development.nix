@@ -45,9 +45,14 @@
       requests        # HTTP requests for API calls (wallet monitor, etc.)
     ]))
     nodejs_22
+    # Bun wrapped with libstdc++ for NixOS compatibility (fixes sharp, canvas, etc.)
+    (pkgs.writeShellScriptBin "bun" ''
+      export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      exec ${pkgs.bun}/bin/bun "$@"
+    '')
     go
     rustup
-    jdk24             # Java Development Kit 24 (required for Audiveris 5.7.1)
+    jdk                # Java Development Kit (latest LTS)
 
     # C++ Development (complete modern toolchain)
     gcc              # GCC 14.3.0 - Primary C++ compiler with C++23 support
@@ -114,5 +119,8 @@
 
     # Reverse Engineering
     pkgs-unstable.ghidra  # NSA Software Reverse Engineering (SRE) suite - compiled from source (11.4.2)
+
+    # Documentation
+    zeal              # Offline documentation browser (Dash compatible)
   ];
 }

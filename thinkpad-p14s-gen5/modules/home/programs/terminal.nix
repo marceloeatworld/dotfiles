@@ -137,6 +137,9 @@
       listen_on = "unix:/tmp/kitty";
       # single_instance removed in kitty 0.42+
 
+      # Disable shell integration to avoid key binding conflicts with TUI apps
+      shell_integration = "disabled";
+
       # ========================================
       # MOUSE & CLIPBOARD - NEW/FIXED
       # ========================================
@@ -169,6 +172,9 @@
 
     # Keyboard shortcuts
     keybindings = {
+      # Unbind shift+enter to allow terminal applications (like Claude Code) to use it
+      "shift+enter" = "no_op";
+
       # Copy/Paste - Primary shortcuts
       "ctrl+shift+c" = "copy_to_clipboard";
       "ctrl+shift+v" = "paste_from_clipboard";
@@ -183,8 +189,8 @@
       # Select all
       "ctrl+shift+a" = "select_all";
       
-      # Clear selection
-      "escape" = "clear_selection";
+      # Note: Don't bind escape - it breaks TUI apps like Claude CLI, vim, etc.
+      # Selection is cleared automatically on typing or clicking elsewhere
       
       # Scrollback
       "ctrl+shift+up" = "scroll_line_up";

@@ -13,7 +13,7 @@
     librsvg                 # SVG thumbnails (includes gdk-pixbuf)
     webp-pixbuf-loader      # WebP thumbnails
     ffmpegthumbnailer       # Video thumbnails
-    poppler_utils           # PDF thumbnails
+    poppler-utils           # PDF thumbnails
   ];
 
   # Nemo configuration

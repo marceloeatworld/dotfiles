@@ -133,6 +133,9 @@
     # Python package manager
     uv                # Fast Python package manager (10-100x faster than pip)
 
+    # API testing
+    bruno             # Open source API client (Postman alternative, no login required)
+
     # Wayland specific
     wl-clipboard
     wl-clipboard-x11

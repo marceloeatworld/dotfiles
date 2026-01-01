@@ -21,7 +21,7 @@ in
   home.packages = [
     nvim-launcher
     pkgs.rustdesk-flutter           # RustDesk (stable version - unstable has FFmpeg build issues)
-    pkgs.teamspeak_client           # TeamSpeak 3 client
+    pkgs.teamspeak3                 # TeamSpeak 3 client
     pkgs.popsicle                   # USB flasher (System76) - lightweight, GTK native
   ];
 

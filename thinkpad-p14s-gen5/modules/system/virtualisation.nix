@@ -40,16 +40,13 @@
   # };
 
   # KVM/QEMU with virt-manager
+  # Note: OVMF submodule removed in NixOS 25.11 - all OVMF images now available by default
   virtualisation.libvirtd = {
     enable = true;
     qemu = {
       package = pkgs.qemu_kvm;
       runAsRoot = false;
       swtpm.enable = true;
-      ovmf = {
-        enable = true;
-        packages = [ pkgs.OVMFFull.fd ];
-      };
     };
   };
 

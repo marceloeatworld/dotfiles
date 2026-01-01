@@ -57,9 +57,7 @@
   systemd.services.NetworkManager-wait-online.enable = false;
 
   # Faster shutdown (5s timeout instead of default 90s)
-  systemd.extraConfig = ''
-    DefaultTimeoutStopSec=5s
-  '';
+  systemd.settings.Manager.DefaultTimeoutStopSec = "5s";
 
   # NOTE: boot.initrd.systemd NOT enabled - keeps default QWERTY keyboard for LUKS
   # This is intentional: LUKS password was created with QWERTY layout

@@ -4,23 +4,27 @@
 {
   programs.git = {
     enable = true;
-    userName = "Marcelo";
-    userEmail = "20625497+marceloeatworld@users.noreply.github.com";  # Change this!
 
-    extraConfig = {
+    settings = {
+      user = {
+        name = "Marcelo";
+        email = "20625497+marceloeatworld@users.noreply.github.com";
+      };
       init.defaultBranch = "main";
       pull.rebase = false;
       core.editor = "nvim";
       color.ui = true;
     };
+  };
 
-    delta = {
-      enable = true;
-      options = {
-        navigate = true;
-        line-numbers = true;
-        syntax-theme = "Catppuccin-mocha";
-      };
+  # Delta diff viewer (separate module in home-manager 25.11)
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
+    options = {
+      navigate = true;
+      line-numbers = true;
+      syntax-theme = "Catppuccin-mocha";
     };
   };
 
