@@ -76,12 +76,6 @@
     HSA_OVERRIDE_GFX_VERSION = "11.0.0";  # Required for Radeon 780M GPU acceleration
   };
 
-  # Gnome Keyring integration
-  services.gnome-keyring = {
-    enable = true;
-    components = [ "pkcs11" "secrets" "ssh" ];
-  };
-
   # Basic user packages
   # NOTE: btop is in btop.nix, fastfetch is in fastfetch.nix
   home.packages = with pkgs; [

@@ -77,9 +77,10 @@
       # npm global packages
       export PATH="$HOME/.npm-global/bin:$PATH"
 
-      # Launch Hyprland on login to TTY1
-      if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
-        exec uwsm start -S hyprland-uwsm.desktop
+      # Launch Hyprland with UWSM on login to TTY1
+      # See: https://wiki.hypr.land/Useful-Utilities/Systemd-start/
+      if uwsm check may-start; then
+        exec uwsm start hyprland.desktop
       fi
     '';
   };

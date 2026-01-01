@@ -23,10 +23,6 @@
     # sudo.fprintAuth = true;
   };
 
-  # Gnome Keyring for secrets management
-  services.gnome.gnome-keyring.enable = true;
-  security.pam.services.marcelo.enableGnomeKeyring = true;
-
   # AppArmor for additional security (optional)
   security.apparmor.enable = true;
 

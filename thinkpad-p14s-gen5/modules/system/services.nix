@@ -85,8 +85,6 @@
   # Enable D-Bus
   services.dbus.enable = true;
 
-  # NOTE: gnome-keyring configured in security.nix with PAM integration
-
   # Enable udisks2 for automatic mounting
   services.udisks2.enable = true;
 
