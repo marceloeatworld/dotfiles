@@ -453,175 +453,63 @@ in
         ", XF86MonBrightnessDown, exec, swayosd-client --brightness lower"
       ];
 
+      # Window rules - Hyprland 0.52 inline syntax
+      # Format: windowrule = RULE, match:CONDITION VALUE
+      windowrule = [
+        # Float windows - System tools
+        "float, class:^(hyprpwcenter)$"
+        "float, class:^(hyprsysteminfo)$"
+        "float, class:^(hyprpolkitagent)$"
+        "float, class:^(nm-connection-editor)$"
+        "float, class:^(blueman-manager)$"
+
+        # Opacity rules for terminals
+        "opacity 0.95, class:^(com.mitchellh.ghostty)$"
+        "opacity 0.95, class:^(Alacritty)$"
+        "opacity 0.95, class:^(thunar)$"
+        "opacity 0.95, class:^(nemo)$"
+
+        # Suppress maximize for all windows
+        "suppressevent maximize, class:.*"
+
+        # Default opacity for all windows
+        "opacity 0.97, class:.*"
+
+        # Brave browser - tiled and full opacity
+        "tile, class:^(Brave-browser)$"
+        "opacity 1.0 override, class:^(Brave-browser)$"
+
+        # Media content - full opacity
+        "opacity 1.0 override, title:^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$"
+
+        # XWayland ghost windows - no focus
+        "nofocus, class:^$, title:^$, xwayland:1, floating:1, fullscreen:0, pinned:0"
+
+        # VS Code - full opacity
+        "opacity 1.0 override, class:^(code-url-handler)$"
+
+        # JetBrains IDEs - full opacity
+        "opacity 1.0 override, class:^(jetbrains-.*)$"
+
+        # Picture-in-Picture
+        "float, title:^(Picture-in-Picture)$"
+        "pin, title:^(Picture-in-Picture)$"
+        "size 640 360, title:^(Picture-in-Picture)$"
+        "move 100%-650 100%-370, title:^(Picture-in-Picture)$"
+
+        # YouTube webapp - floating on the right
+        "float, class:^(brave-youtube\\.com__-Default)$"
+        "size 960 720, class:^(brave-youtube\\.com__-Default)$"
+        "move 100%-970 10, class:^(brave-youtube\\.com__-Default)$"
+
+        # Hyprlauncher
+        "float, class:^(hyprlauncher)$"
+        "center, class:^(hyprlauncher)$"
+        "stayfocused, class:^(hyprlauncher)$"
+      ];
+
     };
 
-    # Hyprland 0.52.0 uses block syntax for window rules
-    # The inline syntax no longer works, so we use extraConfig
-    extraConfig = ''
-      # Float windows - Audio controls
-      windowrule {
-        name = float-hyprpwcenter
-        match:class = ^(hyprpwcenter)$
-        float = true
-      }
-
-      # Float windows - System tools
-      windowrule {
-        name = float-hyprsysteminfo
-        match:class = ^(hyprsysteminfo)$
-        float = true
-      }
-      windowrule {
-        name = float-hyprpolkitagent
-        match:class = ^(hyprpolkitagent)$
-        float = true
-      }
-      windowrule {
-        name = float-nm-editor
-        match:class = ^(nm-connection-editor)$
-        float = true
-      }
-      windowrule {
-        name = float-blueman
-        match:class = ^(blueman-manager)$
-        float = true
-      }
-
-      # Opacity rules for terminals
-      windowrule {
-        name = opacity-ghostty
-        match:class = ^(com.mitchellh.ghostty)$
-        opacity = 0.95
-      }
-      windowrule {
-        name = opacity-alacritty
-        match:class = ^(Alacritty)$
-        opacity = 0.95
-      }
-      windowrule {
-        name = opacity-thunar
-        match:class = ^(thunar)$
-        opacity = 0.95
-      }
-      windowrule {
-        name = opacity-nemo
-        match:class = ^(nemo)$
-        opacity = 0.95
-      }
-      windowrule {
-        name = suppress-maximize-all
-        match:class = .*
-        suppress_event = maximize
-      }
-      windowrule {
-        name = opacity-default
-        match:class = .*
-        opacity = 0.97
-      }
-      windowrule {
-        name = tile-brave
-        match:class = ^(Brave-browser)$
-        tile = true
-      }
-      windowrule {
-        name = opacity-brave
-        match:class = ^(Brave-browser)$
-        opacity = 1.0
-      }
-      windowrule {
-        name = opacity-media
-        match:title = ^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$
-        opacity = 1.0
-      }
-      windowrule {
-        name = nofocus-xwayland
-        match:class = ^$
-        match:title = ^$
-        match:xwayland = true
-        match:float = true
-        match:fullscreen = false
-        match:pin = false
-        no_focus = true
-      }
-      windowrule {
-        name = opacity-vscode
-        match:class = ^(code-url-handler)$
-        opacity = 1.0
-      }
-      windowrule {
-        name = opacity-jetbrains
-        match:class = ^(jetbrains-.*)$
-        opacity = 1.0
-      }
-
-      # Picture-in-Picture
-      windowrule {
-        name = pip-float
-        match:title = ^(Picture-in-Picture)$
-        float = true
-      }
-      windowrule {
-        name = pip-pin
-        match:title = ^(Picture-in-Picture)$
-        pin = true
-      }
-      windowrule {
-        name = pip-size
-        match:title = ^(Picture-in-Picture)$
-        size = 640 360
-      }
-      windowrule {
-        name = pip-move
-        match:title = ^(Picture-in-Picture)$
-        move = 100%-650 100%-370
-      }
-
-      # YouTube webapp - floating on the right
-      windowrule {
-        name = youtube-float
-        match:class = ^(brave-youtube\.com__-Default)$
-        float = true
-      }
-      windowrule {
-        name = youtube-size
-        match:class = ^(brave-youtube\.com__-Default)$
-        size = 960 720
-      }
-      windowrule {
-        name = youtube-move
-        match:class = ^(brave-youtube\.com__-Default)$
-        move = 100%-970 10
-      }
-
-      # Hyprlauncher
-      windowrule {
-        name = hyprlauncher-float
-        match:class = ^(hyprlauncher)$
-        float = true
-      }
-      windowrule {
-        name = hyprlauncher-center
-        match:class = ^(hyprlauncher)$
-        center = 1
-      }
-      windowrule {
-        name = hyprlauncher-focus
-        match:class = ^(hyprlauncher)$
-        stay_focused = true
-      }
-
-      # Touchpad scroll adjustments for terminals
-      windowrule {
-        name = scroll-ghostty
-        match:class = ^(com.mitchellh.ghostty)$
-        scroll_touchpad = 1.5
-      }
-      windowrule {
-        name = scroll-alacritty
-        match:class = ^(Alacritty)$
-        scroll_touchpad = 1.5
-      }
-    '';
   };
 
   # Hyprland-specific packages (core Wayland tools are in system/hyprland.nix)

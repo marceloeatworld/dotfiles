@@ -8,83 +8,15 @@
     syntaxHighlighting.enable = true;
     shellAliases = {
       # NixOS - Using NH (modern nix helper)
-      rebuild = "update-overlays; nh os switch";  # Auto-updates VS Code & Claude Code before rebuild
+      rebuild = "nh os switch";
       update = "cd $HOME/dotfiles/thinkpad-p14s-gen5 && nix flake update && update-overlays && nh os switch";
+      update-apps = "update-overlays && nh os switch";  # Updates VS Code & Claude Code (will close running instances)
       clean = "nh clean all --keep 5";  # Smarter garbage collection
 
       # Additional NH commands
       nb = "nh os boot";       # Build for next boot
       ntest = "nh os test";    # Test without setting boot default
       ndiff = "nh os build";   # See changes without applying
-
-      # Update all custom overlays (VS Code + Claude Code)
-      update-overlays = ''
-        update-vscode
-        update-claude-code
-      '';
-
-      # VS Code auto-update (fetches latest from Microsoft)
-      update-vscode = ''
-        set -e
-        OVERLAY="$HOME/dotfiles/thinkpad-p14s-gen5/overlays/vscode-latest.nix"
-
-        echo "══════════════════════════════════════════"
-        echo "  VS Code Update Check"
-        echo "══════════════════════════════════════════"
-
-        LATEST=$(curl -sI "https://code.visualstudio.com/sha/download?build=stable&os=linux-x64" | grep -i location | sed -n 's/.*\/\([0-9.]*\)\/.*/\1/p' | tr -d '\r')
-        CURRENT=$(grep 'version = ' "$OVERLAY" | sed 's/.*"\(.*\)".*/\1/')
-
-        echo "Current: $CURRENT"
-        echo "Latest:  $LATEST"
-
-        if [ "$CURRENT" = "$LATEST" ]; then
-          echo "✓ Already up to date!"
-          return 0
-        fi
-
-        echo ""
-        echo "Downloading VS Code $LATEST..."
-        HASH=$(nix-prefetch-url "https://update.code.visualstudio.com/$LATEST/linux-x64/stable" 2>/dev/null)
-        SRI=$(nix hash convert --hash-algo sha256 --to sri "$HASH")
-
-        sed -i "s/version = \".*\"/version = \"$LATEST\"/" "$OVERLAY"
-        sed -i "s|sha256 = \".*\"|sha256 = \"$SRI\"|" "$OVERLAY"
-
-        echo "✓ Updated to VS Code $LATEST"
-      '';
-
-      # Claude Code auto-update (fetches latest from npm registry)
-      update-claude-code = ''
-        set -e
-        OVERLAY="$HOME/dotfiles/thinkpad-p14s-gen5/overlays/claude-code-latest.nix"
-
-        echo ""
-        echo "══════════════════════════════════════════"
-        echo "  Claude Code Update Check"
-        echo "══════════════════════════════════════════"
-
-        LATEST=$(curl -s "https://registry.npmjs.org/@anthropic-ai/claude-code/latest" | jq -r '.version')
-        CURRENT=$(grep 'version = ' "$OVERLAY" | sed 's/.*"\(.*\)".*/\1/')
-
-        echo "Current: $CURRENT"
-        echo "Latest:  $LATEST"
-
-        if [ "$CURRENT" = "$LATEST" ]; then
-          echo "✓ Already up to date!"
-          return 0
-        fi
-
-        echo ""
-        echo "Downloading Claude Code $LATEST..."
-        HASH=$(nix-prefetch-url --unpack "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-$LATEST.tgz" 2>/dev/null)
-        SRI=$(nix hash convert --hash-algo sha256 --to sri "$HASH")
-
-        sed -i "s/version = \".*\"/version = \"$LATEST\"/" "$OVERLAY"
-        sed -i "s|hash = \".*\"|hash = \"$SRI\"|" "$OVERLAY"
-
-        echo "✓ Updated to Claude Code $LATEST"
-      '';
 
       # Modern replacements
       ls = "eza --icons";
@@ -116,10 +48,98 @@
       # npm global packages
       export PATH="$HOME/.npm-global/bin:$PATH"
 
+      # VS Code auto-update function (fetches latest from Microsoft API)
+      function update-vscode() {
+        local OVERLAY="$HOME/dotfiles/thinkpad-p14s-gen5/overlays/vscode-latest.nix"
+
+        echo "══════════════════════════════════════════"
+        echo "  VS Code Update Check"
+        echo "══════════════════════════════════════════"
+
+        # Use official VS Code update API
+        local API_RESPONSE=$(curl -s "https://update.code.visualstudio.com/api/update/linux-x64/stable/latest" 2>/dev/null)
+        local LATEST=$(echo "$API_RESPONSE" | jq -r '.productVersion')
+        local CURRENT=$(grep 'version = ' "$OVERLAY" | sed 's/.*"\(.*\)".*/\1/')
+
+        echo "Current: $CURRENT"
+        echo "Latest:  $LATEST"
+
+        if [[ -z "$LATEST" || "$LATEST" = "null" ]]; then
+          echo "⚠ Could not fetch latest version (network error?)"
+          return 0
+        fi
+
+        if [[ "$CURRENT" = "$LATEST" ]]; then
+          echo "✓ Already up to date!"
+          return 0
+        fi
+
+        echo ""
+        echo "Downloading VS Code $LATEST..."
+        local HASH=$(nix-prefetch-url "https://update.code.visualstudio.com/$LATEST/linux-x64/stable" 2>/dev/null)
+        if [[ -z "$HASH" ]]; then
+          echo "⚠ Failed to download VS Code $LATEST"
+          return 1
+        fi
+        local SRI=$(nix hash convert --hash-algo sha256 --to sri "$HASH")
+
+        sed -i "s/version = \".*\"/version = \"$LATEST\"/" "$OVERLAY"
+        sed -i "s|sha256 = \".*\"|sha256 = \"$SRI\"|" "$OVERLAY"
+
+        echo "✓ Updated to VS Code $LATEST"
+      }
+
+      # Claude Code auto-update function (fetches latest from npm registry)
+      function update-claude-code() {
+        local OVERLAY="$HOME/dotfiles/thinkpad-p14s-gen5/overlays/claude-code-latest.nix"
+
+        echo ""
+        echo "══════════════════════════════════════════"
+        echo "  Claude Code Update Check"
+        echo "══════════════════════════════════════════"
+
+        local LATEST=$(curl -s "https://registry.npmjs.org/@anthropic-ai/claude-code/latest" 2>/dev/null | jq -r '.version')
+        local CURRENT=$(grep 'version = ' "$OVERLAY" | sed 's/.*"\(.*\)".*/\1/')
+
+        echo "Current: $CURRENT"
+        echo "Latest:  $LATEST"
+
+        if [[ -z "$LATEST" || "$LATEST" = "null" ]]; then
+          echo "⚠ Could not fetch latest version (network error?)"
+          return 0
+        fi
+
+        if [[ "$CURRENT" = "$LATEST" ]]; then
+          echo "✓ Already up to date!"
+          return 0
+        fi
+
+        echo ""
+        echo "Downloading Claude Code $LATEST..."
+        local HASH=$(nix-prefetch-url --unpack "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-$LATEST.tgz" 2>/dev/null)
+        if [[ -z "$HASH" ]]; then
+          echo "⚠ Failed to download Claude Code $LATEST"
+          return 1
+        fi
+        local SRI=$(nix hash convert --hash-algo sha256 --to sri "$HASH")
+
+        sed -i "s/version = \".*\"/version = \"$LATEST\"/" "$OVERLAY"
+        sed -i "s|hash = \".*\"|hash = \"$SRI\"|" "$OVERLAY"
+
+        echo "✓ Updated to Claude Code $LATEST"
+      }
+
+      # Update all custom overlays
+      function update-overlays() {
+        update-vscode
+        update-claude-code
+      }
+
       # Launch Hyprland with UWSM on login to TTY1
       # See: https://wiki.hypr.land/Useful-Utilities/Systemd-start/
+      # NixOS uses hyprland-uwsm.desktop (not hyprland.desktop) when withUWSM=true
       if uwsm check may-start; then
-        exec uwsm start hyprland.desktop
+        exec uwsm start hyprland-uwsm.desktop
       fi
     '';
   };
