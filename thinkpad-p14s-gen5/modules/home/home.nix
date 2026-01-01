@@ -1,6 +1,98 @@
 # Home Manager configuration for user marcelo
 { config, pkgs, inputs, pkgs-unstable, ... }:
 
+let
+  # Theme selector script (CLI only)
+  # Writes to dotfiles repo file which Nix reads at build time
+  theme-selector = pkgs.writeShellScriptBin "theme-selector" ''
+    #!/usr/bin/env bash
+    # Theme Selector - CLI interface
+    # Usage:
+    #   theme-selector <theme>    # Sets theme directly
+    #   theme-selector --list     # Lists available themes
+    #   theme-selector --current  # Shows current theme
+
+    DOTFILES_DIR="$HOME/dotfiles/thinkpad-p14s-gen5"
+    THEME_FILE="$DOTFILES_DIR/modules/home/config/current-theme"
+
+    # Available themes with descriptions
+    declare -A THEMES=(
+      ["ristretto"]="Ristretto|Warm coffee-inspired (Monokai Pro)"
+      ["neobrutalist"]="Neobrutalist|Minimal high-contrast bold"
+      ["nord"]="Nord|Arctic north-bluish palette"
+      ["tokyonight"]="Tokyo Night|Tokyo city lights inspired"
+      ["catppuccin"]="Catppuccin|Soothing pastel warm theme"
+    )
+
+    # Get current theme from file
+    get_current() {
+      if [ -f "$THEME_FILE" ]; then
+        cat "$THEME_FILE" | tr -d '[:space:]'
+      else
+        echo "ristretto"
+      fi
+    }
+
+    # List themes
+    list_themes() {
+      echo "Available themes:"
+      current=$(get_current)
+      for key in ristretto neobrutalist nord tokyonight catppuccin; do
+        IFS='|' read -r name desc <<< "''${THEMES[$key]}"
+        marker=""
+        [ "$key" = "$current" ] && marker=" (current)"
+        echo "  $key - $name$marker"
+        echo "      $desc"
+      done
+    }
+
+    # Set theme
+    set_theme() {
+      local theme="$1"
+      if [ -z "''${THEMES[$theme]}" ]; then
+        echo "Error: Unknown theme '$theme'"
+        echo ""
+        list_themes
+        exit 1
+      fi
+
+      # Write theme to dotfiles (Nix reads this at build time)
+      echo "$theme" > "$THEME_FILE"
+
+      # Stage the file for git (required for flakes)
+      cd "$DOTFILES_DIR" && ${pkgs.git}/bin/git add "$THEME_FILE"
+
+      IFS='|' read -r name desc <<< "''${THEMES[$theme]}"
+      echo "Theme set to: $name ($theme)"
+      echo ""
+      echo "Rebuilding system to apply theme..."
+      cd "$DOTFILES_DIR" && nh os switch
+    }
+
+    # Main
+    case "''${1:-}" in
+      --list|-l)
+        list_themes
+        ;;
+      --current|-c)
+        echo "Current theme: $(get_current)"
+        ;;
+      --help|-h|"")
+        echo "Theme Selector - Change system theme"
+        echo ""
+        echo "Usage:"
+        echo "  theme-selector <theme>      Set theme (rebuilds system)"
+        echo "  theme-selector --list       List available themes"
+        echo "  theme-selector --current    Show current theme"
+        echo ""
+        list_themes
+        ;;
+      *)
+        set_theme "$1"
+        ;;
+    esac
+  '';
+in
 {
   # Home Manager needs a bit of information about you and the paths it should manage
   home.username = "marcelo";
@@ -85,6 +177,9 @@
   # Basic user packages
   # NOTE: btop is in btop.nix, fastfetch is in fastfetch.nix
   home.packages = with pkgs; [
+    # Theme selector
+    theme-selector  # GUI/CLI theme switcher (SUPER+T or `theme-selector`)
+
     # System utilities
     hyprsysteminfo  # Official Hyprland system info (GUI)
     tree

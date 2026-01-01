@@ -9,7 +9,10 @@
 #     # Access fonts: theme.fonts.mono, theme.fonts.monoSize, etc.
 #   }
 #
-# To change theme: set `theme.name = "neobrutalist";` in home.nix
+# To change theme:
+#   - GUI: Run `theme-selector` or press SUPER+T
+#   - CLI: Run `theme-selector <theme-name>`
+#   - Manual: Edit ~/.config/theme/current and rebuild
 #
 { lib, config, ... }:
 
@@ -22,6 +25,9 @@ let
     # ── Monokai Pro Ristretto ──────────────────────────────────────────────
     # Warm coffee-inspired dark theme with soft colors
     ristretto = {
+      name = "Ristretto";
+      description = "Warm coffee-inspired (Monokai Pro)";
+      icon = "☕";
       colors = {
         # Base
         background = "#2c2421";
@@ -55,8 +61,10 @@ let
 
     # ── Neobrutalist ───────────────────────────────────────────────────────
     # Minimal, high-contrast, bold design with sharp edges
-    # Inspired by brutalist architecture and modern design
     neobrutalist = {
+      name = "Neobrutalist";
+      description = "Minimal high-contrast bold design";
+      icon = "◼";
       colors = {
         # Base - Pure black/white for maximum contrast
         background = "#0a0a0a";
@@ -91,6 +99,9 @@ let
     # ── Nord ───────────────────────────────────────────────────────────────
     # Arctic, north-bluish color palette
     nord = {
+      name = "Nord";
+      description = "Arctic north-bluish palette";
+      icon = "❄";
       colors = {
         # Base - Polar night
         background = "#2e3440";
@@ -125,6 +136,9 @@ let
     # ── Tokyo Night ────────────────────────────────────────────────────────
     # Clean, dark theme inspired by Tokyo city lights
     tokyonight = {
+      name = "Tokyo Night";
+      description = "Tokyo city lights inspired";
+      icon = "🌃";
       colors = {
         # Base
         background = "#1a1b26";
@@ -155,24 +169,81 @@ let
         sansSize = 11;
       };
     };
+
+    # ── Catppuccin Mocha ───────────────────────────────────────────────────
+    # Soothing pastel theme with warm colors
+    catppuccin = {
+      name = "Catppuccin";
+      description = "Soothing pastel warm theme";
+      icon = "🐱";
+      colors = {
+        # Base
+        background = "#1e1e2e";
+        backgroundAlt = "#181825";
+        surface = "#313244";
+        foreground = "#cdd6f4";
+        foregroundDim = "#bac2de";
+        # Accents
+        red = "#f38ba8";
+        orange = "#fab387";
+        yellow = "#f9e2af";
+        green = "#a6e3a1";
+        cyan = "#94e2d5";
+        blue = "#89b4fa";
+        magenta = "#cba6f7";
+        # UI
+        border = "#45475a";
+        selection = "#45475a";
+        comment = "#6c7086";
+        # Terminal bright variants
+        brightBlack = "#585b70";
+        brightWhite = "#a6adc8";
+      };
+      fonts = {
+        mono = "JetBrainsMono Nerd Font";
+        monoSize = 11;
+        sans = "Inter";
+        sansSize = 11;
+      };
+    };
   };
 
+  # Read theme from file in the dotfiles repo (not home directory)
+  # The theme-selector script updates this file and rebuilds
+  themeFile = ./current-theme;
+
+  # Try to read theme file, fallback to "ristretto"
+  currentTheme =
+    let
+      fileContent = builtins.tryEval (builtins.readFile themeFile);
+    in
+      if fileContent.success
+      then builtins.replaceStrings ["\n" " " "\t"] ["" "" ""] fileContent.value
+      else "ristretto";
+
+  # Validate theme exists, fallback to ristretto
+  validTheme = if builtins.hasAttr currentTheme themes then currentTheme else "ristretto";
+
   # Get the selected theme
-  selectedTheme = themes.${config.theme.name};
+  selectedTheme = themes.${validTheme};
+
+  # Export theme list for the selector script
+  themeList = builtins.attrNames themes;
 
 in
 {
   options.theme = {
     # ── Theme Selector ──
     name = lib.mkOption {
-      type = lib.types.enum (builtins.attrNames themes);
-      default = "ristretto";
+      type = lib.types.enum themeList;
+      default = validTheme;
       description = ''
         Theme to use. Available themes:
         - ristretto: Monokai Pro Ristretto (warm coffee-inspired)
         - neobrutalist: Minimal high-contrast bold design
         - nord: Arctic north-bluish palette
         - tokyonight: Tokyo city lights inspired
+        - catppuccin: Soothing pastel warm theme
       '';
     };
 
@@ -290,5 +361,5 @@ in
     };
   };
 
-  config = {};
+  # No config needed - theme is read from ./current-theme file in dotfiles repo
 }
