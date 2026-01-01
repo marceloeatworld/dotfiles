@@ -1,5 +1,9 @@
 # Shell configuration (ZSH with Starship prompt)
 { pkgs, config, inputs, ... }:
+
+let
+  theme = config.theme;
+in
 {
   programs.zsh = {
     enable = true;
@@ -229,7 +233,7 @@
     };
   };
 
-  # Ristretto theme for bat (Monokai Pro Ristretto)
+  # Ristretto theme for bat (Monokai Pro Ristretto - from theme.nix)
   home.file.".config/bat/themes/ristretto.tmTheme".text = ''
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -244,23 +248,23 @@
           <key>settings</key>
           <dict>
             <key>background</key>
-            <string>#2c2421</string>
+            <string>${theme.colors.background}</string>
             <key>foreground</key>
-            <string>#e6d9db</string>
+            <string>${theme.colors.foreground}</string>
             <key>caret</key>
-            <string>#f9cc6c</string>
+            <string>${theme.colors.yellow}</string>
             <key>lineHighlight</key>
-            <string>#403e41</string>
+            <string>${theme.colors.surface}</string>
             <key>selection</key>
-            <string>#72696a</string>
+            <string>${theme.colors.selection}</string>
             <key>selectionBorder</key>
-            <string>#72696a</string>
+            <string>${theme.colors.selection}</string>
             <key>findHighlight</key>
-            <string>#f9cc6c</string>
+            <string>${theme.colors.yellow}</string>
             <key>guide</key>
-            <string>#5b5353</string>
+            <string>${theme.colors.border}</string>
             <key>activeGuide</key>
-            <string>#e6d9db</string>
+            <string>${theme.colors.foreground}</string>
           </dict>
         </dict>
         <!-- Comments -->
@@ -272,7 +276,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#72696a</string>
+            <string>${theme.colors.comment}</string>
             <key>fontStyle</key>
             <string>italic</string>
           </dict>
@@ -286,7 +290,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#f9cc6c</string>
+            <string>${theme.colors.yellow}</string>
           </dict>
         </dict>
         <!-- Numbers -->
@@ -298,7 +302,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#ab9df2</string>
+            <string>${theme.colors.magenta}</string>
           </dict>
         </dict>
         <!-- Constants -->
@@ -310,7 +314,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#ab9df2</string>
+            <string>${theme.colors.magenta}</string>
           </dict>
         </dict>
         <!-- Keywords -->
@@ -322,7 +326,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fd6883</string>
+            <string>${theme.colors.red}</string>
           </dict>
         </dict>
         <!-- Operators -->
@@ -334,7 +338,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fd6883</string>
+            <string>${theme.colors.red}</string>
           </dict>
         </dict>
         <!-- Functions -->
@@ -346,7 +350,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#adda78</string>
+            <string>${theme.colors.green}</string>
           </dict>
         </dict>
         <!-- Classes -->
@@ -358,7 +362,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#85dacc</string>
+            <string>${theme.colors.cyan}</string>
             <key>fontStyle</key>
             <string>italic</string>
           </dict>
@@ -372,7 +376,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#e6d9db</string>
+            <string>${theme.colors.foreground}</string>
           </dict>
         </dict>
         <!-- Parameters -->
@@ -384,7 +388,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fc9867</string>
+            <string>${theme.colors.orange}</string>
             <key>fontStyle</key>
             <string>italic</string>
           </dict>
@@ -398,7 +402,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fd6883</string>
+            <string>${theme.colors.red}</string>
           </dict>
         </dict>
         <!-- Attributes -->
@@ -410,7 +414,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#85dacc</string>
+            <string>${theme.colors.cyan}</string>
             <key>fontStyle</key>
             <string>italic</string>
           </dict>
@@ -424,7 +428,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#85dacc</string>
+            <string>${theme.colors.cyan}</string>
           </dict>
         </dict>
         <!-- Punctuation -->
@@ -436,7 +440,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#e6d9db</string>
+            <string>${theme.colors.foreground}</string>
           </dict>
         </dict>
         <!-- Invalid -->
@@ -448,9 +452,9 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fd6883</string>
+            <string>${theme.colors.red}</string>
             <key>background</key>
-            <string>#403e41</string>
+            <string>${theme.colors.surface}</string>
           </dict>
         </dict>
         <!-- Markdown Heading -->
@@ -462,7 +466,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fd6883</string>
+            <string>${theme.colors.red}</string>
             <key>fontStyle</key>
             <string>bold</string>
           </dict>
@@ -476,7 +480,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fc9867</string>
+            <string>${theme.colors.orange}</string>
             <key>fontStyle</key>
             <string>bold</string>
           </dict>
@@ -490,7 +494,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#f9cc6c</string>
+            <string>${theme.colors.yellow}</string>
             <key>fontStyle</key>
             <string>italic</string>
           </dict>
@@ -504,7 +508,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#85dacc</string>
+            <string>${theme.colors.cyan}</string>
           </dict>
         </dict>
         <!-- Markdown Code -->
@@ -516,7 +520,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#adda78</string>
+            <string>${theme.colors.green}</string>
           </dict>
         </dict>
         <!-- Diff Added -->
@@ -528,7 +532,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#adda78</string>
+            <string>${theme.colors.green}</string>
           </dict>
         </dict>
         <!-- Diff Removed -->
@@ -540,7 +544,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fd6883</string>
+            <string>${theme.colors.red}</string>
           </dict>
         </dict>
         <!-- Diff Changed -->
@@ -552,7 +556,7 @@
           <key>settings</key>
           <dict>
             <key>foreground</key>
-            <string>#fc9867</string>
+            <string>${theme.colors.orange}</string>
           </dict>
         </dict>
       </array>

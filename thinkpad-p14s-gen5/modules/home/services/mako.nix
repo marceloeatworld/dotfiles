@@ -1,6 +1,9 @@
 # Mako notification daemon configuration
-{ ... }:
+{ config, ... }:
 
+let
+  theme = config.theme;
+in
 {
   services.mako = {
     enable = true;
@@ -8,10 +11,10 @@
     # Use settings instead of deprecated extraConfig (NixOS 25.05)
     settings = {
       # Ristretto theme - Global settings
-      background-color = "#2c2421";
-      text-color = "#e6d9db";
-      border-color = "#e6d9db";
-      progress-color = "over #403e41";
+      background-color = theme.colors.background;
+      text-color = theme.colors.foreground;
+      border-color = theme.colors.foreground;
+      progress-color = "over ${theme.colors.surface}";
 
       border-radius = 8;
       border-size = 2;
@@ -24,7 +27,7 @@
       default-timeout = 5000;
       ignore-timeout = true;
 
-      font = "JetBrainsMono Nerd Font 11";
+      font = "${theme.fonts.mono} ${toString theme.fonts.monoSize}";
 
       # Icons
       icons = true;
@@ -46,31 +49,31 @@
 
       # Urgency-specific settings
       "urgency=low" = {
-        border-color = "#85dacc";
+        border-color = theme.colors.cyan;
         default-timeout = 3000;
       };
 
       "urgency=normal" = {
-        border-color = "#e6d9db";
+        border-color = theme.colors.foreground;
       };
 
       "urgency=high" = {
-        border-color = "#fd6883";
+        border-color = theme.colors.red;
         default-timeout = 0;
       };
 
       # App-specific overrides
       "app-name=Spotify" = {
-        border-color = "#adda78";
+        border-color = theme.colors.green;
         default-timeout = 3000;
       };
 
       "app-name=Discord" = {
-        border-color = "#a9dc76";
+        border-color = theme.colors.green;
       };
 
       "app-name=Brave" = {
-        border-color = "#fc9867";
+        border-color = theme.colors.orange;
       };
 
       # Volume/brightness notifications (from SwayOSD) - shorter timeout
@@ -81,7 +84,7 @@
 
       # Screenshot notifications
       "summary~=Screenshot" = {
-        border-color = "#f9cc6c";
+        border-color = theme.colors.yellow;
         default-timeout = 4000;
       };
     };

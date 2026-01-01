@@ -1,1034 +1,77 @@
-# Waybar - Simple colors (Ristretto theme)
+# Waybar configuration - Ristretto theme
+# Scripts are in waybar-scripts/ directory
 { pkgs, config, ... }:
 
 let
-  audioSwitchScript = pkgs.writeShellScriptBin "audio-switch-waybar" ''
-    #!/usr/bin/env bash
-    # Audio output switcher: toggle between internal speakers and headphones (jack)
-    # Works even when headphones cable is NOT plugged in
-
-    STATE_FILE="$HOME/.config/audio-output-state"
-
-    # Auto-detect the sound card (find card with Speaker control)
-    CARD=""
-    for c in 0 1 2 3; do
-      if ${pkgs.alsa-utils}/bin/amixer -c "$c" scontrols 2>/dev/null | grep -q "Speaker\|Internal Speaker"; then
-        CARD="$c"
-        break
-      fi
-    done
-
-    if [ -z "$CARD" ]; then
-      ${pkgs.libnotify}/bin/notify-send -u critical "Audio Error" "No sound card with speaker control found" -i dialog-error
-      exit 1
-    fi
-
-    # Read current state (0 = headphones/jack, 1 = internal speakers)
-    CURRENT_STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
-
-    if [ "$CURRENT_STATE" = "0" ]; then
-      # Switch to internal speakers (force unmute even with jack plugged)
-      echo "1" > "$STATE_FILE"
-
-      # Disable Auto-Mute Mode FIRST (critical for forcing speakers when jack is plugged)
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Auto-Mute Mode" "Disabled" 2>/dev/null
-
-      # Force unmute and set volume for speakers
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Speaker" unmute 2>/dev/null
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Speaker" 100% 2>/dev/null
-
-      # Alternative control names (some systems use these)
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Internal Speaker" unmute 2>/dev/null
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Internal Speaker" 100% 2>/dev/null
-
-      # Also unmute Master to ensure audio flows
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Master" unmute 2>/dev/null
-
-      ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Internal Speakers" -i audio-speakers
-    else
-      # Switch back to headphones/jack (default behavior)
-      echo "0" > "$STATE_FILE"
-
-      # Re-enable auto-mute (normal behavior - auto-switches based on jack detection)
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Auto-Mute Mode" "Enabled" 2>/dev/null
-
-      # Mute speakers (let headphones take over when plugged in)
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Speaker" mute 2>/dev/null
-      ${pkgs.alsa-utils}/bin/amixer -c "$CARD" sset "Internal Speaker" mute 2>/dev/null
-
-      ${pkgs.libnotify}/bin/notify-send "Audio Output" "Switched to Headphones/Auto (Jack)" -i audio-headphones
-    fi
-  '';
-
-  removableDisksScript = pkgs.writeShellScriptBin "removable-disks-waybar" ''
-    #!/usr/bin/env bash
-    # List removable USB/external disks and allow ejecting
-
-    # Get list of USB disk devices (parent devices)
-    usb_disks=$(lsblk -nrpo "name,type,tran" | awk '$2=="disk" && $3=="usb" {print $1}')
-
-    # Get all partitions from USB disks (both removable and external HDDs)
-    devices=""
-    for disk in $usb_disks; do
-      partitions=$(lsblk -nrpo "name,type,size,mountpoint,label" "$disk" | awk '$2=="part" {print $0}')
-      if [ -n "$partitions" ]; then
-        devices="$devices$partitions"$'\n'
-      fi
-    done
-
-    # Remove trailing newline
-    devices=$(echo "$devices" | sed '/^$/d')
-
-    if [ -z "$devices" ]; then
-      echo '{"text": "", "tooltip": "No USB disks"}'
-      exit 0
-    fi
-
-    # Count mounted devices
-    count=$(echo "$devices" | wc -l)
-
-    # Build tooltip with device list
-    tooltip="USB Disks ($count):\n"
-    while IFS= read -r line; do
-      name=$(echo "$line" | awk '{print $1}')
-      size=$(echo "$line" | awk '{print $3}')
-      mount=$(echo "$line" | awk '{print $4}')
-      label=$(echo "$line" | awk '{print $5}')
-
-      if [ -n "$mount" ] && [ "$mount" != "" ]; then
-        tooltip="$tooltip\n● $(basename $name) - $size - $label"
-        tooltip="$tooltip\n  Mounted: $mount"
-      else
-        tooltip="$tooltip\n○ $(basename $name) - $size - $label (not mounted)"
-      fi
-    done <<< "$devices"
-
-    tooltip="$tooltip\n\nClick to open file manager"
-
-    echo "{\"text\": \"󰋊 $count\", \"tooltip\": \"$tooltip\"}"
-  '';
-
-  bitcoinScript = pkgs.writeShellScriptBin "bitcoin-waybar" ''
-    #!/usr/bin/env bash
-    # Bitcoin price monitor: Coinbase (price) + CoinGecko (market data)
-    PATH="${pkgs.xxd}/bin:$PATH"
-
-    # Configuration files
-    ALERT_FILE="$HOME/.config/waybar/bitcoin-alerts.conf"
-    LAST_PRICE_FILE="$HOME/.config/waybar/bitcoin-last-price"
-
-    # Fetch prices from Coinbase API (reliable primary source)
-    usd_response=$(${pkgs.curl}/bin/curl -s "https://api.coinbase.com/v2/prices/BTC-USD/spot" --max-time 10)
-    eur_response=$(${pkgs.curl}/bin/curl -s "https://api.coinbase.com/v2/prices/BTC-EUR/spot" --max-time 10)
-
-    if [ $? -ne 0 ] || [ -z "$usd_response" ]; then
-      echo '{"text": "BTC: N/A", "tooltip": "Failed to fetch Bitcoin data"}'
-      exit 0
-    fi
-
-    # Parse prices from Coinbase
-    usd=$(echo "$usd_response" | ${pkgs.jq}/bin/jq -r '.data.amount // "N/A"')
-    eur=$(echo "$eur_response" | ${pkgs.jq}/bin/jq -r '.data.amount // "N/A"')
-
-    if [ "$usd" = "N/A" ] || [ "$usd" = "null" ]; then
-      echo '{"text": "BTC: N/A", "tooltip": "Failed to parse Bitcoin data"}'
-      exit 0
-    fi
-
-    # Fetch market data from CoinGecko (optional, with fallback)
-    coingecko_data=$(${pkgs.curl}/bin/curl -s --max-time 10 "https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false")
-
-    # Parse CoinGecko data (with fallback to N/A if it fails)
-    if [ -n "$coingecko_data" ]; then
-      change_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_24h // "N/A"')
-      change_7d=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_7d // "N/A"')
-      change_30d=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_30d // "N/A"')
-      change_1y=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.price_change_percentage_1y // "N/A"')
-      market_cap=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.market_cap.usd // "N/A"')
-      volume_24h=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.total_volume.usd // "N/A"')
-      high_24h_usd=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.high_24h.usd // "N/A"')
-      high_24h_eur=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.high_24h.eur // "N/A"')
-      low_24h_usd=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.low_24h.usd // "N/A"')
-      low_24h_eur=$(echo "$coingecko_data" | ${pkgs.jq}/bin/jq -r '.market_data.low_24h.eur // "N/A"')
-    else
-      # CoinGecko failed, use N/A for market data
-      change_24h="N/A"
-      change_7d="N/A"
-      change_30d="N/A"
-      change_1y="N/A"
-      market_cap="N/A"
-      volume_24h="N/A"
-      high_24h_usd="N/A"
-      high_24h_eur="N/A"
-      low_24h_usd="N/A"
-      low_24h_eur="N/A"
-    fi
-
-    # Fetch Bitcoin Dominance from CoinGecko Global API
-    global_data=$(${pkgs.curl}/bin/curl -s --max-time 10 "https://api.coingecko.com/api/v3/global")
-    if [ -n "$global_data" ]; then
-      btc_dominance=$(echo "$global_data" | ${pkgs.jq}/bin/jq -r '.data.market_cap_percentage.btc // "N/A"')
-    else
-      btc_dominance="N/A"
-    fi
-
-    # Check price alerts
-    if [ -f "$ALERT_FILE" ]; then
-      while IFS='=' read -r threshold_type threshold_value; do
-        # Skip comments and empty lines
-        [[ "$threshold_type" =~ ^#.*$ ]] && continue
-        [[ -z "$threshold_type" ]] && continue
-
-        case "$threshold_type" in
-          above)
-            if (( $(echo "$usd >= $threshold_value" | ${pkgs.bc}/bin/bc -l) )); then
-              # Check if we already notified
-              last_price=$(cat "$LAST_PRICE_FILE" 2>/dev/null || echo "0")
-              if (( $(echo "$last_price < $threshold_value" | ${pkgs.bc}/bin/bc -l) )); then
-                ${pkgs.libnotify}/bin/notify-send -u critical "Bitcoin Alert" "Price crossed above \$$threshold_value\nCurrent: \$$usd"
-              fi
-            fi
-            ;;
-          below)
-            if (( $(echo "$usd <= $threshold_value" | ${pkgs.bc}/bin/bc -l) )); then
-              last_price=$(cat "$LAST_PRICE_FILE" 2>/dev/null || echo "999999")
-              if (( $(echo "$last_price > $threshold_value" | ${pkgs.bc}/bin/bc -l) )); then
-                ${pkgs.libnotify}/bin/notify-send -u critical "Bitcoin Alert" "Price dropped below \$$threshold_value\nCurrent: \$$usd"
-              fi
-            fi
-            ;;
-        esac
-      done < "$ALERT_FILE"
-
-      # Save current price for next check
-      echo "$usd" > "$LAST_PRICE_FILE"
-    fi
-
-    # Format prices
-    usd_formatted=$(printf "%.0fk" $(echo "$usd / 1000" | ${pkgs.bc}/bin/bc))
-    usd_full=$(printf "%'.0f" "$usd" 2>/dev/null || echo "$usd")
-    eur_full=$(printf "%'.0f" "$eur" 2>/dev/null || echo "$eur")
-
-    # Format market data
-    if [ "$market_cap" != "N/A" ]; then
-      market_cap_t=$(echo "scale=3; $market_cap / 1000000000000" | ${pkgs.bc}/bin/bc)
-      if (( $(echo "$market_cap_t >= 1" | ${pkgs.bc}/bin/bc -l) )); then
-        market_cap_formatted=$(printf "%.2fT" "$market_cap_t")
-      else
-        market_cap_b=$(echo "scale=2; $market_cap / 1000000000" | ${pkgs.bc}/bin/bc)
-        market_cap_formatted=$(printf "%.2fB" "$market_cap_b")
-      fi
-    else
-      market_cap_formatted="N/A"
-    fi
-
-    if [ "$volume_24h" != "N/A" ]; then
-      volume_b=$(echo "scale=2; $volume_24h / 1000000000" | ${pkgs.bc}/bin/bc)
-      volume_formatted=$(printf "%.2fB" "$volume_b")
-    else
-      volume_formatted="N/A"
-    fi
-
-    # Build tooltip with Coinbase price + CoinGecko market data
-    tooltip="┌─ 🏷️ PRICE ──────────"
-    tooltip="$tooltip\n│ USD  \$$usd_full"
-    tooltip="$tooltip\n│ EUR  €$eur_full"
-    tooltip="$tooltip\n└────"
-
-    # Price changes (from CoinGecko)
-    if [ "$change_24h" != "N/A" ] || [ "$change_7d" != "N/A" ]; then
-      tooltip="$tooltip\n┌─ 📊 PERFORMANCE ─────"
-
-      if [ "$change_24h" != "N/A" ]; then
-        change_24h_fmt=$(printf "%.2f" "$change_24h")
-        if (( $(echo "$change_24h >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-          tooltip="$tooltip\n│ 24h  🟢 +$change_24h_fmt%"
-        else
-          tooltip="$tooltip\n│ 24h  🔴 $change_24h_fmt%"
-        fi
-      fi
-
-      if [ "$change_7d" != "N/A" ]; then
-        change_7d_fmt=$(printf "%.2f" "$change_7d")
-        if (( $(echo "$change_7d >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-          tooltip="$tooltip\n│ 7d   🟢 +$change_7d_fmt%"
-        else
-          tooltip="$tooltip\n│ 7d   🔴 $change_7d_fmt%"
-        fi
-      fi
-
-      if [ "$change_30d" != "N/A" ]; then
-        change_30d_fmt=$(printf "%.2f" "$change_30d")
-        if (( $(echo "$change_30d >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-          tooltip="$tooltip\n│ 30d  🟢 +$change_30d_fmt%"
-        else
-          tooltip="$tooltip\n│ 30d  🔴 $change_30d_fmt%"
-        fi
-      fi
-
-      if [ "$change_1y" != "N/A" ]; then
-        change_1y_fmt=$(printf "%.2f" "$change_1y")
-        if (( $(echo "$change_1y >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-          tooltip="$tooltip\n│ 1yr  🟢 +$change_1y_fmt%"
-        else
-          tooltip="$tooltip\n│ 1yr  🔴 $change_1y_fmt%"
-        fi
-      fi
-
-      tooltip="$tooltip\n└────"
-    fi
-
-    # 24h range (from CoinGecko)
-    if [ "$high_24h_usd" != "N/A" ] && [ "$low_24h_usd" != "N/A" ]; then
-      high_24h_usd_formatted=$(printf "%'.0f" "$high_24h_usd")
-      high_24h_eur_formatted=$(printf "%'.0f" "$high_24h_eur")
-      low_24h_usd_formatted=$(printf "%'.0f" "$low_24h_usd")
-      low_24h_eur_formatted=$(printf "%'.0f" "$low_24h_eur")
-
-      tooltip="$tooltip\n┌─ 📈 24H RANGE ───────"
-      tooltip="$tooltip\n│ High \$$high_24h_usd_formatted / €$high_24h_eur_formatted"
-      tooltip="$tooltip\n│ Low  \$$low_24h_usd_formatted / €$low_24h_eur_formatted"
-      tooltip="$tooltip\n└────"
-    fi
-
-    # Market data (from CoinGecko)
-    if [ "$market_cap" != "N/A" ] || [ "$volume_24h" != "N/A" ]; then
-      tooltip="$tooltip\n┌─ 💎 MARKET ──────────"
-      tooltip="$tooltip\n│ Cap    \$$market_cap_formatted"
-      tooltip="$tooltip\n│ Volume \$$volume_formatted"
-      tooltip="$tooltip\n└────"
-    fi
-
-    # Bitcoin Dominance
-    if [ "$btc_dominance" != "N/A" ]; then
-      btc_dom_fmt=$(printf "%.2f" "$btc_dominance")
-      tooltip="$tooltip\n┌─ 📊 DOMINANCE ───────"
-      tooltip="$tooltip\n│ BTC  $btc_dom_fmt%"
-      altcoin_dom=$(echo "100 - $btc_dominance" | ${pkgs.bc}/bin/bc)
-      altcoin_dom_fmt=$(printf "%.2f" "$altcoin_dom")
-      tooltip="$tooltip\n│ ALT  $altcoin_dom_fmt%"
-      tooltip="$tooltip\n└────"
-    fi
-
-    # Alert info
-    if [ -f "$ALERT_FILE" ]; then
-      tooltip="$tooltip\n\n🔔 Price Alerts: Active"
-    fi
-
-    # ═══════════════════════════════════════
-    # BLOCKCHAIN INFO - Last 3 blocks & Next 3 estimated
-    # ═══════════════════════════════════════
-
-    # Fetch last 3 blocks from mempool.space
-    blocks_data=$(${pkgs.curl}/bin/curl -s "https://mempool.space/api/v1/blocks")
-
-    # Fetch mempool info for next blocks estimation
-    mempool_data=$(${pkgs.curl}/bin/curl -s "https://mempool.space/api/mempool")
-
-    # Fetch difficulty adjustment info
-    difficulty_data=$(${pkgs.curl}/bin/curl -s "https://mempool.space/api/v1/difficulty-adjustment")
-
-    if [ $? -eq 0 ] && [ -n "$blocks_data" ]; then
-      # Difficulty Adjustment info with progress bar (centered)
-      if [ -n "$difficulty_data" ]; then
-        progress=$(echo "$difficulty_data" | ${pkgs.jq}/bin/jq -r '.progressPercent // "N/A"')
-        diff_change=$(echo "$difficulty_data" | ${pkgs.jq}/bin/jq -r '.difficultyChange // "N/A"')
-        remaining_blocks=$(echo "$difficulty_data" | ${pkgs.jq}/bin/jq -r '.remainingBlocks // "N/A"')
-        next_height=$(echo "$difficulty_data" | ${pkgs.jq}/bin/jq -r '.nextRetargetHeight // "N/A"')
-
-        if [ "$progress" != "N/A" ]; then
-          progress_fmt=$(printf "%.1f" "$progress")
-          diff_change_fmt=$(printf "%+.2f" "$diff_change")
-
-          # Create visual progress bar (17 chars for box width)
-          progress_int=$(printf "%.0f" "$progress")
-          filled=$((progress_int / 6))  # ~17 blocks = 100%
-          [ "$filled" -gt 17 ] && filled=17
-          empty=$((17 - filled))
-
-          bar=""
-          for ((i=0; i<filled; i++)); do bar="''${bar}█"; done
-          for ((i=0; i<empty; i++)); do bar="''${bar}░"; done
-
-          tooltip="$tooltip\n┌─ ⚙️  DIFFICULTY ─────"
-          tooltip="$tooltip\n│ $bar"
-          tooltip="$tooltip\n│ Progress: $progress_fmt%"
-          tooltip="$tooltip\n│ Remain: $remaining_blocks blks"
-
-          if (( $(echo "$diff_change >= 0" | ${pkgs.bc}/bin/bc -l) )); then
-            tooltip="$tooltip\n│ Next: 📈 $diff_change_fmt%"
-          else
-            tooltip="$tooltip\n│ Next: 📉 $diff_change_fmt%"
-          fi
-          tooltip="$tooltip\n└────"
-        fi
-      fi
-
-      # Last 3 mined blocks (compact & cute display)
-      tooltip="$tooltip\n┌─ 🧊 LAST 3 BLOCKS ───"
-
-      for i in 0 1 2; do
-        block_height=$(echo "$blocks_data" | ${pkgs.jq}/bin/jq -r ".[$i].height // \"N/A\"")
-        block_tx_count=$(echo "$blocks_data" | ${pkgs.jq}/bin/jq -r ".[$i].tx_count // \"N/A\"")
-        block_timestamp=$(echo "$blocks_data" | ${pkgs.jq}/bin/jq -r ".[$i].timestamp // \"N/A\"")
-        block_size=$(echo "$blocks_data" | ${pkgs.jq}/bin/jq -r ".[$i].size // \"N/A\"")
-        coinbase_raw=$(echo "$blocks_data" | ${pkgs.jq}/bin/jq -r ".[$i].extras.coinbaseRaw // \"\"")
-
-        if [ "$block_height" != "N/A" ]; then
-          # Calculate time ago
-          current_time=$(date +%s)
-          time_diff=$((current_time - block_timestamp))
-
-          if [ $time_diff -lt 60 ]; then
-            time_ago="''${time_diff}s"
-          elif [ $time_diff -lt 3600 ]; then
-            time_ago="$((time_diff / 60))m"
-          else
-            time_ago="$((time_diff / 3600))h"
-          fi
-
-          # Format size (compact)
-          if [ "$block_size" != "N/A" ]; then
-            size_mb=$(echo "scale=1; $block_size / 1048576" | ${pkgs.bc}/bin/bc)
-            size_fmt="''${size_mb}MB"
-          else
-            size_fmt="N/A"
-          fi
-
-          # Extract pool name (short version)
-          pool_name="❓"
-          if [ -n "$coinbase_raw" ]; then
-            pool_text=$(echo "$coinbase_raw" | ${pkgs.xxd}/bin/xxd -r -p 2>/dev/null | strings | head -1)
-
-            if echo "$pool_text" | grep -qi "foundry"; then
-              pool_name="Foundry"
-            elif echo "$pool_text" | grep -qi "antpool"; then
-              pool_name="AntPool"
-            elif echo "$pool_text" | grep -qi "f2pool"; then
-              pool_name="F2Pool"
-            elif echo "$pool_text" | grep -qi "binance"; then
-              pool_name="Binance"
-            elif echo "$pool_text" | grep -qi "viabtc"; then
-              pool_name="ViaBTC"
-            elif echo "$pool_text" | grep -qi "marathon"; then
-              pool_name="MARA"
-            elif echo "$pool_text" | grep -qi "luxor"; then
-              pool_name="Luxor"
-            elif echo "$pool_text" | grep -qi "braiins"; then
-              pool_name="Braiins"
-            elif [ -n "$pool_text" ]; then
-              pool_name=$(echo "$pool_text" | awk '{print $1}' | cut -c1-8)
-            fi
-          fi
-
-          # Create sparkline based on tx count
-          tx_scaled=$(echo "scale=0; ($block_tx_count - 1000) / 500" | ${pkgs.bc}/bin/bc 2>/dev/null || echo "4")
-          [ "$tx_scaled" -lt 0 ] && tx_scaled=0
-          [ "$tx_scaled" -gt 7 ] && tx_scaled=7
-          spark_chars=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█")
-          block_bar="''${spark_chars[$tx_scaled]}"
-
-          # Multi-line cute display inside box
-          tooltip="$tooltip\n│"
-          tooltip="$tooltip\n│ $block_bar  #$block_height"
-          tooltip="$tooltip\n│    📊 $block_tx_count txs"
-          tooltip="$tooltip\n│    💾 $size_fmt · ⏰ $time_ago"
-          tooltip="$tooltip\n│    ⛏️  $pool_name"
-        fi
-      done
-      tooltip="$tooltip\n└────"
-
-      # Next 3 blocks estimation (based on mempool)
-      if [ -n "$mempool_data" ]; then
-        mempool_count=$(echo "$mempool_data" | ${pkgs.jq}/bin/jq -r '.count // 0')
-        mempool_vsize=$(echo "$mempool_data" | ${pkgs.jq}/bin/jq -r '.vsize // 0')
-        mempool_total_fee=$(echo "$mempool_data" | ${pkgs.jq}/bin/jq -r '.total_fee // 0')
-
-        tooltip="$tooltip\n┌─ ⏳ NEXT 3 BLOCKS ───"
-
-        # Get current tip height
-        tip_height=$(echo "$blocks_data" | ${pkgs.jq}/bin/jq -r '.[0].height // 0')
-
-        # Estimate blocks based on mempool
-        avg_block_vsize=1500000  # ~1.5MB average
-
-        if [ "$mempool_vsize" -gt 0 ]; then
-          blocks_in_mempool=$(echo "scale=0; $mempool_vsize / $avg_block_vsize" | ${pkgs.bc}/bin/bc)
-
-          for i in 1 2 3; do
-            next_height=$((tip_height + i))
-            est_time=$((i * 10))  # 10 minutes per block
-
-            # Visual progress indicator (8 chars, compact)
-            if [ $i -le $blocks_in_mempool ]; then
-              bar="████████"
-              icon="🎯"
-            elif [ $i -eq $((blocks_in_mempool + 1)) ]; then
-              bar="████░░░░"
-              icon="⏳"
-            else
-              bar="░░░░░░░░"
-              icon="⏸️"
-            fi
-
-            tooltip="$tooltip\n│ $icon #$next_height $bar ~$est_time m"
-          done
-          tooltip="$tooltip\n└────"
-
-          # Show mempool stats with more info
-          if [ "$mempool_count" != "0" ]; then
-            mempool_mb=$(echo "scale=1; $mempool_vsize / 1048576" | ${pkgs.bc}/bin/bc)
-            # Convert satoshis to BTC
-            mempool_btc=$(echo "scale=2; $mempool_total_fee / 100000000" | ${pkgs.bc}/bin/bc)
-            # Calculate fee rate (sat/vB)
-            avg_fee_rate=$(echo "scale=0; ($mempool_total_fee / $mempool_vsize) * 1000" | ${pkgs.bc}/bin/bc)
-
-            tooltip="$tooltip\n┌─ 📦 MEMPOOL ─────────"
-            tooltip="$tooltip\n│ Txs:  $mempool_count"
-            tooltip="$tooltip\n│ Size: $mempool_mb MB"
-            tooltip="$tooltip\n│ Fees: $mempool_btc BTC"
-            tooltip="$tooltip\n│ Rate: ~$avg_fee_rate sat/vB"
-            tooltip="$tooltip\n└────"
-          fi
-        fi
-      fi
-    fi
-
-    # Output JSON for Waybar
-    echo "{\"text\": \"$usd_formatted\", \"tooltip\": \"$tooltip\"}"
-  '';
-
-  # Brightness sync script - synchronizes internal and external monitor brightness
-  brightnessSyncScript = pkgs.writeShellScriptBin "brightness-sync" ''
-    #!/usr/bin/env bash
-    # Synchronize brightness between internal (Lenovo) and external (HDMI) monitors
-
-    # Check if argument is provided
-    if [ -z "$1" ]; then
-      echo "Usage: brightness-sync <+5%|-5%|50%>"
-      exit 1
-    fi
-
-    CHANGE="$1"
-
-    # Change internal display brightness (Lenovo laptop screen)
-    ${pkgs.brightnessctl}/bin/brightnessctl set "$CHANGE" > /dev/null
-
-    # Get current brightness percentage
-    CURRENT=$(${pkgs.brightnessctl}/bin/brightnessctl get)
-    MAX=$(${pkgs.brightnessctl}/bin/brightnessctl max)
-    PERCENT=$((CURRENT * 100 / MAX))
-
-    # Sync external display if connected (HDMI via DDC/CI)
-    # Check if external display is available (suppress errors if not connected)
-    if ${pkgs.ddcutil}/bin/ddcutil detect 2>/dev/null | grep -q "Display"; then
-      # Set external monitor brightness to match internal
-      ${pkgs.ddcutil}/bin/ddcutil setvcp 10 "$PERCENT" 2>/dev/null || true
-    fi
-  '';
-
-  # VPN Status Script
-  vpnStatusScript = pkgs.writeShellScriptBin "vpn-status-waybar" ''
-    #!/usr/bin/env bash
-    # VPN Status Monitor: Detects any VPN connection (WireGuard, OpenVPN, etc.)
-
-    # Method 1: Check for VPN/WireGuard/tun interfaces directly (most reliable)
-    vpn_interface=""
-    vpn_name=""
-
-    # Check for common VPN interface patterns using ip link (includes WireGuard interfaces)
-    for iface in $(${pkgs.iproute2}/bin/ip link show 2>/dev/null | ${pkgs.gnugrep}/bin/grep -E "^[0-9]+: (wg|tun|proton|vpn|nordlynx)" | ${pkgs.gawk}/bin/awk -F': ' '{print $2}' || true); do
-      # Verify interface has an IP
-      if ${pkgs.iproute2}/bin/ip addr show "$iface" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "inet "; then
-        vpn_interface="$iface"
-        break
-      fi
-    done
-
-    # Method 2: Check NetworkManager for WireGuard devices (nmcli device shows wireguard type)
-    if [ -z "$vpn_interface" ]; then
-      wg_device=$(${pkgs.networkmanager}/bin/nmcli -t -f DEVICE,TYPE device status 2>/dev/null | ${pkgs.gnugrep}/bin/grep ":wireguard$" | cut -d: -f1 | head -1 || true)
-      if [ -n "$wg_device" ]; then
-        # Verify interface has an IP
-        if ${pkgs.iproute2}/bin/ip addr show "$wg_device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "inet "; then
-          vpn_interface="$wg_device"
-        fi
-      fi
-    fi
-
-    # Method 3: Check NetworkManager for VPN connections (wireguard, vpn, tun types)
-    if [ -z "$vpn_interface" ]; then
-      vpn_line=$(${pkgs.networkmanager}/bin/nmcli -t -f NAME,TYPE,DEVICE connection show --active | ${pkgs.gnugrep}/bin/grep -iE "(wireguard|vpn|tun|proton)" | head -1 || true)
-      if [ -n "$vpn_line" ]; then
-        vpn_name=$(echo "$vpn_line" | cut -d: -f1)
-        vpn_interface=$(echo "$vpn_line" | cut -d: -f3)
-        # Verify interface has an IP
-        if ! ${pkgs.iproute2}/bin/ip addr show "$vpn_interface" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "inet "; then
-          vpn_interface=""
-        fi
-      fi
-    fi
-
-    # Method 4: Check for any non-standard interface with a private IP (10.x, 172.16-31.x, or Proton's ranges)
-    if [ -z "$vpn_interface" ]; then
-      for iface in $(${pkgs.iproute2}/bin/ip -o addr show | ${pkgs.gnugrep}/bin/grep -E "inet (10\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.)" | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.gnugrep}/bin/grep -vE "^(docker|br-|veth|lo)" || true); do
-        # Skip known non-VPN interfaces
-        if [[ ! "$iface" =~ ^(wlp|enp|eth|wlan) ]]; then
-          vpn_interface="$iface"
-          break
-        fi
-      done
-    fi
-
-    # Set device variable for compatibility with rest of script
-    device="$vpn_interface"
-    vpn_line="$vpn_interface"
-
-    if [ -n "$vpn_interface" ]; then
-      # VPN is connected
-
-      # Get local VPN IP address
-      local_ip=$(${pkgs.iproute2}/bin/ip addr show "$device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep "inet " | ${pkgs.gawk}/bin/awk '{print $2}' | cut -d'/' -f1 || echo "N/A")
-
-      # Try to get connection name from NetworkManager if not already set
-      if [ -z "$vpn_name" ]; then
-        vpn_name=$(${pkgs.networkmanager}/bin/nmcli -t -f NAME,DEVICE connection show --active | ${pkgs.gnugrep}/bin/grep ":$device$" | cut -d: -f1 || echo "$device")
-      fi
-      [ -z "$vpn_name" ] && vpn_name="$device"
-
-      # Try to extract country from interface name or connection name
-      # Proton VPN formats: "protonvpn-PT-12", "ProtonVPN CH-123", "wg-nl-123"
-      country=$(echo "$vpn_name $device" | ${pkgs.gnugrep}/bin/grep -oE '[^a-zA-Z]([A-Z]{2})[^a-zA-Z]' | ${pkgs.gnugrep}/bin/grep -oE '[A-Z]{2}' | head -1 || true)
-      [ -z "$country" ] && country="VPN"
-
-      # Determine VPN type from interface name
-      if [[ "$device" == wg* ]] || [[ "$device" == proton* ]]; then
-        vpn_type="WireGuard"
-      elif [[ "$device" == tun* ]]; then
-        vpn_type="OpenVPN"
-      else
-        vpn_type="VPN"
-      fi
-
-      # Get VPN gateway from routing table
-      gateway=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gnugrep}/bin/grep "dev $device" | ${pkgs.gnugrep}/bin/grep -v "src" | ${pkgs.gawk}/bin/awk '{print $1}' | head -1 || echo "N/A")
-      [ "$gateway" = "default" ] && gateway=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gnugrep}/bin/grep "dev $device" | ${pkgs.gawk}/bin/awk '/via/ {print $3}' | head -1 || echo "N/A")
-
-      # Get public IP (with timeout to avoid hanging)
-      public_ip=$(${pkgs.curl}/bin/curl -s --max-time 3 https://icanhazip.com 2>/dev/null | ${pkgs.coreutils}/bin/tr -d '[:space:]' || echo "N/A")
-
-      # Get DNS servers from resolv.conf
-      dns_servers=$(${pkgs.gnugrep}/bin/grep "^nameserver" /etc/resolv.conf 2>/dev/null | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.coreutils}/bin/tr '\n' ', ' | ${pkgs.gnused}/bin/sed 's/,$//' || echo "N/A")
-
-      # Get interface uptime from /sys
-      uptime="N/A"
-      if [ -f "/sys/class/net/$device/statistics/tx_bytes" ]; then
-        # Interface exists, try to get creation time
-        iface_time=$(stat -c %Y "/sys/class/net/$device" 2>/dev/null || echo "0")
-        if [ "$iface_time" != "0" ]; then
-          current_time=$(date +%s)
-          uptime_sec=$((current_time - iface_time))
-          if [ $uptime_sec -lt 60 ]; then
-            uptime="''${uptime_sec}s"
-          elif [ $uptime_sec -lt 3600 ]; then
-            uptime="$((uptime_sec / 60))m"
-          else
-            uptime="$((uptime_sec / 3600))h $((uptime_sec % 3600 / 60))m"
-          fi
-        fi
-      fi
-
-      # Build detailed tooltip
-      tooltip="┌─ 󰖂 VPN CONNECTED ─────"
-      tooltip="$tooltip\n│"
-      tooltip="$tooltip\n│ 🌍 Location: $country"
-      tooltip="$tooltip\n│ 📡 Server:   $vpn_name"
-      tooltip="$tooltip\n│ 🔒 Protocol: $vpn_type"
-      tooltip="$tooltip\n│"
-      tooltip="$tooltip\n│ 🖧  Device:   $device"
-      tooltip="$tooltip\n│ 🏠 Local IP: $local_ip"
-      tooltip="$tooltip\n│ 🌐 Public IP: $public_ip"
-      if [ "$gateway" != "N/A" ] && [ -n "$gateway" ]; then
-        tooltip="$tooltip\n│ 🚪 Gateway:  $gateway"
-      fi
-      tooltip="$tooltip\n│"
-      tooltip="$tooltip\n│ 🕐 Uptime:   $uptime"
-      if [ "$dns_servers" != "N/A" ] && [ -n "$dns_servers" ]; then
-        tooltip="$tooltip\n│ 🔍 DNS:      $dns_servers"
-      fi
-      tooltip="$tooltip\n└────────────────────────"
-      tooltip="$tooltip\n\nClick to open Proton VPN"
-
-      echo "{\"text\": \"󰖂 $country\", \"tooltip\": \"$tooltip\", \"class\": \"connected\"}"
-    else
-      # VPN is disconnected - show local network info
-      tooltip="┌─ 󰿆 VPN DISCONNECTED ──"
-      tooltip="$tooltip\n│"
-      tooltip="$tooltip\n│ ⚠️  Not protected by VPN"
-      tooltip="$tooltip\n│"
-
-      # Get active network interface (WiFi or Ethernet)
-      active_conn=$(${pkgs.networkmanager}/bin/nmcli -t -f NAME,TYPE,DEVICE connection show --active | ${pkgs.gnugrep}/bin/grep -E "wireless|ethernet" | head -1 || true)
-
-      if [ -n "$active_conn" ]; then
-        conn_name=$(echo "$active_conn" | cut -d: -f1)
-        conn_type=$(echo "$active_conn" | cut -d: -f2)
-        conn_device=$(echo "$active_conn" | cut -d: -f3)
-
-        # Get local IP
-        local_ip=$(${pkgs.iproute2}/bin/ip addr show "$conn_device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep "inet " | ${pkgs.gawk}/bin/awk '{print $2}' | cut -d'/' -f1 || echo "N/A")
-
-        # Get gateway
-        gateway=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gnugrep}/bin/grep default | ${pkgs.gawk}/bin/awk '{print $3}' | head -1 || echo "N/A")
-
-        # Get DNS servers (read from /etc/resolv.conf since systemd-resolved is disabled)
-        dns_servers=$(${pkgs.gnugrep}/bin/grep "^nameserver" /etc/resolv.conf | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.coreutils}/bin/tr '\n' ', ' | ${pkgs.gnused}/bin/sed 's/,$//' || echo "N/A")
-
-        # Connection type icon
-        if [ "$conn_type" = "wireless" ] || [ "$conn_type" = "802-11-wireless" ]; then
-          conn_icon="📶 WiFi"
-        else
-          conn_icon="🔌 Ethernet"
-        fi
-
-        # Get public IP (with timeout) - Using Cloudflare for privacy
-        public_ip=$(${pkgs.curl}/bin/curl -s --max-time 3 https://icanhazip.com 2>/dev/null || echo "N/A")
-
-        tooltip="$tooltip\n│ $conn_icon: $conn_name"
-        tooltip="$tooltip\n│ 🖧  Device:   $conn_device"
-        tooltip="$tooltip\n│ 🏠 Local IP: $local_ip"
-        tooltip="$tooltip\n│ 🚪 Gateway:  $gateway"
-        tooltip="$tooltip\n│ 🔍 DNS:      $dns_servers"
-        tooltip="$tooltip\n│"
-        tooltip="$tooltip\n│ 🌐 Public IP: $public_ip"
-      else
-        tooltip="$tooltip\n│ No active connection"
-      fi
-
-      tooltip="$tooltip\n└────────────────────────"
-      tooltip="$tooltip\n\n⚠️  Connect VPN for privacy"
-      tooltip="$tooltip\n\nClick to open Proton VPN"
-      echo "{\"text\": \"󰿆\", \"tooltip\": \"$tooltip\", \"class\": \"disconnected\"}"
-    fi
-  '';
-
-  # NixOS Updates Script
-  nixUpdatesScript = pkgs.writeShellScriptBin "nix-updates-waybar" ''
-    #!/usr/bin/env bash
-    # NixOS Updates Monitor: Checks for available flake updates
-
-    FLAKE_DIR="$HOME/dotfiles/thinkpad-p14s-gen5"
-    CACHE_FILE="$HOME/.cache/waybar-nix-updates"
-    CACHE_DURATION=3600  # Cache for 1 hour
-
-    # Check if cache is fresh
-    if [ -f "$CACHE_FILE" ]; then
-      cache_age=$(($(date +%s) - $(stat -c %Y "$CACHE_FILE")))
-      if [ $cache_age -lt $CACHE_DURATION ]; then
-        cat "$CACHE_FILE"
-        exit 0
-      fi
-    fi
-
-    # Check if flake directory exists
-    if [ ! -d "$FLAKE_DIR" ]; then
-      echo '{"text": "󰄬", "tooltip": "Flake directory not found", "class": "ok"}' | tee "$CACHE_FILE"
-      exit 0
-    fi
-
-    cd "$FLAKE_DIR" || exit 1
-
-    # Check for updates (compare current lock with latest)
-    # This is a simplified check - just see if flake.lock is old
-    lock_age=$(($(date +%s) - $(stat -c %Y "flake.lock" 2>/dev/null || echo 0)))
-    days_old=$((lock_age / 86400))
-
-    if [ $days_old -gt 7 ]; then
-      # Flake is more than 7 days old
-      tooltip="┌─ 󰏔 NixOS UPDATES ────┐"
-      tooltip="$tooltip\n│ Last update: $days_old days ago"
-      tooltip="$tooltip\n│"
-      tooltip="$tooltip\n│ Run: nix flake update"
-      tooltip="$tooltip\n└──────────────────────┘"
-      tooltip="$tooltip\n\nClick to open terminal"
-
-      echo "{\"text\": \"󰏔 $days_old\", \"tooltip\": \"$tooltip\", \"class\": \"updates\"}" | tee "$CACHE_FILE"
-    else
-      tooltip="󰄬 System is up to date\n\nLast update: $days_old days ago"
-      echo "{\"text\": \"󰄬\", \"tooltip\": \"$tooltip\", \"class\": \"ok\"}" | tee "$CACHE_FILE"
-    fi
-  '';
-
-  # Systemd Failed Services Script
-  systemdFailedScript = pkgs.writeShellScriptBin "systemd-failed-waybar" ''
-    #!/usr/bin/env bash
-    # Systemd Failed Services Monitor
-
-    # Count failed services
-    failed_count=$(${pkgs.systemd}/bin/systemctl --failed --no-legend --no-pager | wc -l)
-
-    if [ "$failed_count" -gt 0 ]; then
-      # Get list of failed services
-      failed_list=$(${pkgs.systemd}/bin/systemctl --failed --no-legend --no-pager | ${pkgs.gawk}/bin/awk '{print $1}')
-
-      tooltip="┌─ 󰀨 FAILED SERVICES ───┐"
-      tooltip="$tooltip\n│ Count: $failed_count"
-      tooltip="$tooltip\n│"
-      while IFS= read -r service; do
-        tooltip="$tooltip\n│ • $service"
-      done <<< "$failed_list"
-      tooltip="$tooltip\n└───────────────────────┘"
-      tooltip="$tooltip\n\nClick to view details"
-
-      echo "{\"text\": \"󰀨 $failed_count\", \"tooltip\": \"$tooltip\", \"class\": \"warning\"}"
-    else
-      echo "{\"text\": \"\", \"tooltip\": \"󰄬 No failed services\", \"class\": \"ok\"}"
-    fi
-  '';
-
-  # Mako Notifications Script
-  makoScript = pkgs.writeShellScriptBin "mako-waybar" ''
-    #!/usr/bin/env bash
-    # Mako Notifications Counter
-
-    # Count notifications in history
-    notif_count=$(${pkgs.mako}/bin/makoctl history | ${pkgs.jq}/bin/jq '.data[0] | length' 2>/dev/null || echo "0")
-
-    if [ "$notif_count" -gt 0 ]; then
-      # Get last few notifications
-      recent=$(${pkgs.mako}/bin/makoctl history | ${pkgs.jq}/bin/jq -r '.data[0][:3] | .[] | "\(.app_name.data): \(.summary.data)"' 2>/dev/null)
-
-      tooltip="┌─ 󰂚 NOTIFICATIONS ─────┐"
-      tooltip="$tooltip\n│ Unread: $notif_count"
-      tooltip="$tooltip\n│"
-
-      if [ -n "$recent" ]; then
-        while IFS= read -r notif; do
-          # Truncate long notifications
-          truncated=$(echo "$notif" | ${pkgs.coreutils}/bin/cut -c1-35)
-          tooltip="$tooltip\n│ • $truncated"
-        done <<< "$recent"
-      fi
-
-      tooltip="$tooltip\n└───────────────────────┘"
-      tooltip="$tooltip\n\nClick: invoke | Right: dismiss all"
-
-      echo "{\"text\": \"󰂚 $notif_count\", \"tooltip\": \"$tooltip\", \"class\": \"notification\"}"
-    else
-      echo "{\"text\": \"\", \"tooltip\": \"No notifications\", \"class\": \"empty\"}"
-    fi
-  '';
-
-  # World Clocks Script
-  worldClocksScript = pkgs.writeShellScriptBin "world-clocks-waybar" ''
-    #!/usr/bin/env bash
-    # World Clocks: Shows NY and Beijing times in tooltip
-
-    # Get current times
-    local_time=$(TZ="Europe/Lisbon" date "+%H:%M")
-    ny_time=$(TZ="America/New_York" date "+%H:%M")
-    beijing_time=$(TZ="Asia/Shanghai" date "+%H:%M")
-
-    # Build tooltip
-    tooltip="┌─ 🌍 WORLD CLOCKS ─────┐"
-    tooltip="$tooltip\n│ 🇵🇹 Lisbon    $local_time"
-    tooltip="$tooltip\n│ 🇺🇸 New York  $ny_time"
-    tooltip="$tooltip\n│ 🇨🇳 Beijing   $beijing_time"
-    tooltip="$tooltip\n└───────────────────────┘"
-
-    echo "{\"text\": \"🌍\", \"tooltip\": \"$tooltip\", \"class\": \"world-clocks\"}"
-  '';
-
-  # Monitor Rotation Display Script - Shows current rotation status
-  monitorRotationScript = pkgs.writeShellScriptBin "monitor-rotation-waybar" ''
-    #!/usr/bin/env bash
-    # Monitor Rotation Display: Shows current rotation status
-
-    STATE_FILE="$HOME/.config/monitor-rotation-state"
-
-    # Read current rotation (default: 0 = normal)
-    CURRENT_ROTATION=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
-
-    # Detect external monitor (HDMI-A-1 or DP-1)
-    EXTERNAL_MONITOR=""
-    if ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -q "HDMI-A-1"; then
-      EXTERNAL_MONITOR="HDMI-A-1"
-    elif ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -q "DP-1"; then
-      EXTERNAL_MONITOR="DP-1"
-    fi
-
-    if [ -z "$EXTERNAL_MONITOR" ]; then
-      # No external monitor - show disabled state
-      echo "{\"text\": \"󰹑\", \"tooltip\": \"No external monitor\", \"class\": \"disabled\"}"
-      exit 0
-    fi
-
-    # Display current rotation status based on state file
-    case "$CURRENT_ROTATION" in
-      0)
-        ICON="󰹑"  # Monitor icon (normal)
-        DESC="0° (Normal)"
-        ;;
-      1)
-        ICON="󰹑"  # Monitor icon (90°)
-        DESC="90° (Portrait)"
-        ;;
-      2)
-        ICON="󰹑"  # Monitor icon (180°)
-        DESC="180° (Inverted)"
-        ;;
-      3)
-        ICON="󰹑"  # Monitor icon (270°)
-        DESC="270° (Portrait Flipped)"
-        ;;
-      *)
-        ICON="󰹑"
-        DESC="0° (Normal)"
-        ;;
-    esac
-
-    # Return current state for Waybar display
-    tooltip="┌─ 󰹑 MONITOR ───────────┐"
-    tooltip="$tooltip\n│ Display: $EXTERNAL_MONITOR"
-    tooltip="$tooltip\n│ Current: $DESC"
-    tooltip="$tooltip\n└───────────────────────┘"
-    tooltip="$tooltip\n\nClick to rotate 90°"
-
-    echo "{\"text\": \"$ICON\", \"tooltip\": \"$tooltip\", \"class\": \"active\"}"
-  '';
-
-  # Monitor Rotation Action Script - Performs the actual rotation
-  monitorRotateAction = pkgs.writeShellScriptBin "monitor-rotate-action" ''
-    #!/usr/bin/env bash
-    # Monitor Rotation Action: Rotates the external monitor by 90°
-
-    STATE_FILE="$HOME/.config/monitor-rotation-state"
-
-    # Read current rotation (default: 0 = normal)
-    CURRENT_ROTATION=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
-
-    # Detect external monitor (HDMI-A-1 or DP-1)
-    EXTERNAL_MONITOR=""
-    if ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -q "HDMI-A-1"; then
-      EXTERNAL_MONITOR="HDMI-A-1"
-    elif ${pkgs.hyprland}/bin/hyprctl monitors | ${pkgs.gnugrep}/bin/grep -q "DP-1"; then
-      EXTERNAL_MONITOR="DP-1"
-    fi
-
-    if [ -z "$EXTERNAL_MONITOR" ]; then
-      ${pkgs.libnotify}/bin/notify-send "Monitor Rotation" "No external monitor detected" -i video-display
-      exit 1
-    fi
-
-    # Determine next rotation (cycle: 0 -> 90 -> 180 -> 270 -> 0)
-    case "$CURRENT_ROTATION" in
-      0)
-        NEXT_ROTATION="1"  # 90° clockwise
-        TRANSFORM="1"
-        DESC="90° (Portrait)"
-        ;;
-      1)
-        NEXT_ROTATION="2"  # 180° upside-down
-        TRANSFORM="2"
-        DESC="180° (Inverted)"
-        ;;
-      2)
-        NEXT_ROTATION="3"  # 270° counter-clockwise
-        TRANSFORM="3"
-        DESC="270° (Portrait Flipped)"
-        ;;
-      3)
-        NEXT_ROTATION="0"  # 0° normal
-        TRANSFORM="0"
-        DESC="0° (Normal)"
-        ;;
-      *)
-        NEXT_ROTATION="0"
-        TRANSFORM="0"
-        DESC="0° (Normal)"
-        ;;
-    esac
-
-    # Apply rotation using Hyprland
-    ${pkgs.hyprland}/bin/hyprctl keyword monitor "$EXTERNAL_MONITOR,transform,$TRANSFORM"
-
-    # Fix duplicate cursor bug by reloading cursor theme
-    sleep 0.3
-    ${pkgs.hyprland}/bin/hyprctl setcursor Bibata-Modern-Classic 24
-
-    # Save state
-    echo "$NEXT_ROTATION" > "$STATE_FILE"
-
-    # Send notification
-    ${pkgs.libnotify}/bin/notify-send "Monitor Rotation" "$EXTERNAL_MONITOR: $DESC" -i video-display
-  '';
+  theme = config.theme;
 in
 {
-  # Create scripts in waybar config directory
+  # Deploy scripts from waybar-scripts/ directory
   home.file.".config/waybar/scripts/bitcoin.sh" = {
-    source = "${bitcoinScript}/bin/bitcoin-waybar";
+    source = ./waybar-scripts/bitcoin.sh;
     executable = true;
   };
 
   home.file.".config/waybar/scripts/removable-disks.sh" = {
-    source = "${removableDisksScript}/bin/removable-disks-waybar";
+    source = ./waybar-scripts/removable-disks.sh;
     executable = true;
   };
 
-  # Brightness sync script for syncing internal + external monitors
   home.file.".config/waybar/scripts/brightness-sync.sh" = {
-    source = "${brightnessSyncScript}/bin/brightness-sync";
+    source = ./waybar-scripts/brightness-sync.sh;
     executable = true;
   };
 
-  # New system monitoring scripts
   home.file.".config/waybar/scripts/vpn-status.sh" = {
-    source = "${vpnStatusScript}/bin/vpn-status-waybar";
+    source = ./waybar-scripts/vpn-status.sh;
     executable = true;
   };
 
   home.file.".config/waybar/scripts/nix-updates.sh" = {
-    source = "${nixUpdatesScript}/bin/nix-updates-waybar";
+    source = ./waybar-scripts/nix-updates.sh;
     executable = true;
   };
 
   home.file.".config/waybar/scripts/systemd-failed.sh" = {
-    source = "${systemdFailedScript}/bin/systemd-failed-waybar";
+    source = ./waybar-scripts/systemd-failed.sh;
     executable = true;
   };
 
   home.file.".config/waybar/scripts/mako.sh" = {
-    source = "${makoScript}/bin/mako-waybar";
-    executable = true;
-  };
-
-  home.file.".config/waybar/scripts/world-clocks.sh" = {
-    source = "${worldClocksScript}/bin/world-clocks-waybar";
+    source = ./waybar-scripts/mako.sh;
     executable = true;
   };
 
   home.file.".config/waybar/scripts/monitor-rotation.sh" = {
-    source = "${monitorRotationScript}/bin/monitor-rotation-waybar";
+    source = ./waybar-scripts/monitor-rotation.sh;
     executable = true;
   };
 
   home.file.".config/waybar/scripts/monitor-rotate-action.sh" = {
-    source = "${monitorRotateAction}/bin/monitor-rotate-action";
+    source = ./waybar-scripts/monitor-rotate-action.sh;
     executable = true;
   };
 
-  # Bitcoin wallet balance monitor (privacy-focused zpub derivation)
   home.file.".config/waybar/scripts/wallets.py" = {
     source = ./waybar-scripts/wallets.py;
     executable = true;
   };
 
-  home.file.".config/waybar/scripts/audio-switch.sh" = {
-    source = "${audioSwitchScript}/bin/audio-switch-waybar";
+  home.file.".config/waybar/scripts/weather.py" = {
+    source = ./waybar-scripts/weather.py;
     executable = true;
   };
 
-  # Wallet configuration template
+  home.file.".config/waybar/scripts/polymarket.py" = {
+    source = ./waybar-scripts/polymarket.py;
+    executable = true;
+  };
+
+  home.file.".config/waybar/scripts/audio-switch.sh" = {
+    source = ./waybar-scripts/audio-switch.sh;
+    executable = true;
+  };
+
   home.file.".config/waybar/.env.example" = {
     source = ./waybar-scripts/.env.example;
   };
@@ -1139,11 +182,11 @@ in
             weeks-pos = "right";
             on-scroll = 1;
             format = {
-              months = "<span color='#f9cc6c'><b>{}</b></span>";
-              days = "<span color='#e6d9db'>{}</span>";
-              weeks = "<span color='#f9cc6c'><b>W{}</b></span>";
-              weekdays = "<span color='#f9cc6c'><b>{}</b></span>";
-              today = "<span color='#fd6883'><b><u>{}</u></b></span>";
+              months = "<span color='${theme.colors.yellow}'><b>{}</b></span>";
+              days = "<span color='${theme.colors.foreground}'>{}</span>";
+              weeks = "<span color='${theme.colors.yellow}'><b>W{}</b></span>";
+              weekdays = "<span color='${theme.colors.yellow}'><b>{}</b></span>";
+              today = "<span color='${theme.colors.red}'><b><u>{}</u></b></span>";
             };
           };
           actions = {
@@ -1369,242 +412,180 @@ in
     };
 
     style = ''
+      /* Ristretto theme - all colors from config/theme.nix */
+      @define-color bg ${theme.colors.background};
+      @define-color fg ${theme.colors.foreground};
+      @define-color surface ${theme.colors.surface};
+      @define-color comment ${theme.colors.comment};
+      @define-color red ${theme.colors.red};
+      @define-color green ${theme.colors.green};
+      @define-color yellow ${theme.colors.yellow};
+      @define-color cyan ${theme.colors.cyan};
+      @define-color magenta ${theme.colors.magenta};
+      @define-color orange ${theme.colors.orange};
+
       * {
         border: none;
         border-radius: 0;
-        font-family: "JetBrainsMono Nerd Font", monospace;
+        font-family: "${theme.fonts.mono}", monospace;
         font-size: 13px;
         min-height: 0;
       }
 
       window#waybar {
-        background: rgba(44, 37, 37, 0.93);
-        color: #e6d9db;
+        background: alpha(@bg, 0.93);
+        color: @fg;
       }
 
-      #workspaces {
-        margin: 0 6px;
-      }
-
+      /* Workspaces */
+      #workspaces { margin: 0 6px; }
       #workspaces button {
         padding: 0 10px;
         min-width: 30px;
-        color: #e6d9db;
+        color: @fg;
         background: transparent;
         border-bottom: 2px solid transparent;
         border-radius: 0;
         transition: all 0.2s ease;
       }
-
       #workspaces button:hover {
-        background: rgba(230, 217, 219, 0.1);
-        border-bottom: 2px solid rgba(230, 217, 219, 0.3);
+        background: alpha(@fg, 0.1);
+        border-bottom: 2px solid alpha(@fg, 0.3);
       }
-
       #workspaces button.active {
-        background: #f9cc6c;
-        color: #2c2421;
-        border-bottom: 2px solid #f9cc6c;
+        background: @yellow;
+        color: @bg;
+        border-bottom: 2px solid @yellow;
         font-weight: bold;
       }
-
       #workspaces button.urgent {
-        background: #fd6883;
-        color: #2c2421;
-        border-bottom: 2px solid #fd6883;
+        background: @red;
+        color: @bg;
+        border-bottom: 2px solid @red;
       }
+      #workspaces button.visible { color: @yellow; }
+      #workspaces button.empty { opacity: 0.5; }
 
-      #workspaces button.visible {
-        color: #f9cc6c;
-      }
-
-      #workspaces button.empty {
-        opacity: 0.5;
-      }
-
+      /* Window title */
       #window {
         margin: 0 12px;
         padding: 0 10px;
-        color: #f9cc6c;
+        color: @yellow;
       }
 
+      /* Clock - highlighted */
       #clock {
         padding: 0 12px;
         margin: 0 2px;
-        background: rgba(249, 204, 108, 0.15);
-        color: #f9cc6c;
+        background: alpha(@yellow, 0.15);
+        color: @yellow;
         border-radius: 10px;
       }
 
-      #custom-bitcoin,
-      #custom-wallets,
-      #custom-vpn,
-      #custom-nix-updates,
-      #custom-systemd-failed,
-      #custom-mako,
-      #custom-monitor-rotation,
-      #pulseaudio,
-      #bluetooth,
-      #network,
-      #disk,
-      #cpu,
-      #memory,
-      #temperature,
-      #backlight,
-      #battery,
-      #tray {
+      /* Default module style */
+      #custom-bitcoin, #custom-wallets, #custom-vpn, #custom-nix-updates,
+      #custom-systemd-failed, #custom-mako, #custom-monitor-rotation,
+      #custom-weather, #custom-polymarket, #custom-removable-disks,
+      #pulseaudio, #bluetooth, #network, #disk, #cpu, #memory,
+      #temperature, #backlight, #battery, #tray {
         padding: 0 8px;
         margin: 0 1px;
-        background: rgba(64, 62, 65, 0.85);
+        background: alpha(@surface, 0.85);
         border-radius: 6px;
-        color: #e6d9db;
+        color: @fg;
       }
 
+      /* Bitcoin - yellow accent */
       #custom-bitcoin {
-        padding: 0 8px;
         font-size: 12px;
-        background: rgba(249, 204, 108, 0.2);
-        color: #f9cc6c;
+        background: alpha(@yellow, 0.2);
+        color: @yellow;
       }
 
+      /* Wallets - blurred privacy, red accent */
       #custom-wallets {
-        padding: 0 8px;
         font-size: 12px;
-        background: rgba(253, 104, 131, 0.2);
+        background: alpha(@red, 0.2);
         color: transparent;
-        text-shadow: 0 0 8px #fd6883;
+        text-shadow: 0 0 8px @red;
         transition: all 0.2s ease;
       }
-
       #custom-wallets:hover {
-        color: #fd6883;
+        color: @red;
         text-shadow: none;
       }
 
-      #custom-removable-disks {
-        padding: 0 8px;
-        margin: 0 1px;
-        background: rgba(173, 218, 120, 0.2);
-        color: #adda78;
-      }
-
-      #custom-monitor-rotation {
-        padding: 0 8px;
-        margin: 0 1px;
-        background: rgba(173, 218, 120, 0.2);
-        color: #adda78;
+      /* Removable disks & monitor - green accent */
+      #custom-removable-disks, #custom-monitor-rotation {
+        background: alpha(@green, 0.2);
+        color: @green;
         transition: all 0.2s ease;
       }
-
-      #custom-monitor-rotation:hover {
-        background: rgba(173, 218, 120, 0.3);
-      }
-
+      #custom-monitor-rotation:hover { background: alpha(@green, 0.3); }
       #custom-monitor-rotation.disabled {
-        background: rgba(64, 62, 65, 0.85);
-        color: #665c54;
+        background: alpha(@surface, 0.85);
+        color: @comment;
       }
 
-      #custom-weather {
-        padding: 0 8px;
-        margin: 0 1px;
-        background: rgba(64, 62, 65, 0.85);
-        border-radius: 6px;
-        color: #e6d9db;
-      }
-
+      /* Polymarket - purple accent */
       #custom-polymarket {
-        padding: 0 8px;
-        margin: 0 1px;
-        background: rgba(149, 128, 255, 0.2);
-        border-radius: 6px;
-        color: #9580ff;
+        background: alpha(@magenta, 0.2);
+        color: @magenta;
       }
 
-      #bluetooth {
-        padding: 0 8px;
-        margin: 0 1px;
-        background: rgba(64, 62, 65, 0.85);
-        border-radius: 6px;
-        color: #85d3f2;
-      }
+      /* Bluetooth - cyan accent */
+      #bluetooth { color: @cyan; }
+      #bluetooth.connected { color: @green; }
+      #bluetooth.off, #bluetooth.disabled { color: @comment; }
 
-      #bluetooth.connected {
-        color: #adda78;
-      }
+      /* Audio states */
+      #pulseaudio.muted { color: @red; }
 
-      #bluetooth.off,
-      #bluetooth.disabled {
-        color: #665c54;
-      }
+      /* Battery states */
+      #battery.charging, #battery.plugged { color: @green; }
+      #battery.warning:not(.charging) { color: @yellow; }
+      #battery.critical:not(.charging) { color: @red; }
 
-      #pulseaudio.muted {
-        color: #fd6883;
-      }
-
-      #battery.charging,
-      #battery.plugged {
-        color: #adda78;
-      }
-
-      #battery.warning:not(.charging) {
-        color: #f9cc6c;
-      }
-
-      #battery.critical:not(.charging) {
-        color: #fd6883;
-      }
-
-      #temperature.critical {
-        color: #fd6883;
-      }
+      /* Temperature */
+      #temperature.critical { color: @red; }
 
       /* VPN states */
       #custom-vpn.connected {
-        background: rgba(173, 218, 120, 0.2);
-        color: #adda78;
+        background: alpha(@green, 0.2);
+        color: @green;
       }
-
       #custom-vpn.disconnected {
-        background: rgba(253, 104, 131, 0.15);
-        color: #fd6883;
+        background: alpha(@red, 0.15);
+        color: @red;
       }
 
       /* Nix updates */
-      #custom-nix-updates.ok {
-        color: #adda78;
-      }
-
+      #custom-nix-updates.ok { color: @green; }
       #custom-nix-updates.updates {
-        background: rgba(249, 204, 108, 0.2);
-        color: #f9cc6c;
+        background: alpha(@yellow, 0.2);
+        color: @yellow;
       }
 
-      /* Systemd failed services */
+      /* Systemd failed */
       #custom-systemd-failed.warning {
-        background: rgba(253, 104, 131, 0.2);
-        color: #fd6883;
+        background: alpha(@red, 0.2);
+        color: @red;
       }
+      #custom-systemd-failed.ok { color: @comment; }
 
-      #custom-systemd-failed.ok {
-        color: #665c54;
-      }
-
-      /* Mako notifications */
+      /* Notifications */
       #custom-mako.notification {
-        background: rgba(133, 211, 242, 0.2);
-        color: #85d3f2;
+        background: alpha(@cyan, 0.2);
+        color: @cyan;
       }
+      #custom-mako.empty { color: @comment; }
 
-      #custom-mako.empty {
-        color: #665c54;
-      }
-
+      /* Tooltip */
       tooltip {
-        background: rgba(44, 37, 37, 0.95);
-        border: 2px solid rgba(249, 204, 108, 0.5);
+        background: alpha(@bg, 0.95);
+        border: 2px solid alpha(@yellow, 0.5);
         border-radius: 10px;
-        color: #e6d9db;
+        color: @fg;
       }
     '';
   };

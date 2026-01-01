@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
 """
 Multi-city weather monitor for Waybar using Open-Meteo API
-Displays current weather for Lagos (PT), Paris (FR), Bejaia (DZ), Kaunas (LT)
+Displays current weather for Lagos (PT), Paris (FR), Bejaia (DZ), Kaunas (LT), etc.
+Optimized: Concurrent requests using ThreadPoolExecutor
 """
 
 import json
+import os
+import subprocess
 import sys
 import urllib.request
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 
 # Configuration
 CACHE_FILE = Path.home() / ".cache" / "weather-waybar.json"
-CACHE_DURATION = timedelta(minutes=10)  # Cache for 10 minutes
+CACHE_DURATION = timedelta(minutes=10)
 API_BASE = "https://api.open-meteo.com/v1/forecast"
-TIMEOUT = 10  # seconds
+TIMEOUT = 10
 
 # Cities configuration: (name, country_code, latitude, longitude, emoji_flag)
 CITIES = [
@@ -65,8 +69,10 @@ def get_weather_icon(weather_code):
     return WEATHER_CODES.get(weather_code, ("Unknown", "❓"))
 
 
-def fetch_weather(city_name, lat, lon):
-    """Fetch weather data from Open-Meteo API"""
+def fetch_weather(city_data):
+    """Fetch weather data from Open-Meteo API for a single city"""
+    city_name, country_code, lat, lon, flag = city_data
+
     params = {
         "latitude": lat,
         "longitude": lon,
@@ -75,7 +81,6 @@ def fetch_weather(city_name, lat, lon):
         "timezone": "auto",
     }
 
-    # Build URL with parameters
     url = f"{API_BASE}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
 
     try:
@@ -89,12 +94,13 @@ def fetch_weather(city_name, lat, lon):
         current = data.get("current_weather", {})
         hourly = data.get("hourly", {})
 
-        # Get current hour index for detailed data
         current_time = datetime.fromisoformat(current.get("time", datetime.now().isoformat()))
         hour_index = current_time.hour
 
         return {
             "city": city_name,
+            "country_code": country_code,
+            "flag": flag,
             "temperature": current.get("temperature", 0),
             "windspeed": current.get("windspeed", 0),
             "weather_code": current.get("weathercode", 0),
@@ -103,11 +109,8 @@ def fetch_weather(city_name, lat, lon):
             "precipitation": hourly.get("precipitation", [0]*24)[hour_index] if hourly else 0,
         }
 
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
+    except Exception as e:
         print(f"API Error for {city_name}: {e}", file=sys.stderr)
-        return None
-    except (json.JSONDecodeError, KeyError) as e:
-        print(f"Parse Error for {city_name}: {e}", file=sys.stderr)
         return None
 
 
@@ -140,25 +143,58 @@ def save_cache(weather_data):
 
 
 def fetch_all_weather():
-    """Fetch weather for all cities"""
-    # Check cache first
+    """Fetch weather for all cities concurrently"""
     cached = get_cached_data()
     if cached:
         return cached
 
     weather_data = []
-    for city_name, country_code, lat, lon, flag in CITIES:
-        weather = fetch_weather(city_name, lat, lon)
-        if weather:
-            weather["country_code"] = country_code
-            weather["flag"] = flag
-            weather_data.append(weather)
 
-    # Save to cache if we got data
+    # Use ThreadPoolExecutor for concurrent requests
+    with ThreadPoolExecutor(max_workers=len(CITIES)) as executor:
+        futures = {executor.submit(fetch_weather, city): city for city in CITIES}
+
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                weather_data.append(result)
+
+    # Sort by original city order
+    city_order = {city[0]: i for i, city in enumerate(CITIES)}
+    weather_data.sort(key=lambda w: city_order.get(w['city'], 999))
+
     if weather_data:
         save_cache(weather_data)
 
     return weather_data
+
+
+def get_world_clocks():
+    """Get current times for different timezones"""
+    timezones = [
+        ("🇺🇸", "New York", "America/New_York"),
+        ("🇨🇳", "Beijing", "Asia/Shanghai"),
+        ("🇱🇹", "Vilnius", "Europe/Vilnius"),
+        ("🇨🇾", "Cyprus", "Asia/Nicosia"),
+        ("🇨🇷", "Costa Rica", "America/Costa_Rica"),
+    ]
+
+    clocks = []
+    for flag, name, tz in timezones:
+        try:
+            result = subprocess.run(
+                ['date', '+%H:%M'],
+                env={**os.environ, 'TZ': tz},
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            time_str = result.stdout.strip()
+            clocks.append(f"│  {flag} {name:<12} {time_str}")
+        except Exception:
+            continue
+
+    return clocks
 
 
 def create_tooltip(weather_data):
@@ -166,12 +202,7 @@ def create_tooltip(weather_data):
     if not weather_data:
         return "Failed to fetch weather data\nRetrying in 10 minutes..."
 
-    from datetime import datetime
-    import os
-
-    lines = []
-    lines.append("┌─────── WEATHER ───────┐")
-    lines.append("│")
+    lines = ["┌─────── WEATHER ───────┐", "│"]
 
     for weather in weather_data:
         desc, icon = get_weather_icon(weather["weather_code"])
@@ -190,27 +221,9 @@ def create_tooltip(weather_data):
             lines.append(f"│     🌧️   {precip:.1f} mm")
         lines.append("│")
 
-    # Add World Clocks section
+    # World Clocks section
     lines.append("┌──── WORLD CLOCKS ─────┐")
-
-    # Get current times for different zones
-    ny_time = datetime.now().astimezone(tz=None).replace(tzinfo=None)
-    try:
-        import subprocess
-        ny_time_str = subprocess.check_output(['date', '+%H:%M'], env={**os.environ, 'TZ': 'America/New_York'}).decode().strip()
-        beijing_time_str = subprocess.check_output(['date', '+%H:%M'], env={**os.environ, 'TZ': 'Asia/Shanghai'}).decode().strip()
-        vilnius_time_str = subprocess.check_output(['date', '+%H:%M'], env={**os.environ, 'TZ': 'Europe/Vilnius'}).decode().strip()
-        cyprus_time_str = subprocess.check_output(['date', '+%H:%M'], env={**os.environ, 'TZ': 'Asia/Nicosia'}).decode().strip()
-        costarica_time_str = subprocess.check_output(['date', '+%H:%M'], env={**os.environ, 'TZ': 'America/Costa_Rica'}).decode().strip()
-
-        lines.append(f"│  🇺🇸 New York     {ny_time_str}")
-        lines.append(f"│  🇨🇳 Beijing      {beijing_time_str}")
-        lines.append(f"│  🇱🇹 Vilnius      {vilnius_time_str}")
-        lines.append(f"│  🇨🇾 Cyprus       {cyprus_time_str}")
-        lines.append(f"│  🇨🇷 Costa Rica   {costarica_time_str}")
-    except:
-        pass
-
+    lines.extend(get_world_clocks())
     lines.append("└───────────────────────┘")
 
     return "\n".join(lines)
@@ -227,8 +240,6 @@ def main():
             "class": "weather-error"
         }
     else:
-        # Display first city in bar (or rotate through them)
-        # For now, show the first city (Lagos)
         first = weather_data[0]
         desc, icon = get_weather_icon(first["weather_code"])
         temp = first["temperature"]

@@ -1,7 +1,9 @@
 # Media applications configuration
-{ pkgs, pkgs-unstable, ... }:
+{ config, pkgs, pkgs-unstable, ... }:
 
 let
+  theme = config.theme;
+
   # PhotoGIMP - Makes GIMP look like Photoshop (GIMP 3.0)
   photogimp = pkgs.fetchzip {
     url = "https://github.com/Diolinux/PhotoGIMP/releases/download/3.0/PhotoGIMP-linux.zip";
@@ -35,7 +37,7 @@ in
 
       # Subtitles
       sub-auto = "fuzzy";
-      sub-font = "JetBrainsMono Nerd Font";
+      sub-font = theme.fonts.mono;
       sub-font-size = 40;
       sub-color = "#FFFFFF";
       sub-border-color = "#000000";
@@ -47,10 +49,10 @@ in
       # OSD
       osd-level = 1;
       osd-duration = 2500;
-      osd-font = "JetBrainsMono Nerd Font";
+      osd-font = theme.fonts.mono;
       osd-font-size = 32;
-      osd-color = "#e6d9db";
-      osd-border-color = "#2c2421";
+      osd-color = theme.colors.foreground;
+      osd-border-color = theme.colors.background;
       osd-border-size = 2;
       osd-bar-align-y = 0.9;
 

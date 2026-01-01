@@ -1,7 +1,10 @@
 # Hyprlock configuration (Official Hyprland screen locker)
 # Replaces swaylock - uses hyprtoolkit theme
-{ pkgs, ... }:
+{ config, ... }:
 
+let
+  theme = config.theme;
+in
 {
   # DISABLED - swaylock replaced by hyprlock
   programs.swaylock.enable = false;
@@ -76,7 +79,7 @@
       text = $TIME
       color = rgba(230, 217, 219, 1.0)
       font_size = 90
-      font_family = JetBrainsMono Nerd Font
+      font_family = ${theme.fonts.mono}
       position = 0, 200
       halign = center
       valign = center
@@ -88,7 +91,7 @@
       text = cmd[update:3600000] date +"%A, %d %B %Y"
       color = rgba(230, 217, 219, 0.8)
       font_size = 24
-      font_family = JetBrainsMono Nerd Font
+      font_family = ${theme.fonts.mono}
       position = 0, 100
       halign = center
       valign = center
@@ -100,7 +103,7 @@
       text = Hi, $USER
       color = rgba(249, 204, 108, 1.0)
       font_size = 20
-      font_family = JetBrainsMono Nerd Font
+      font_family = ${theme.fonts.mono}
       position = 0, -50
       halign = center
       valign = center

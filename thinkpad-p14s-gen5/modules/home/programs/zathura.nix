@@ -1,6 +1,9 @@
 # Zathura PDF reader configuration (Ristretto theme)
-{ pkgs, ... }:
+{ config, ... }:
 
+let
+  theme = config.theme;
+in
 {
   programs.zathura = {
     enable = true;
@@ -20,55 +23,55 @@
       show-scrollbars = false;
 
       # Font
-      font = "JetBrainsMono Nerd Font 11";
+      font = "${theme.fonts.mono} ${toString theme.fonts.monoSize}";
 
       # === Ristretto Theme ===
       # Background colors
-      default-bg = "#2c2421";
-      default-fg = "#e6d9db";
+      default-bg = theme.colors.background;
+      default-fg = theme.colors.foreground;
 
       # Statusbar
-      statusbar-fg = "#e6d9db";
-      statusbar-bg = "#2c2421";
+      statusbar-fg = theme.colors.foreground;
+      statusbar-bg = theme.colors.background;
 
       # Inputbar
-      inputbar-bg = "#2c2421";
-      inputbar-fg = "#e6d9db";
+      inputbar-bg = theme.colors.background;
+      inputbar-fg = theme.colors.foreground;
 
       # Notification colors
-      notification-bg = "#2c2421";
-      notification-fg = "#e6d9db";
-      notification-error-bg = "#fd6883";
-      notification-error-fg = "#2c2421";
-      notification-warning-bg = "#f9cc6c";
-      notification-warning-fg = "#2c2421";
+      notification-bg = theme.colors.background;
+      notification-fg = theme.colors.foreground;
+      notification-error-bg = theme.colors.red;
+      notification-error-fg = theme.colors.background;
+      notification-warning-bg = theme.colors.yellow;
+      notification-warning-fg = theme.colors.background;
 
       # Highlighting
       highlight-color = "rgba(249, 204, 108, 0.5)";  # Yellow highlight
       highlight-active-color = "rgba(133, 218, 204, 0.5)";  # Cyan active highlight
 
       # Completion
-      completion-bg = "#403e41";
-      completion-fg = "#e6d9db";
-      completion-group-bg = "#2c2421";
-      completion-group-fg = "#adda78";
-      completion-highlight-bg = "#403e41";
-      completion-highlight-fg = "#f9cc6c";
+      completion-bg = theme.colors.surface;
+      completion-fg = theme.colors.foreground;
+      completion-group-bg = theme.colors.background;
+      completion-group-fg = theme.colors.green;
+      completion-highlight-bg = theme.colors.surface;
+      completion-highlight-fg = theme.colors.yellow;
 
       # Index mode
-      index-bg = "#2c2421";
-      index-fg = "#e6d9db";
-      index-active-bg = "#403e41";
-      index-active-fg = "#f9cc6c";
+      index-bg = theme.colors.background;
+      index-fg = theme.colors.foreground;
+      index-active-bg = theme.colors.surface;
+      index-active-fg = theme.colors.yellow;
 
       # Render options
-      render-loading-bg = "#2c2421";
-      render-loading-fg = "#e6d9db";
+      render-loading-bg = theme.colors.background;
+      render-loading-fg = theme.colors.foreground;
 
       # Recolor (dark mode for documents)
       recolor = true;
-      recolor-darkcolor = "#e6d9db";
-      recolor-lightcolor = "#2c2421";
+      recolor-darkcolor = theme.colors.foreground;
+      recolor-lightcolor = theme.colors.background;
       recolor-keephue = true;
       recolor-reverse-video = true;
     };

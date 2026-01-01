@@ -23,9 +23,9 @@ fi
 cd "$FLAKE_DIR" || exit 1
 
 # Check for updates (compare current lock with latest)
-# This is a simplified check - just see if flake.lock is old
 lock_age=$(($(date +%s) - $(stat -c %Y "flake.lock" 2>/dev/null || echo 0)))
 days_old=$((lock_age / 86400))
+hours_old=$(((lock_age % 86400) / 3600))
 
 if [ $days_old -gt 7 ]; then
   # Flake is more than 7 days old
@@ -36,8 +36,25 @@ if [ $days_old -gt 7 ]; then
   tooltip="$tooltip\n└──────────────────────┘"
   tooltip="$tooltip\n\nClick to open terminal"
 
-  echo "{\"text\": \"󰏔 $days_old\", \"tooltip\": \"$tooltip\", \"class\": \"updates\"}" | tee "$CACHE_FILE"
+  echo "{\"text\": \"󰏔 ${days_old}d\", \"tooltip\": \"$tooltip\", \"class\": \"updates\"}" | tee "$CACHE_FILE"
+elif [ $days_old -eq 0 ]; then
+  # Updated today
+  if [ $hours_old -eq 0 ]; then
+    time_str="just now"
+  elif [ $hours_old -eq 1 ]; then
+    time_str="1 hour ago"
+  else
+    time_str="$hours_old hours ago"
+  fi
+  tooltip="󰄬 System is up to date\n\nLast update: $time_str"
+  echo "{\"text\": \"󰄬\", \"tooltip\": \"$tooltip\", \"class\": \"ok\"}" | tee "$CACHE_FILE"
 else
-  tooltip="󰄬 System is up to date\n\nLast update: $days_old days ago"
+  # 1-7 days old
+  if [ $days_old -eq 1 ]; then
+    time_str="yesterday"
+  else
+    time_str="$days_old days ago"
+  fi
+  tooltip="󰄬 System is up to date\n\nLast update: $time_str"
   echo "{\"text\": \"󰄬\", \"tooltip\": \"$tooltip\", \"class\": \"ok\"}" | tee "$CACHE_FILE"
 fi

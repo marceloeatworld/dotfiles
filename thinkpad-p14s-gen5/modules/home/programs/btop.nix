@@ -1,40 +1,43 @@
 # btop system monitor configuration
-{ ... }:
+{ config, ... }:
 
+let
+  theme = config.theme;
+in
 {
   # btop theme (Monokai Pro Ristretto)
   xdg.configFile."btop/themes/ristretto.theme".text = ''
     # Monokai Pro (Filter Ristretto) - btop theme
 
     # Main background
-    theme[main_bg]="#2c2421"
+    theme[main_bg]="${theme.colors.background}"
 
     # Main text color
-    theme[main_fg]="#e6d9db"
+    theme[main_fg]="${theme.colors.foreground}"
 
     # Title color for boxes
-    theme[title]="#e6d9db"
+    theme[title]="${theme.colors.foreground}"
 
     # Highlight color for keyboard shortcuts
-    theme[hi_fg]="#fd6883"
+    theme[hi_fg]="${theme.colors.red}"
 
     # Background color of selected item in processes box
     theme[selected_bg]="#3d2f2a"
 
     # Foreground color of selected item in processes box
-    theme[selected_fg]="#f9cc6c"
+    theme[selected_fg]="${theme.colors.yellow}"
 
     # Color of inactive/disabled text
-    theme[inactive_fg]="#72696a"
+    theme[inactive_fg]="${theme.colors.comment}"
 
     # Color of text appearing on top of graphs
-    theme[graph_text]="#e6d9db"
+    theme[graph_text]="${theme.colors.foreground}"
 
     # Background color of the percentage meters
     theme[meter_bg]="#3d2f2a"
 
     # Misc colors for processes box including mini cpu graphs, details memory graph and details status text
-    theme[proc_misc]="#85dacc"
+    theme[proc_misc]="${theme.colors.cyan}"
 
     # CPU, Memory, Network, Proc box outline colors
     theme[cpu_box]="#5b4a45"
@@ -43,52 +46,52 @@
     theme[proc_box]="#5b4a45"
 
     # Box divider line and small boxes line color
-    theme[div_line]="#72696a"
+    theme[div_line]="${theme.colors.comment}"
 
     # Temperature graph color (Fully red @100C, Fully blue @0C)
-    theme[temp_start]="#a8a9eb"
-    theme[temp_mid]="#f38d70"
+    theme[temp_start]="${theme.colors.magenta}"
+    theme[temp_mid]="${theme.colors.orange}"
     theme[temp_end]="#fd6a85"
 
     # CPU graph colors (Fully red @100%, Fully blue @0%)
-    theme[cpu_start]="#adda78"
-    theme[cpu_mid]="#f9cc6c"
-    theme[cpu_end]="#fd6883"
+    theme[cpu_start]="${theme.colors.green}"
+    theme[cpu_mid]="${theme.colors.yellow}"
+    theme[cpu_end]="${theme.colors.red}"
 
     # Memory/disks free meter
-    theme[free_start]="#72696a"
-    theme[free_mid]="#85dacc"
-    theme[free_end]="#a8a9eb"
+    theme[free_start]="${theme.colors.comment}"
+    theme[free_mid]="${theme.colors.cyan}"
+    theme[free_end]="${theme.colors.magenta}"
 
     # Memory cached meter
-    theme[cached_start]="#72696a"
-    theme[cached_mid]="#f9cc6c"
-    theme[cached_end]="#fd6883"
+    theme[cached_start]="${theme.colors.comment}"
+    theme[cached_mid]="${theme.colors.yellow}"
+    theme[cached_end]="${theme.colors.red}"
 
     # Memory available meter
-    theme[available_start]="#72696a"
-    theme[available_mid]="#adda78"
-    theme[available_end]="#85dacc"
+    theme[available_start]="${theme.colors.comment}"
+    theme[available_mid]="${theme.colors.green}"
+    theme[available_end]="${theme.colors.cyan}"
 
     # Memory used meter
-    theme[used_start]="#fd6883"
-    theme[used_mid]="#f38d70"
-    theme[used_end]="#f9cc6c"
+    theme[used_start]="${theme.colors.red}"
+    theme[used_mid]="${theme.colors.orange}"
+    theme[used_end]="${theme.colors.yellow}"
 
     # Download graph colors (Fully red @100%, Fully blue @0%)
-    theme[download_start]="#a8a9eb"
-    theme[download_mid]="#c3b7b8"
-    theme[download_end]="#fd6883"
+    theme[download_start]="${theme.colors.magenta}"
+    theme[download_mid]="${theme.colors.foregroundDim}"
+    theme[download_end]="${theme.colors.red}"
 
     # Upload graph colors (Fully red @100%, Fully blue @0%)
-    theme[upload_start]="#adda78"
-    theme[upload_mid]="#f9cc6c"
-    theme[upload_end]="#fd6883"
+    theme[upload_start]="${theme.colors.green}"
+    theme[upload_mid]="${theme.colors.yellow}"
+    theme[upload_end]="${theme.colors.red}"
 
     # Process box color gradient for threads, mem and cpu usage (Fully red @100%, Fully blue @0%)
-    theme[process_start]="#85dacc"
-    theme[process_mid]="#f9cc6c"
-    theme[process_end]="#fd6883"
+    theme[process_start]="${theme.colors.cyan}"
+    theme[process_mid]="${theme.colors.yellow}"
+    theme[process_end]="${theme.colors.red}"
   '';
 
   # btop configuration

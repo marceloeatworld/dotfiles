@@ -1,7 +1,13 @@
 # Hyprlauncher - Official Hyprland launcher
 # Monokai Pro Ristretto theme (matching btop, ghostty, system)
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
+let
+  theme = config.theme;
+
+  # Convert hex color to hyprtoolkit format (0xAARRGGBB)
+  toHyprColor = hex: "0xFF${builtins.substring 1 6 hex}";
+in
 {
   # Install hyprlauncher
   home.packages = with pkgs; [
@@ -14,17 +20,17 @@
     # Hyprtoolkit Theme - Monokai Pro Ristretto
 
     # Background colors (from btop main_bg)
-    background = 0xFF2c2421
-    base = 0xFF2c2421
+    background = ${toHyprColor theme.colors.background}
+    base = ${toHyprColor theme.colors.background}
     alternate_base = 0xFF3d2f2a
 
     # Text colors (from btop main_fg)
-    text = 0xFFe6d9db
-    bright_text = 0xFFf1e5e7
+    text = ${toHyprColor theme.colors.foreground}
+    bright_text = ${toHyprColor theme.colors.brightWhite}
 
     # Accent colors - Ristretto yellow/gold
-    accent = 0xFFf9cc6c
-    accent_secondary = 0xFFadda78
+    accent = ${toHyprColor theme.colors.yellow}
+    accent_secondary = ${toHyprColor theme.colors.green}
 
     # Typography (matching GTK theme)
     font_family = Noto Sans

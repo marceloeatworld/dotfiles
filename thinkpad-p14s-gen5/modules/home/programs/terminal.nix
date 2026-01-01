@@ -1,7 +1,10 @@
 # Terminal emulator configuration
 # Terminal emulators: Ghostty (primary) + Alacritty (backup)
-{ pkgs, ... }:
+{ config, ... }:
 
+let
+  theme = config.theme;
+in
 {
   # ============================================
   # GHOSTTY - Primary terminal (modern, fast, compatible)
@@ -12,7 +15,7 @@
 
     settings = {
       # Font
-      font-family = "JetBrainsMono Nerd Font";
+      font-family = theme.fonts.mono;
       font-size = 10;
 
       # Window
@@ -25,31 +28,31 @@
       cursor-style = "block";
       cursor-style-blink = false;
 
-      # Theme - Monokai Pro Ristretto (matching btop, hyprlauncher, waybar)
-      background = "2c2421";
-      foreground = "e6d9db";
+      # Theme - Monokai Pro Ristretto (from theme.nix)
+      background = builtins.substring 1 6 theme.colors.background;
+      foreground = builtins.substring 1 6 theme.colors.foreground;
       selection-background = "3d2f2a";
-      selection-foreground = "e6d9db";
-      cursor-color = "f9cc6c";
+      selection-foreground = builtins.substring 1 6 theme.colors.foreground;
+      cursor-color = builtins.substring 1 6 theme.colors.yellow;
 
-      # Monokai Pro Ristretto palette
+      # Monokai Pro Ristretto palette (from theme.nix)
       palette = [
-        "0=#72696a"   # black
-        "1=#fd6883"   # red
-        "2=#adda78"   # green
-        "3=#f9cc6c"   # yellow
-        "4=#f38d70"   # blue (orange in Ristretto)
-        "5=#a8a9eb"   # magenta
-        "6=#85dacc"   # cyan
-        "7=#e6d9db"   # white
-        "8=#948a8b"   # bright black
-        "9=#ff8297"   # bright red
-        "10=#c8e292"  # bright green
-        "11=#fcd675"  # bright yellow
-        "12=#f8a788"  # bright blue
-        "13=#bebffd"  # bright magenta
-        "14=#9bf1e1"  # bright cyan
-        "15=#f1e5e7"  # bright white
+        "0=${theme.colors.brightBlack}"   # black
+        "1=${theme.colors.red}"           # red
+        "2=${theme.colors.green}"         # green
+        "3=${theme.colors.yellow}"        # yellow
+        "4=${theme.colors.orange}"        # blue (orange in Ristretto)
+        "5=${theme.colors.magenta}"       # magenta
+        "6=${theme.colors.cyan}"          # cyan
+        "7=${theme.colors.foreground}"    # white
+        "8=#948a8b"                        # bright black
+        "9=#ff8297"                        # bright red
+        "10=#c8e292"                       # bright green
+        "11=#fcd675"                       # bright yellow
+        "12=#f8a788"                       # bright blue
+        "13=#bebffd"                       # bright magenta
+        "14=#9bf1e1"                       # bright cyan
+        "15=${theme.colors.brightWhite}"  # bright white
       ];
 
       # Clipboard
@@ -117,7 +120,7 @@
 
       # Font
       font = {
-        normal = { family = "JetBrainsMono Nerd Font"; style = "Regular"; };
+        normal = { family = theme.fonts.mono; style = "Regular"; };
         size = 10;
       };
 
@@ -145,26 +148,26 @@
       # Monokai Pro Ristretto color scheme (matching Ghostty, btop, system)
       colors = {
         primary = {
-          background = "#2c2421";
-          foreground = "#e6d9db";
+          background = theme.colors.background;
+          foreground = theme.colors.foreground;
         };
         cursor = {
-          text = "#2c2421";
-          cursor = "#f9cc6c";
+          text = theme.colors.background;
+          cursor = theme.colors.yellow;
         };
         selection = {
-          text = "#e6d9db";
+          text = theme.colors.foreground;
           background = "#3d2f2a";
         };
         normal = {
-          black = "#72696a";
-          red = "#fd6883";
-          green = "#adda78";
-          yellow = "#f9cc6c";
+          black = theme.colors.comment;
+          red = theme.colors.red;
+          green = theme.colors.green;
+          yellow = theme.colors.yellow;
           blue = "#f38d70";
-          magenta = "#a8a9eb";
-          cyan = "#85dacc";
-          white = "#e6d9db";
+          magenta = theme.colors.magenta;
+          cyan = theme.colors.cyan;
+          white = theme.colors.foreground;
         };
         bright = {
           black = "#948a8b";
@@ -174,7 +177,7 @@
           blue = "#f8a788";
           magenta = "#bebffd";
           cyan = "#9bf1e1";
-          white = "#f1e5e7";
+          white = theme.colors.brightWhite;
         };
       };
 

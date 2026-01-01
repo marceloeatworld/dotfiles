@@ -1,6 +1,9 @@
 # SwayOSD - On-screen display for volume/brightness
-{ pkgs, ... }:
+{ config, ... }:
 
+let
+  theme = config.theme;
+in
 {
   # SwayOSD is already in home.packages (from home.nix)
   # This module just adds configuration
@@ -14,11 +17,11 @@
 
   # SwayOSD style (Ristretto theme)
   xdg.configFile."swayosd/style.css".text = ''
-    @define-color background-color #2c2421;
-    @define-color border-color #c3b7b8;
-    @define-color label #c3b7b8;
-    @define-color image #c3b7b8;
-    @define-color progress #c3b7b8;
+    @define-color background-color ${theme.colors.background};
+    @define-color border-color ${theme.colors.foregroundDim};
+    @define-color label ${theme.colors.foregroundDim};
+    @define-color image ${theme.colors.foregroundDim};
+    @define-color progress ${theme.colors.foregroundDim};
 
     window {
       background: alpha(@background-color, 0.95);
@@ -40,7 +43,7 @@
     trough {
       min-height: 10px;
       border-radius: 5px;
-      background: #403e41;
+      background: ${theme.colors.surface};
     }
 
     progress {
@@ -50,7 +53,7 @@
     }
 
     label {
-      font-family: "JetBrainsMono Nerd Font";
+      font-family: "${theme.fonts.mono}";
       font-size: 16px;
       color: @label;
       margin: 5px;

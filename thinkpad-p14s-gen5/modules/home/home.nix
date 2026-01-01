@@ -50,7 +50,7 @@
 
     # ── Utilities ──
     ./programs/windows-vm.nix     # Windows 11 VM (Docker + RDP)
-    ./programs/security-tools.nix # Security tools aliases & docs
+    ./programs/security-packages.nix # Security tools aliases & docs
 
     # ── Services ──
     ./services/waybar.nix         # Status bar + custom scripts
@@ -59,6 +59,7 @@
     ./services/swayosd.nix        # Volume/brightness OSD
 
     # ── Configuration ──
+    ./config/theme.nix            # Centralized Ristretto theme (colors + fonts)
     ./config/gtk.nix              # GTK theme (Adwaita-dark)
     ./config/qt.nix               # Qt theme
     ./config/fontconfig.nix       # Font configuration

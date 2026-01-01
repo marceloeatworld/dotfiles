@@ -133,20 +133,6 @@
       };
     };
 
-    # ── Helper Functions (as strings for use in configs) ──
-    # These provide ready-to-use format strings
-    css = {
-      background = lib.mkOption {
-        type = lib.types.str;
-        default = "#2c2421";
-        description = "CSS-ready background color";
-      };
-      foreground = lib.mkOption {
-        type = lib.types.str;
-        default = "#e6d9db";
-        description = "CSS-ready foreground color";
-      };
-    };
   };
 
   # Default config values are set above via `default = ...`
