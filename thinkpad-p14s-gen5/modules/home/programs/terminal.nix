@@ -22,7 +22,7 @@ in
       window-padding-x = 14;
       window-padding-y = 14;
       window-decoration = false;
-      background-opacity = 0.95;
+      background-opacity = 1;
 
       # Cursor
       cursor-style = "block";
@@ -88,8 +88,8 @@ in
         "ctrl+shift+right=next_tab"
         "ctrl+shift+left=previous_tab"
         # Split management
-        "ctrl+shift+enter=new_split:right"
-        "ctrl+shift+backslash=new_split:down"
+        "ctrl+shift+enter=new_split:down"
+        "ctrl+shift+backslash=new_split:right"
         "ctrl+shift+]=goto_split:next"
         "ctrl+shift+[=goto_split:previous"
         # Font size
@@ -115,7 +115,7 @@ in
       window = {
         padding = { x = 14; y = 14; };
         decorations = "none";
-        opacity = 0.95;
+        opacity = 1;
       };
 
       # Font

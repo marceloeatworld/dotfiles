@@ -6,6 +6,16 @@ let
   theme = config.theme;
 in
 {
+  # Systemd user service for VPN status refresh (triggered by VPN-DNS-SWITCH)
+  systemd.user.services.waybar-vpn-refresh = {
+    Unit = {
+      Description = "Refresh Waybar VPN module";
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.procps}/bin/pkill -RTMIN+8 waybar";
+    };
+  };
   # Deploy scripts from waybar-scripts/ directory
   home.file.".config/waybar/scripts/bitcoin.sh" = {
     source = ./waybar-scripts/bitcoin.sh;
@@ -433,7 +443,7 @@ in
       }
 
       window#waybar {
-        background: alpha(@bg, 0.93);
+        background: @bg;
         color: @fg;
       }
 
@@ -449,8 +459,8 @@ in
         transition: all 0.2s ease;
       }
       #workspaces button:hover {
-        background: alpha(@fg, 0.1);
-        border-bottom: 2px solid alpha(@fg, 0.3);
+        background: @surface;
+        border-bottom: 2px solid @comment;
       }
       #workspaces button.active {
         background: @yellow;
@@ -477,12 +487,12 @@ in
       #clock {
         padding: 0 12px;
         margin: 0 2px;
-        background: alpha(@yellow, 0.15);
+        background: @surface;
         color: @yellow;
-        border-radius: 10px;
+        border-radius: 0;
       }
 
-      /* Default module style */
+      /* Default module style - neobrutalist: sharp corners, no transparency */
       #custom-bitcoin, #custom-wallets, #custom-vpn, #custom-nix-updates,
       #custom-systemd-failed, #custom-mako, #custom-monitor-rotation,
       #custom-weather, #custom-polymarket, #custom-removable-disks,
@@ -490,8 +500,8 @@ in
       #temperature, #backlight, #battery, #tray {
         padding: 0 8px;
         margin: 0 1px;
-        background: alpha(@surface, 0.85);
-        border-radius: 6px;
+        background: @surface;
+        border-radius: 0;
         color: @fg;
       }
 
@@ -580,11 +590,11 @@ in
       }
       #custom-mako.empty { color: @comment; }
 
-      /* Tooltip */
+      /* Tooltip - neobrutalist: sharp corners, solid border */
       tooltip {
-        background: alpha(@bg, 0.95);
-        border: 2px solid alpha(@yellow, 0.5);
-        border-radius: 10px;
+        background: @bg;
+        border: 2px solid @yellow;
+        border-radius: 0;
         color: @fg;
       }
     '';

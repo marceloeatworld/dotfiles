@@ -8,113 +8,56 @@ let
 in
 
 let
+  # Blue light filter toggle - cycles through temperature levels
   bluelight-toggle = pkgs.writeShellScriptBin "bluelight-toggle" ''
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # State file to track current temperature
     STATE_FILE="$HOME/.config/bluelight-state"
 
-    # Read current state (default to off if file doesn't exist)
-    if [ -f "$STATE_FILE" ]; then
-      CURRENT=$(cat "$STATE_FILE")
-    else
-      CURRENT="off"
-    fi
+    # Read current state (default to off)
+    CURRENT=$(cat "$STATE_FILE" 2>/dev/null || echo "off")
 
-    # Determine next state and temperature (8 levels total)
+    # Temperature levels for eye protection:
+    # 5500K = Slight warmth (afternoon sun)
+    # 4500K = Warm (sunset)
+    # 3500K = Very warm (golden hour)
+    # 2500K = Candlelight
+    # 2000K = Deep amber (late night)
+    # 1500K = Very deep amber (pre-sleep)
+    # 1200K = Maximum protection (extreme night mode)
     case "$CURRENT" in
-      off|6500)
-        NEXT="5500"
-        TEMP=5500
-        ICON="weather-clear-night"
-        TITLE="Blue Light Filter"
-        DESC="Level 1 (5500K)"
-        ;;
-      5500)
-        NEXT="4500"
-        TEMP=4500
-        ICON="weather-clear-night"
-        TITLE="Blue Light Filter"
-        DESC="Level 2 (4500K)"
-        ;;
-      4500)
-        NEXT="3500"
-        TEMP=3500
-        ICON="weather-clear-night"
-        TITLE="Blue Light Filter"
-        DESC="Level 3 (3500K)"
-        ;;
-      3500)
-        NEXT="2500"
-        TEMP=2500
-        ICON="weather-clear-night"
-        TITLE="Blue Light Filter"
-        DESC="Level 4 (2500K)"
-        ;;
-      2500)
-        NEXT="2000"
-        TEMP=2000
-        ICON="weather-clear-night"
-        TITLE="Blue Light Filter"
-        DESC="Level 5 (2000K - Warm)"
-        ;;
-      2000)
-        NEXT="1500"
-        TEMP=1500
-        ICON="weather-clear-night"
-        TITLE="Blue Light Filter"
-        DESC="Level 6 (1500K - Very Warm)"
-        ;;
-      1500)
-        NEXT="1200"
-        TEMP=1200
-        ICON="weather-clear-night"
-        TITLE="Blue Light Filter"
-        DESC="Level 7 (1200K - Ultra Warm)"
-        ;;
-      1200)
-        NEXT="off"
-        TEMP=0
-        ICON="weather-clear"
-        TITLE="Blue Light Filter"
-        DESC="Off"
-        ;;
-      *)
-        NEXT="5500"
-        TEMP=5500
-        ICON="weather-clear-night"
-        TITLE="Blue Light Filter"
-        DESC="Level 1 (5500K)"
-        ;;
+      off|6500) NEXT="5500"; TEMP=5500; DESC="󰖨  Level 1 (5500K - Afternoon)" ;;
+      5500)     NEXT="4500"; TEMP=4500; DESC="󰖨  Level 2 (4500K - Sunset)" ;;
+      4500)     NEXT="3500"; TEMP=3500; DESC="󰖨  Level 3 (3500K - Golden hour)" ;;
+      3500)     NEXT="2500"; TEMP=2500; DESC="󰖨  Level 4 (2500K - Candlelight)" ;;
+      2500)     NEXT="2000"; TEMP=2000; DESC="󱩌  Level 5 (2000K - Late night)" ;;
+      2000)     NEXT="1500"; TEMP=1500; DESC="󱩌  Level 6 (1500K - Pre-sleep)" ;;
+      1500)     NEXT="1200"; TEMP=1200; DESC="󱩌  Level 7 (1200K - Maximum)" ;;
+      1200)     NEXT="off";  TEMP=0;    DESC="󰖙  Filter Off" ;;
+      *)        NEXT="5500"; TEMP=5500; DESC="󰖨  Level 1 (5500K - Afternoon)" ;;
     esac
 
-    # Kill existing hyprsunset process and wait for it to terminate
-    if pgrep -x hyprsunset > /dev/null; then
-      pkill -TERM hyprsunset
-      # Wait up to 2 seconds for process to terminate
-      for i in {1..20}; do
-        if ! pgrep -x hyprsunset > /dev/null; then
-          break
-        fi
-        sleep 0.1
-      done
-      # Force kill if still running
-      if pgrep -x hyprsunset > /dev/null; then
-        pkill -KILL hyprsunset
-        sleep 0.2
-      fi
-    fi
+    # Kill existing hyprsunset gracefully
+    pkill -TERM hyprsunset 2>/dev/null && sleep 0.2 || true
+    pkill -KILL hyprsunset 2>/dev/null || true
 
-    # Start hyprsunset with new temperature (if not turning off)
+    # Start with new temperature (if not off)
     if [ "$NEXT" != "off" ]; then
       ${pkgs-unstable.hyprsunset}/bin/hyprsunset -t $TEMP &
       disown
     fi
 
-    # Save state and notify
     echo "$NEXT" > "$STATE_FILE"
-    notify-send -t 2000 "$TITLE" "$DESC" -i "$ICON"
+    notify-send -t 2000 "Blue Light Filter" "$DESC" -i "weather-clear-night"
+  '';
+
+  # Quick off - instantly disable blue light filter
+  bluelight-off = pkgs.writeShellScriptBin "bluelight-off" ''
+    #!/usr/bin/env bash
+    pkill hyprsunset 2>/dev/null || true
+    echo "off" > "$HOME/.config/bluelight-state"
+    notify-send -t 1500 "Blue Light Filter" "󰖙  Disabled" -i "weather-clear"
   '';
 
   # Toggle performance mode (blur/shadows/animations)
@@ -239,6 +182,7 @@ in
         "wl-paste --type image --watch cliphist store"
         "hyprlauncher -d"  # Start hyprlauncher daemon
         "hypridle"
+        "sleep 2 && nm-applet"  # Delay tray applet to avoid "no icon" errors
       ];
 
       # Cursor and GDK settings (system-level has the rest via environment.sessionVariables)
@@ -288,25 +232,22 @@ in
       };
 
       decoration = {
-        # Neobrutalist: sharp corners (0) or minimal rounding (2)
-        rounding = 2;
+        # Neobrutalist: sharp corners - no rounding
+        rounding = 0;
 
-        # Neobrutalist: no blur - flat, raw aesthetic
+        # No blur - saves GPU resources
         blur = {
           enabled = false;
         };
 
-        # Neobrutalist: solid sharp shadow (like CSS 1px 1px 0px 0px)
+        # No shadows - saves resources, cleaner neobrutalist look
         shadow = {
-          enabled = true;
-          range = 4;
-          render_power = 4;
-          offset = "2 2";
-          color = "rgba(000000cc)";
+          enabled = false;
         };
 
+        # No transparency - saves resources
         active_opacity = 1.0;
-        inactive_opacity = 0.98;
+        inactive_opacity = 1.0;
         fullscreen_opacity = 1.0;
       };
 
@@ -427,6 +368,7 @@ in
         "$mod CTRL, Escape, exec, systemctl reboot"
         "$mod, C, exec, hyprpicker -a"
         "$mod, N, exec, ${bluelight-toggle}/bin/bluelight-toggle"
+        "$mod SHIFT, N, exec, ${bluelight-off}/bin/bluelight-off"
         "$mod, M, exec, ${battery-mode}/bin/battery-mode"
         "$mod SHIFT, M, exec, ${perf-mode}/bin/perf-mode"
         ", Print, exec, grim -g \"$(slurp)\" - | wl-copy && notify-send 'Screenshot' 'Copied to clipboard'"
@@ -548,7 +490,8 @@ in
     brightnessctl             # Brightness control (for hypridle dim)
     pamixer                   # Volume control CLI (for scripts)
     pkgs-unstable.hyprsunset  # Blue light filter (v0.3.3+ with SIGTERM/SIGINT fixes)
-    bluelight-toggle          # Custom toggle script
+    bluelight-toggle          # Custom toggle script (SUPER+N)
+    bluelight-off             # Quick disable (SUPER+SHIFT+N)
     battery-mode              # Battery charge mode script
     perf-mode                 # Performance mode toggle
     wofi                      # dmenu-like picker for clipboard history

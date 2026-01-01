@@ -60,39 +60,39 @@ let
     };
 
     # ── Neobrutalist ───────────────────────────────────────────────────────
-    # Neobrutalist style inspired by Tavus design
-    # Sharp edges, solid shadows, warm cream/beige palette with Catppuccin accents
+    # Neobrutalist style - warm amber palette, no blue
+    # Sharp edges, solid shadows, warm cream/beige aesthetic
     neobrutalist = {
       name = "Neobrutalist";
-      description = "Tavus-inspired neobrutalist with Catppuccin accents";
+      description = "Warm amber neobrutalist - no blue";
       icon = "◼";
       colors = {
-        # Base - Warm dark with cream undertones (Tavus-inspired)
-        background = "#1a1720";      # Deep purple-black (slate-like)
-        backgroundAlt = "#221f2b";   # Slightly lighter (from Tavus CSS)
-        surface = "#2a2735";         # Surface for cards/panels
-        foreground = "#F3EEE7";      # Warm cream text (Tavus)
-        foregroundDim = "#92897a";   # Muted warm gray (Tavus)
-        # Accents - Catppuccin Mocha pastels (soft but vibrant)
-        red = "#f38ba8";             # Catppuccin Red
-        orange = "#fab387";          # Catppuccin Peach
-        yellow = "#f9e2af";          # Catppuccin Yellow
-        green = "#a6e3a1";           # Catppuccin Green
-        cyan = "#94e2d5";            # Catppuccin Teal
-        blue = "#89b4fa";            # Catppuccin Blue
-        magenta = "#cba6f7";         # Catppuccin Mauve
-        # UI - Strong borders for neobrutalist feel
-        border = "#3d3a47";          # Visible border
-        selection = "#45475a";       # Catppuccin Surface1
-        comment = "#6c7086";         # Catppuccin Overlay0
+        # Base - Warm dark browns
+        background = "#1a1714";      # Deep warm black
+        backgroundAlt = "#221e1a";   # Warm dark brown
+        surface = "#2d2720";         # Surface brown
+        foreground = "#F3EEE7";      # Warm cream text
+        foregroundDim = "#a89984";   # Muted warm tan
+        # Accents - Warm amber palette (no blue/cyan)
+        red = "#ea6962";             # Warm red
+        orange = "#e78a4e";          # Amber orange (primary)
+        yellow = "#d8a657";          # Golden yellow
+        green = "#a9b665";           # Olive green (warm)
+        cyan = "#d8a657";            # Use yellow instead of cyan
+        blue = "#e78a4e";            # Use orange instead of blue
+        magenta = "#d3869b";         # Dusty rose
+        # UI - Warm borders
+        border = "#504540";          # Warm brown border
+        selection = "#3d3530";       # Warm selection
+        comment = "#7c6f64";         # Warm gray comment
         # Terminal bright variants
-        brightBlack = "#585b70";     # Catppuccin Surface2
-        brightWhite = "#F7F4EF";     # Warm white (Tavus)
+        brightBlack = "#665c54";     # Warm gray
+        brightWhite = "#F7F4EF";     # Warm white
       };
       fonts = {
         mono = "JetBrainsMono Nerd Font";
         monoSize = 11;
-        sans = "Inter";              # Clean geometric sans (similar to Suisse Intl)
+        sans = "Inter";
         sansSize = 11;
       };
     };

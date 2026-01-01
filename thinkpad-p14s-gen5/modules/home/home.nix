@@ -277,5 +277,11 @@ in
     publicShare = "${config.home.homeDirectory}/Public";
   };
 
+  # Disable XDG autostart for nm-applet (we launch it with delay in hyprland.nix)
+  xdg.configFile."autostart/nm-applet.desktop".text = ''
+    [Desktop Entry]
+    Hidden=true
+  '';
+
   # NOTE: MIME types are centralized in ./config/mimeapps.nix
 }
