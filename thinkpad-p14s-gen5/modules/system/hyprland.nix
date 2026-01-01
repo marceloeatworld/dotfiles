@@ -28,6 +28,7 @@
       hyprland = {
         default = [ "hyprland" "gtk" ];
         "org.freedesktop.impl.portal.OpenURI" = [ "gtk" ];  # Use GTK for opening URIs
+        "org.freedesktop.impl.portal.Settings" = [ "gtk" ];  # Use GTK for settings (theme detection)
       };
     };
   };

@@ -60,34 +60,34 @@ let
     };
 
     # ── Neobrutalist ───────────────────────────────────────────────────────
-    # Neobrutalist style - warm amber palette, no blue
-    # Sharp edges, solid shadows, warm cream/beige aesthetic
+    # Ultra-minimal old-school terminal aesthetic
+    # Muted colors, functional for terminal, minimal for UI
     neobrutalist = {
       name = "Neobrutalist";
-      description = "Warm amber neobrutalist - no blue";
-      icon = "◼";
+      description = "Ultra-minimal old-school";
+      icon = "▪";
       colors = {
-        # Base - Warm dark browns
-        background = "#1a1714";      # Deep warm black
-        backgroundAlt = "#221e1a";   # Warm dark brown
-        surface = "#2d2720";         # Surface brown
-        foreground = "#F3EEE7";      # Warm cream text
-        foregroundDim = "#a89984";   # Muted warm tan
-        # Accents - Warm amber palette (no blue/cyan)
-        red = "#ea6962";             # Warm red
-        orange = "#e78a4e";          # Amber orange (primary)
-        yellow = "#d8a657";          # Golden yellow
-        green = "#a9b665";           # Olive green (warm)
-        cyan = "#d8a657";            # Use yellow instead of cyan
-        blue = "#e78a4e";            # Use orange instead of blue
-        magenta = "#d3869b";         # Dusty rose
-        # UI - Warm borders
-        border = "#504540";          # Warm brown border
-        selection = "#3d3530";       # Warm selection
-        comment = "#7c6f64";         # Warm gray comment
-        # Terminal bright variants
-        brightBlack = "#665c54";     # Warm gray
-        brightWhite = "#F7F4EF";     # Warm white
+        # Base - Pure black
+        background = "#0a0a0a";      # Near black
+        backgroundAlt = "#111111";   # Slightly lighter
+        surface = "#1a1a1a";         # Surface
+        foreground = "#c8c8c8";      # Soft white (not harsh)
+        foregroundDim = "#666666";   # Dim gray
+        # Accents - Muted but functional for terminal
+        red = "#b36060";             # Muted red (errors)
+        orange = "#a08060";          # Muted orange
+        yellow = "#b8a060";          # Muted gold (primary accent)
+        green = "#70a070";           # Muted green (success)
+        cyan = "#6090a0";            # Muted cyan
+        blue = "#6080a0";            # Muted blue
+        magenta = "#906090";         # Muted magenta
+        # UI - Minimal
+        border = "#333333";          # Dark border
+        selection = "#222222";       # Subtle selection
+        comment = "#555555";         # Dim comment
+        # Terminal
+        brightBlack = "#444444";
+        brightWhite = "#e0e0e0";
       };
       fonts = {
         mono = "JetBrainsMono Nerd Font";

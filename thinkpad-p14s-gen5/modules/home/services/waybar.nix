@@ -422,23 +422,17 @@ in
     };
 
     style = ''
-      /* Ristretto theme - all colors from config/theme.nix */
+      /* Ultra-minimal old-school style */
       @define-color bg ${theme.colors.background};
       @define-color fg ${theme.colors.foreground};
-      @define-color surface ${theme.colors.surface};
-      @define-color comment ${theme.colors.comment};
-      @define-color red ${theme.colors.red};
-      @define-color green ${theme.colors.green};
-      @define-color yellow ${theme.colors.yellow};
-      @define-color cyan ${theme.colors.cyan};
-      @define-color magenta ${theme.colors.magenta};
-      @define-color orange ${theme.colors.orange};
+      @define-color dim ${theme.colors.comment};
+      @define-color accent ${theme.colors.yellow};
 
       * {
         border: none;
         border-radius: 0;
         font-family: "${theme.fonts.mono}", monospace;
-        font-size: 13px;
+        font-size: 12px;
         min-height: 0;
       }
 
@@ -447,154 +441,79 @@ in
         color: @fg;
       }
 
-      /* Workspaces */
-      #workspaces { margin: 0 6px; }
+      /* Workspaces - minimal */
+      #workspaces { margin: 0 4px; }
       #workspaces button {
-        padding: 0 10px;
-        min-width: 30px;
-        color: @fg;
+        padding: 0 6px;
+        color: @dim;
         background: transparent;
-        border-bottom: 2px solid transparent;
-        border-radius: 0;
-        transition: all 0.2s ease;
-      }
-      #workspaces button:hover {
-        background: @surface;
-        border-bottom: 2px solid @comment;
       }
       #workspaces button.active {
-        background: @yellow;
-        color: @bg;
-        border-bottom: 2px solid @yellow;
-        font-weight: bold;
+        color: @accent;
       }
       #workspaces button.urgent {
-        background: @red;
-        color: @bg;
-        border-bottom: 2px solid @red;
+        color: @fg;
       }
-      #workspaces button.visible { color: @yellow; }
-      #workspaces button.empty { opacity: 0.5; }
+      #workspaces button.empty { color: @dim; opacity: 0.4; }
 
       /* Window title */
       #window {
-        margin: 0 12px;
-        padding: 0 10px;
-        color: @yellow;
+        margin: 0 8px;
+        color: @dim;
       }
 
-      /* Clock - highlighted */
+      /* Clock */
       #clock {
-        padding: 0 12px;
-        margin: 0 2px;
-        background: @surface;
-        color: @yellow;
-        border-radius: 0;
+        padding: 0 8px;
+        color: @fg;
       }
 
-      /* Default module style - neobrutalist: sharp corners, no transparency */
+      /* All modules - pure text, no backgrounds */
       #custom-bitcoin, #custom-wallets, #custom-vpn, #custom-nix-updates,
       #custom-systemd-failed, #custom-mako, #custom-monitor-rotation,
       #custom-weather, #custom-polymarket, #custom-removable-disks,
       #pulseaudio, #bluetooth, #network, #disk, #cpu, #memory,
       #temperature, #backlight, #battery, #tray {
-        padding: 0 8px;
-        margin: 0 1px;
-        background: @surface;
-        border-radius: 0;
-        color: @fg;
+        padding: 0 6px;
+        background: transparent;
+        color: @dim;
       }
 
-      /* Bitcoin - yellow accent */
-      #custom-bitcoin {
-        font-size: 12px;
-        background: alpha(@yellow, 0.2);
-        color: @yellow;
-      }
+      /* Accent for important */
+      #custom-bitcoin { color: @accent; }
 
-      /* Wallets - blurred privacy, red accent */
+      /* Wallets - blurred */
       #custom-wallets {
-        font-size: 12px;
-        background: alpha(@red, 0.2);
         color: transparent;
-        text-shadow: 0 0 8px @red;
-        transition: all 0.2s ease;
+        text-shadow: 0 0 6px @dim;
       }
       #custom-wallets:hover {
-        color: @red;
+        color: @fg;
         text-shadow: none;
       }
 
-      /* Removable disks & monitor - green accent */
-      #custom-removable-disks, #custom-monitor-rotation {
-        background: alpha(@green, 0.2);
-        color: @green;
-        transition: all 0.2s ease;
-      }
-      #custom-monitor-rotation:hover { background: alpha(@green, 0.3); }
-      #custom-monitor-rotation.disabled {
-        background: alpha(@surface, 0.85);
-        color: @comment;
-      }
+      /* States */
+      #battery.charging { color: @fg; }
+      #battery.warning:not(.charging) { color: @accent; }
+      #battery.critical:not(.charging) { color: @fg; }
+      #pulseaudio.muted { opacity: 0.3; }
+      #bluetooth.connected { color: @fg; }
+      #bluetooth.off, #bluetooth.disabled { opacity: 0.3; }
+      #temperature.critical { color: @fg; }
 
-      /* Polymarket - purple accent */
-      #custom-polymarket {
-        background: alpha(@magenta, 0.2);
-        color: @magenta;
-      }
+      /* VPN */
+      #custom-vpn.connected { color: @fg; }
+      #custom-vpn.disconnected { color: @dim; opacity: 0.5; }
 
-      /* Bluetooth - cyan accent */
-      #bluetooth { color: @cyan; }
-      #bluetooth.connected { color: @green; }
-      #bluetooth.off, #bluetooth.disabled { color: @comment; }
+      /* Updates & alerts */
+      #custom-nix-updates.updates { color: @accent; }
+      #custom-systemd-failed.warning { color: @fg; }
+      #custom-mako.notification { color: @fg; }
 
-      /* Audio states */
-      #pulseaudio.muted { color: @red; }
-
-      /* Battery states */
-      #battery.charging, #battery.plugged { color: @green; }
-      #battery.warning:not(.charging) { color: @yellow; }
-      #battery.critical:not(.charging) { color: @red; }
-
-      /* Temperature */
-      #temperature.critical { color: @red; }
-
-      /* VPN states */
-      #custom-vpn.connected {
-        background: alpha(@green, 0.2);
-        color: @green;
-      }
-      #custom-vpn.disconnected {
-        background: alpha(@red, 0.15);
-        color: @red;
-      }
-
-      /* Nix updates */
-      #custom-nix-updates.ok { color: @green; }
-      #custom-nix-updates.updates {
-        background: alpha(@yellow, 0.2);
-        color: @yellow;
-      }
-
-      /* Systemd failed */
-      #custom-systemd-failed.warning {
-        background: alpha(@red, 0.2);
-        color: @red;
-      }
-      #custom-systemd-failed.ok { color: @comment; }
-
-      /* Notifications */
-      #custom-mako.notification {
-        background: alpha(@cyan, 0.2);
-        color: @cyan;
-      }
-      #custom-mako.empty { color: @comment; }
-
-      /* Tooltip - neobrutalist: sharp corners, solid border */
+      /* Tooltip - minimal */
       tooltip {
         background: @bg;
-        border: 2px solid @yellow;
-        border-radius: 0;
+        border: 1px solid @dim;
         color: @fg;
       }
     '';

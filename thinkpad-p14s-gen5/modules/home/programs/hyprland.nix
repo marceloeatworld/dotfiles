@@ -26,6 +26,7 @@ let
     # 2000K = Deep amber (late night)
     # 1500K = Very deep amber (pre-sleep)
     # 1200K = Maximum protection (extreme night mode)
+    # 1000K = Ultra deep (absolute minimum)
     case "$CURRENT" in
       off|6500) NEXT="5500"; TEMP=5500; DESC="󰖨  Level 1 (5500K - Afternoon)" ;;
       5500)     NEXT="4500"; TEMP=4500; DESC="󰖨  Level 2 (4500K - Sunset)" ;;
@@ -34,7 +35,8 @@ let
       2500)     NEXT="2000"; TEMP=2000; DESC="󱩌  Level 5 (2000K - Late night)" ;;
       2000)     NEXT="1500"; TEMP=1500; DESC="󱩌  Level 6 (1500K - Pre-sleep)" ;;
       1500)     NEXT="1200"; TEMP=1200; DESC="󱩌  Level 7 (1200K - Maximum)" ;;
-      1200)     NEXT="off";  TEMP=0;    DESC="󰖙  Filter Off" ;;
+      1200)     NEXT="1000"; TEMP=1000; DESC="󱩌  Level 8 (1000K - Ultra deep)" ;;
+      1000)     NEXT="off";  TEMP=0;    DESC="󰖙  Filter Off" ;;
       *)        NEXT="5500"; TEMP=5500; DESC="󰖨  Level 1 (5500K - Afternoon)" ;;
     esac
 
@@ -58,6 +60,28 @@ let
     pkill hyprsunset 2>/dev/null || true
     echo "off" > "$HOME/.config/bluelight-state"
     notify-send -t 1500 "Blue Light Filter" "󰖙  Disabled" -i "weather-clear"
+  '';
+
+  # Auto-enable blue light filter at boot based on time of day
+  # Night hours: 20:00-07:00 → auto-enable at 2000K
+  bluelight-auto = pkgs.writeShellScriptBin "bluelight-auto" ''
+    #!/usr/bin/env bash
+    STATE_FILE="$HOME/.config/bluelight-state"
+    HOUR=$(date +%H)
+
+    # Night hours: 20:00 (8pm) to 07:00 (7am)
+    if [ "$HOUR" -ge 20 ] || [ "$HOUR" -lt 7 ]; then
+      # Check if already running
+      if pgrep -x hyprsunset > /dev/null; then
+        exit 0
+      fi
+
+      # Set to 2000K for night mode
+      TEMP=2000
+      echo "2000" > "$STATE_FILE"
+      ${pkgs-unstable.hyprsunset}/bin/hyprsunset -t $TEMP &
+      disown
+    fi
   '';
 
   # Toggle performance mode (blur/shadows/animations)
@@ -182,6 +206,7 @@ in
         "wl-paste --type image --watch cliphist store"
         "hyprlauncher -d"  # Start hyprlauncher daemon
         "hypridle"
+        "${bluelight-auto}/bin/bluelight-auto"  # Auto-enable blue light filter at night
         "sleep 2 && nm-applet"  # Delay tray applet to avoid "no icon" errors
       ];
 
@@ -221,7 +246,7 @@ in
       general = {
         gaps_in = 0;
         gaps_out = 0;
-        border_size = 2;
+        border_size = 1;
         layout = "dwindle";
         resize_on_border = true;
         allow_tearing = false;
@@ -492,6 +517,7 @@ in
     pkgs-unstable.hyprsunset  # Blue light filter (v0.3.3+ with SIGTERM/SIGINT fixes)
     bluelight-toggle          # Custom toggle script (SUPER+N)
     bluelight-off             # Quick disable (SUPER+SHIFT+N)
+    bluelight-auto            # Auto-enable at night (runs on boot)
     battery-mode              # Battery charge mode script
     perf-mode                 # Performance mode toggle
     wofi                      # dmenu-like picker for clipboard history

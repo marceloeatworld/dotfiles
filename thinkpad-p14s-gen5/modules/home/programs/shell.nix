@@ -148,60 +148,58 @@ in
     '';
   };
 
-  # Starship prompt (Ristretto theme)
+  # Starship prompt - minimal style
   programs.starship = {
     enable = true;
     enableZshIntegration = true;
 
     settings = {
-      # Minimalist format: directory + git + character
-      format = "[$directory$git_branch$git_status]($style)$character";
-      add_newline = true;
+      # Ultra-minimal format
+      format = "$directory$git_branch$git_status$character";
+      add_newline = false;
       command_timeout = 200;
 
       character = {
-        success_symbol = "[❯](bold cyan)";
-        error_symbol = "[✗](bold cyan)";
+        success_symbol = "[>](${theme.colors.foreground})";
+        error_symbol = "[x](${theme.colors.red})";
       };
 
       directory = {
         truncation_length = 2;
-        truncation_symbol = "…/";
-        repo_root_style = "bold cyan";
-        repo_root_format = "[$repo_root]($repo_root_style)[$path]($style)[$read_only]($read_only_style) ";
+        truncation_symbol = "../";
+        style = "${theme.colors.foreground}";
+        repo_root_style = "${theme.colors.yellow}";
+        repo_root_format = "[$repo_root]($repo_root_style)[$path]($style) ";
       };
 
       git_branch = {
         format = "[$branch]($style) ";
-        style = "italic cyan";
+        style = "${theme.colors.comment}";
       };
 
       git_status = {
         format = "[$all_status]($style)";
-        style = "cyan";
-        ahead = "⇡\${count} ";
-        diverged = "⇕⇡\${ahead_count}⇣\${behind_count} ";
-        behind = "⇣\${count} ";
-        conflicted = " ";
-        up_to_date = " ";
-        untracked = "? ";
-        modified = " ";
+        style = "${theme.colors.comment}";
+        ahead = "+";
+        behind = "-";
+        diverged = "+-";
+        conflicted = "!";
+        up_to_date = "";
+        untracked = "?";
+        modified = "*";
         stashed = "";
-        staged = "";
+        staged = "+";
         renamed = "";
         deleted = "";
       };
 
-      # Keep nix_shell for NixOS development
       nix_shell = {
-        symbol = " ";
-        format = "via [$symbol$state]($style) ";
+        symbol = "nix ";
+        format = "[$symbol]($style)";
+        style = "${theme.colors.comment}";
       };
 
-      # Disable package module (minimalist)
-      package = {
-        disabled = true;
-      };
+      package.disabled = true;
     };
   };
 
@@ -224,17 +222,17 @@ in
     enableZshIntegration = true;
   };
 
-  # Bat (cat replacement) - Ristretto theme
+  # Bat (cat replacement) - theme from theme.nix
   programs.bat = {
     enable = true;
     config = {
-      theme = "ristretto";
-      style = "numbers,changes,header";
+      theme = "current";
+      style = "numbers,changes";
     };
   };
 
-  # Ristretto theme for bat (Monokai Pro Ristretto - from theme.nix)
-  home.file.".config/bat/themes/ristretto.tmTheme".text = ''
+  # Bat theme (from theme.nix)
+  home.file.".config/bat/themes/current.tmTheme".text = ''
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
     <plist version="1.0">

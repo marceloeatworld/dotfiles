@@ -46,9 +46,9 @@ in
       notification-warning-bg = theme.colors.yellow;
       notification-warning-fg = theme.colors.background;
 
-      # Highlighting
-      highlight-color = "rgba(249, 204, 108, 0.5)";  # Yellow highlight
-      highlight-active-color = "rgba(133, 218, 204, 0.5)";  # Cyan active highlight
+      # Highlighting (uses theme accent)
+      highlight-color = theme.colors.yellow;
+      highlight-active-color = theme.colors.cyan;
 
       # Completion
       completion-bg = theme.colors.surface;

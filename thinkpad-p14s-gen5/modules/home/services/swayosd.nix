@@ -15,52 +15,46 @@ in
     max_volume = 100
   '';
 
-  # SwayOSD style (Ristretto theme)
+  # SwayOSD style - minimal
   xdg.configFile."swayosd/style.css".text = ''
-    @define-color background-color ${theme.colors.background};
-    @define-color border-color ${theme.colors.foregroundDim};
-    @define-color label ${theme.colors.foregroundDim};
-    @define-color image ${theme.colors.foregroundDim};
-    @define-color progress ${theme.colors.foregroundDim};
-
     window {
-      background: alpha(@background-color, 0.95);
-      border-radius: 12px;
-      border: 2px solid @border-color;
-      padding: 20px;
+      background: ${theme.colors.background};
+      border-radius: 0;
+      border: 1px solid ${theme.colors.border};
+      padding: 12px;
     }
 
     #container {
-      margin: 10px;
+      margin: 6px;
     }
 
     progressbar {
-      min-height: 10px;
-      border-radius: 5px;
+      min-height: 6px;
+      border-radius: 0;
       background: transparent;
     }
 
     trough {
-      min-height: 10px;
-      border-radius: 5px;
+      min-height: 6px;
+      border-radius: 0;
       background: ${theme.colors.surface};
     }
 
     progress {
-      min-height: 10px;
-      border-radius: 5px;
-      background: @progress;
+      min-height: 6px;
+      border-radius: 0;
+      background: ${theme.colors.foreground};
     }
 
     label {
       font-family: "${theme.fonts.mono}";
-      font-size: 16px;
-      color: @label;
-      margin: 5px;
+      font-size: 12px;
+      color: ${theme.colors.foreground};
+      margin: 4px;
     }
 
     image {
-      color: @image;
+      color: ${theme.colors.foreground};
     }
   '';
 }

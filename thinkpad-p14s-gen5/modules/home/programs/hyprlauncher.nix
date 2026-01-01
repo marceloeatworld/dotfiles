@@ -15,33 +15,27 @@ in
   ];
 
   # Hyprtoolkit theme configuration (used by hyprlauncher and other hypr apps)
-  # Monokai Pro Ristretto - matching btop, ghostty, waybar
   xdg.configFile."hypr/hyprtoolkit.conf".text = ''
-    # Hyprtoolkit Theme - Monokai Pro Ristretto
+    # Hyprtoolkit Theme - from theme.nix
 
-    # Background colors (from btop main_bg)
     background = ${toHyprColor theme.colors.background}
     base = ${toHyprColor theme.colors.background}
-    alternate_base = 0xFF3d2f2a
+    alternate_base = ${toHyprColor theme.colors.surface}
 
-    # Text colors (from btop main_fg)
     text = ${toHyprColor theme.colors.foreground}
     bright_text = ${toHyprColor theme.colors.brightWhite}
 
-    # Accent colors - Ristretto yellow/gold
     accent = ${toHyprColor theme.colors.yellow}
     accent_secondary = ${toHyprColor theme.colors.green}
 
-    # Typography (matching GTK theme)
-    font_family = Noto Sans
-    font_family_monospace = CaskaydiaMono Nerd Font
-    font_size = 12
-    h1_size = 18
-    h2_size = 15
-    h3_size = 13
+    font_family = ${theme.fonts.sans}
+    font_family_monospace = ${theme.fonts.mono}
+    font_size = 11
+    h1_size = 16
+    h2_size = 14
+    h3_size = 12
     small_font_size = 10
 
-    # Icons (matching GTK icon theme)
     icon_theme = Yaru-yellow
   '';
 

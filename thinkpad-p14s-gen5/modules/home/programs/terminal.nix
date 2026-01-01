@@ -18,9 +18,9 @@ in
       font-family = theme.fonts.mono;
       font-size = 10;
 
-      # Window
-      window-padding-x = 14;
-      window-padding-y = 14;
+      # Window - minimal padding
+      window-padding-x = 4;
+      window-padding-y = 4;
       window-decoration = false;
       background-opacity = 1;
 
@@ -28,30 +28,30 @@ in
       cursor-style = "block";
       cursor-style-blink = false;
 
-      # Theme - Monokai Pro Ristretto (from theme.nix)
+      # Theme colors from config/theme.nix
       background = builtins.substring 1 6 theme.colors.background;
       foreground = builtins.substring 1 6 theme.colors.foreground;
-      selection-background = "3d2f2a";
+      selection-background = builtins.substring 1 6 theme.colors.selection;
       selection-foreground = builtins.substring 1 6 theme.colors.foreground;
       cursor-color = builtins.substring 1 6 theme.colors.yellow;
 
-      # Monokai Pro Ristretto palette (from theme.nix)
+      # Terminal palette from theme
       palette = [
         "0=${theme.colors.brightBlack}"   # black
         "1=${theme.colors.red}"           # red
         "2=${theme.colors.green}"         # green
         "3=${theme.colors.yellow}"        # yellow
-        "4=${theme.colors.orange}"        # blue (orange in Ristretto)
+        "4=${theme.colors.blue}"          # blue
         "5=${theme.colors.magenta}"       # magenta
         "6=${theme.colors.cyan}"          # cyan
         "7=${theme.colors.foreground}"    # white
-        "8=#948a8b"                        # bright black
-        "9=#ff8297"                        # bright red
-        "10=#c8e292"                       # bright green
-        "11=#fcd675"                       # bright yellow
-        "12=#f8a788"                       # bright blue
-        "13=#bebffd"                       # bright magenta
-        "14=#9bf1e1"                       # bright cyan
+        "8=${theme.colors.comment}"       # bright black
+        "9=${theme.colors.red}"           # bright red
+        "10=${theme.colors.green}"        # bright green
+        "11=${theme.colors.yellow}"       # bright yellow
+        "12=${theme.colors.blue}"         # bright blue
+        "13=${theme.colors.magenta}"      # bright magenta
+        "14=${theme.colors.cyan}"         # bright cyan
         "15=${theme.colors.brightWhite}"  # bright white
       ];
 
@@ -111,9 +111,9 @@ in
   programs.alacritty = {
     enable = true;
     settings = {
-      # Window
+      # Window - minimal padding
       window = {
-        padding = { x = 14; y = 14; };
+        padding = { x = 4; y = 4; };
         decorations = "none";
         opacity = 1;
       };
@@ -145,7 +145,7 @@ in
         duration = 0;
       };
 
-      # Monokai Pro Ristretto color scheme (matching Ghostty, btop, system)
+      # Colors from theme.nix
       colors = {
         primary = {
           background = theme.colors.background;
@@ -157,26 +157,26 @@ in
         };
         selection = {
           text = theme.colors.foreground;
-          background = "#3d2f2a";
+          background = theme.colors.selection;
         };
         normal = {
-          black = theme.colors.comment;
+          black = theme.colors.brightBlack;
           red = theme.colors.red;
           green = theme.colors.green;
           yellow = theme.colors.yellow;
-          blue = "#f38d70";
+          blue = theme.colors.blue;
           magenta = theme.colors.magenta;
           cyan = theme.colors.cyan;
           white = theme.colors.foreground;
         };
         bright = {
-          black = "#948a8b";
-          red = "#ff8297";
-          green = "#c8e292";
-          yellow = "#fcd675";
-          blue = "#f8a788";
-          magenta = "#bebffd";
-          cyan = "#9bf1e1";
+          black = theme.colors.comment;
+          red = theme.colors.red;
+          green = theme.colors.green;
+          yellow = theme.colors.yellow;
+          blue = theme.colors.blue;
+          magenta = theme.colors.magenta;
+          cyan = theme.colors.cyan;
           white = theme.colors.brightWhite;
         };
       };

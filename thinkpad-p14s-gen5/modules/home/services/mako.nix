@@ -10,82 +10,52 @@ in
 
     # Use settings instead of deprecated extraConfig (NixOS 25.05)
     settings = {
-      # Ristretto theme - Global settings
+      # Ultra-minimal old-school style
       background-color = theme.colors.background;
       text-color = theme.colors.foreground;
-      border-color = theme.colors.foreground;
+      border-color = theme.colors.border;
       progress-color = "over ${theme.colors.surface}";
 
-      border-radius = 8;
-      border-size = 2;
-      width = 400;
-      height = 200;
-      max-visible = 5;
-      margin = "10";
-      padding = "15";
+      # Sharp corners, thin border
+      border-radius = 0;
+      border-size = 1;
+      width = 350;
+      height = 150;
+      max-visible = 3;
+      margin = "8";
+      padding = "12";
 
-      default-timeout = 5000;
+      default-timeout = 4000;
       ignore-timeout = true;
 
-      font = "${theme.fonts.mono} ${toString theme.fonts.monoSize}";
+      font = "${theme.fonts.mono} 10";
 
-      # Icons
+      # Minimal icons
       icons = true;
-      max-icon-size = 64;
+      max-icon-size = 32;
       icon-location = "left";
 
-      # Actions (buttons in notifications)
       actions = true;
-
-      # Grouping similar notifications
       group-by = "app-name";
+      format = "%s\\n%b";
 
-      # Format with app name and body
-      format = "<b>%s</b>\\n%b";
-
-      # Layer and anchor position
       layer = "overlay";
       anchor = "top-right";
 
-      # Urgency-specific settings
+      # All urgencies same minimal border
       "urgency=low" = {
-        border-color = theme.colors.cyan;
-        default-timeout = 3000;
-      };
-
-      "urgency=normal" = {
-        border-color = theme.colors.foreground;
+        default-timeout = 2000;
       };
 
       "urgency=high" = {
-        border-color = theme.colors.red;
+        border-color = theme.colors.foreground;
         default-timeout = 0;
       };
 
-      # App-specific overrides
-      "app-name=Spotify" = {
-        border-color = theme.colors.green;
-        default-timeout = 3000;
-      };
-
-      "app-name=Discord" = {
-        border-color = theme.colors.green;
-      };
-
-      "app-name=Brave" = {
-        border-color = theme.colors.orange;
-      };
-
-      # Volume/brightness notifications (from SwayOSD) - shorter timeout
+      # SwayOSD - quick dismiss
       "app-name=SwayOSD" = {
-        default-timeout = 1500;
+        default-timeout = 1000;
         group-by = "app-name";
-      };
-
-      # Screenshot notifications
-      "summary~=Screenshot" = {
-        border-color = theme.colors.yellow;
-        default-timeout = 4000;
       };
     };
   };

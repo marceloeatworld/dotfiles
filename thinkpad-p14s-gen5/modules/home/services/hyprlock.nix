@@ -49,94 +49,55 @@ in
     }
   '';
 
-  # Hyprlock configuration with Ristretto theme
+  # Hyprlock configuration - Ultra minimal
   xdg.configFile."hypr/hyprlock.conf".text = ''
-    # Hyprlock Configuration - Ristretto Theme
+    # Hyprlock - Minimal
 
     general {
-      disable_loading_bar = false
+      disable_loading_bar = true
       hide_cursor = true
       grace = 0
-      no_fade_in = false
-      no_fade_out = false
+      no_fade_in = true
+      no_fade_out = true
     }
 
     background {
       monitor =
-      path = screenshot
-      blur_passes = 3
-      blur_size = 8
-      noise = 0.0117
-      contrast = 0.8916
-      brightness = 0.7
-      vibrancy = 0.1696
-      vibrancy_darkness = 0.0
+      color = rgba(10, 10, 10, 1.0)
     }
 
-    # Clock
+    # Clock only
     label {
       monitor =
       text = $TIME
-      color = rgba(230, 217, 219, 1.0)
-      font_size = 90
-      font_family = ${theme.fonts.mono}
-      position = 0, 200
-      halign = center
-      valign = center
-    }
-
-    # Date
-    label {
-      monitor =
-      text = cmd[update:3600000] date +"%A, %d %B %Y"
-      color = rgba(230, 217, 219, 0.8)
-      font_size = 24
+      color = rgba(200, 200, 200, 1.0)
+      font_size = 72
       font_family = ${theme.fonts.mono}
       position = 0, 100
       halign = center
       valign = center
     }
 
-    # User greeting (Ristretto yellow)
-    label {
-      monitor =
-      text = Hi, $USER
-      color = rgba(249, 204, 108, 1.0)
-      font_size = 20
-      font_family = ${theme.fonts.mono}
-      position = 0, -50
-      halign = center
-      valign = center
-    }
-
-    # Password input
+    # Password input - minimal
     input-field {
       monitor =
-      size = 300, 50
-      outline_thickness = 3
-      dots_size = 0.33
-      dots_spacing = 0.15
+      size = 250, 40
+      outline_thickness = 1
+      dots_size = 0.25
+      dots_spacing = 0.2
       dots_center = true
-      dots_rounding = -1
-      outer_color = rgba(64, 62, 65, 1)
-      inner_color = rgba(44, 37, 37, 0.9)
-      font_color = rgba(230, 217, 219, 1)
+      outer_color = rgba(51, 51, 51, 1)
+      inner_color = rgba(26, 26, 26, 1)
+      font_color = rgba(200, 200, 200, 1)
       fade_on_empty = false
-      fade_timeout = 1000
-      placeholder_text = <i>Password...</i>
+      placeholder_text =
       hide_input = false
-      rounding = 8
-      check_color = rgba(133, 218, 204, 1)
-      fail_color = rgba(253, 104, 131, 1)
-      fail_text = <i>$FAIL <b>($ATTEMPTS)</b></i>
-      fail_timeout = 2000
-      fail_transition = 300
-      capslock_color = rgba(249, 204, 108, 1)
-      numlock_color = -1
-      bothlock_color = -1
-      invert_numlock = false
-      swap_font_color = false
-      position = 0, -150
+      rounding = 0
+      check_color = rgba(200, 200, 200, 1)
+      fail_color = rgba(200, 200, 200, 1)
+      fail_text = $FAIL
+      capslock_color = rgba(184, 160, 112, 1)
+      position = 0, -50
       halign = center
       valign = center
     }
