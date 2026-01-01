@@ -16,8 +16,10 @@
     timeout = 3;
   };
 
-  # Latest kernel for best hardware support
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # Zen kernel - optimized for desktop/gaming with better interactivity
+  # Lower latency, better responsiveness, improved scheduler (BORE)
+  # Also potentially more stable with AMD GPU MES issues
+  boot.kernelPackages = pkgs.linuxPackages_zen;
 
   # Kernel parameters optimized for Ryzen 7 PRO 8840HS
   boot.kernelParams = [
@@ -41,6 +43,11 @@
     # Additional stability parameters for AMD display
     "amdgpu.sg_display=0"              # Fixes screen flickering
     "amdgpu.noretry=0"                 # Retry on timeout (default)
+
+    # MES (Micro Engine Scheduler) stability workarounds
+    # Fixes random freezes on RDNA3 GPUs (Radeon 780M)
+    "amdgpu.vm_update_mode=3"          # Force CPU for compute queue updates
+    "amdgpu.cwsr_enable=0"             # Reduce GPU context switching
 
     # Enable AMD SEV (Secure Encrypted Virtualization) if needed
     # "mem_encrypt=on"  # Uncomment for extra VM security

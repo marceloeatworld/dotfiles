@@ -530,90 +530,130 @@ let
   # VPN Status Script
   vpnStatusScript = pkgs.writeShellScriptBin "vpn-status-waybar" ''
     #!/usr/bin/env bash
-    # VPN Status Monitor: Detects Proton VPN connection status and country
+    # VPN Status Monitor: Detects any VPN connection (WireGuard, OpenVPN, etc.)
 
-    # Check if any Proton VPN connection is active in NetworkManager (use terse mode)
-    vpn_line=$(${pkgs.networkmanager}/bin/nmcli -t -f NAME,TYPE,DEVICE connection show --active | ${pkgs.gnugrep}/bin/grep -i "proton" || true)
+    # Method 1: Check for VPN/WireGuard/tun interfaces directly (most reliable)
+    vpn_interface=""
+    vpn_name=""
 
-    # Double check: verify the VPN interface actually exists and has an IP
-    if [ -n "$vpn_line" ]; then
-      # Extract fields from terse output (delimiter is :)
-      vpn_name=$(echo "$vpn_line" | cut -d: -f1)
-      device=$(echo "$vpn_line" | cut -d: -f3)
+    # Check for common VPN interface patterns using ip link (includes WireGuard interfaces)
+    for iface in $(${pkgs.iproute2}/bin/ip link show 2>/dev/null | ${pkgs.gnugrep}/bin/grep -E "^[0-9]+: (wg|tun|proton|vpn|nordlynx)" | ${pkgs.gawk}/bin/awk -F': ' '{print $2}' || true); do
+      # Verify interface has an IP
+      if ${pkgs.iproute2}/bin/ip addr show "$iface" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "inet "; then
+        vpn_interface="$iface"
+        break
+      fi
+    done
 
-      # Verify device exists and has an IP address
-      if ! ${pkgs.iproute2}/bin/ip addr show "$device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "inet "; then
-        # Device doesn't exist or has no IP - VPN is NOT really connected
-        vpn_line=""
+    # Method 2: Check NetworkManager for WireGuard devices (nmcli device shows wireguard type)
+    if [ -z "$vpn_interface" ]; then
+      wg_device=$(${pkgs.networkmanager}/bin/nmcli -t -f DEVICE,TYPE device status 2>/dev/null | ${pkgs.gnugrep}/bin/grep ":wireguard$" | cut -d: -f1 | head -1 || true)
+      if [ -n "$wg_device" ]; then
+        # Verify interface has an IP
+        if ${pkgs.iproute2}/bin/ip addr show "$wg_device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "inet "; then
+          vpn_interface="$wg_device"
+        fi
       fi
     fi
 
-    if [ -n "$vpn_line" ]; then
+    # Method 3: Check NetworkManager for VPN connections (wireguard, vpn, tun types)
+    if [ -z "$vpn_interface" ]; then
+      vpn_line=$(${pkgs.networkmanager}/bin/nmcli -t -f NAME,TYPE,DEVICE connection show --active | ${pkgs.gnugrep}/bin/grep -iE "(wireguard|vpn|tun|proton)" | head -1 || true)
+      if [ -n "$vpn_line" ]; then
+        vpn_name=$(echo "$vpn_line" | cut -d: -f1)
+        vpn_interface=$(echo "$vpn_line" | cut -d: -f3)
+        # Verify interface has an IP
+        if ! ${pkgs.iproute2}/bin/ip addr show "$vpn_interface" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "inet "; then
+          vpn_interface=""
+        fi
+      fi
+    fi
+
+    # Method 4: Check for any non-standard interface with a private IP (10.x, 172.16-31.x, or Proton's ranges)
+    if [ -z "$vpn_interface" ]; then
+      for iface in $(${pkgs.iproute2}/bin/ip -o addr show | ${pkgs.gnugrep}/bin/grep -E "inet (10\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.)" | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.gnugrep}/bin/grep -vE "^(docker|br-|veth|lo)" || true); do
+        # Skip known non-VPN interfaces
+        if [[ ! "$iface" =~ ^(wlp|enp|eth|wlan) ]]; then
+          vpn_interface="$iface"
+          break
+        fi
+      done
+    fi
+
+    # Set device variable for compatibility with rest of script
+    device="$vpn_interface"
+    vpn_line="$vpn_interface"
+
+    if [ -n "$vpn_interface" ]; then
       # VPN is connected
-
-      # Try to extract country from connection name
-      # Proton VPN format: "ProtonVPN CH-123" or "Proton VPN NL" or "ProtonVPN PT#20"
-      country=$(echo "$vpn_name" | ${pkgs.gnugrep}/bin/grep -oP '(?<=[A-Z]{2}[#-])?\K[A-Z]{2}(?=[#-]|$)' | head -1 || echo "?")
-
-      # Get detailed connection info using connection name
-      vpn_details=$(${pkgs.networkmanager}/bin/nmcli connection show "$vpn_name" 2>/dev/null)
-
-      # Extract VPN type (WireGuard, OpenVPN, etc.)
-      vpn_type=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "connection.type:" | ${pkgs.gawk}/bin/awk '{print $2}')
 
       # Get local VPN IP address
       local_ip=$(${pkgs.iproute2}/bin/ip addr show "$device" 2>/dev/null | ${pkgs.gnugrep}/bin/grep "inet " | ${pkgs.gawk}/bin/awk '{print $2}' | cut -d'/' -f1 || echo "N/A")
 
-      # Get VPN gateway
-      # WireGuard doesn't have a traditional gateway, so we check multiple sources:
-      # 1. Try IP4.GATEWAY first (OpenVPN, etc.)
-      gateway=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.GATEWAY:" | ${pkgs.gawk}/bin/awk '{print $2}')
+      # Try to get connection name from NetworkManager if not already set
+      if [ -z "$vpn_name" ]; then
+        vpn_name=$(${pkgs.networkmanager}/bin/nmcli -t -f NAME,DEVICE connection show --active | ${pkgs.gnugrep}/bin/grep ":$device$" | cut -d: -f1 || echo "$device")
+      fi
+      [ -z "$vpn_name" ] && vpn_name="$device"
 
-      # 2. If gateway is "--" or empty (WireGuard case), use DNS server as reference
-      if [ "$gateway" = "--" ] || [ -z "$gateway" ]; then
-        gateway=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.DNS" | ${pkgs.gawk}/bin/awk '{print $2}' | head -1)
-        if [ -z "$gateway" ]; then
-          gateway="N/A"
-        fi
+      # Try to extract country from interface name or connection name
+      # Proton VPN formats: "protonvpn-PT-12", "ProtonVPN CH-123", "wg-nl-123"
+      country=$(echo "$vpn_name $device" | ${pkgs.gnugrep}/bin/grep -oE '[^a-zA-Z]([A-Z]{2})[^a-zA-Z]' | ${pkgs.gnugrep}/bin/grep -oE '[A-Z]{2}' | head -1 || true)
+      [ -z "$country" ] && country="VPN"
+
+      # Determine VPN type from interface name
+      if [[ "$device" == wg* ]] || [[ "$device" == proton* ]]; then
+        vpn_type="WireGuard"
+      elif [[ "$device" == tun* ]]; then
+        vpn_type="OpenVPN"
+      else
+        vpn_type="VPN"
       fi
 
-      # Get public IP (with timeout to avoid hanging) - Using Cloudflare for privacy
-      public_ip=$(${pkgs.curl}/bin/curl -s --max-time 2 https://icanhazip.com 2>/dev/null || echo "N/A")
+      # Get VPN gateway from routing table
+      gateway=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gnugrep}/bin/grep "dev $device" | ${pkgs.gnugrep}/bin/grep -v "src" | ${pkgs.gawk}/bin/awk '{print $1}' | head -1 || echo "N/A")
+      [ "$gateway" = "default" ] && gateway=$(${pkgs.iproute2}/bin/ip route | ${pkgs.gnugrep}/bin/grep "dev $device" | ${pkgs.gawk}/bin/awk '/via/ {print $3}' | head -1 || echo "N/A")
 
-      # Get DNS servers
-      dns_servers=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "IP4.DNS" | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.coreutils}/bin/tr '\n' ', ' | ${pkgs.gnused}/bin/sed 's/,$//' || echo "N/A")
+      # Get public IP (with timeout to avoid hanging)
+      public_ip=$(${pkgs.curl}/bin/curl -s --max-time 3 https://icanhazip.com 2>/dev/null | ${pkgs.coreutils}/bin/tr -d '[:space:]' || echo "N/A")
 
-      # Get connection start time and calculate uptime
-      # Use connection.timestamp instead of GENERAL.STATE
-      timestamp=$(echo "$vpn_details" | ${pkgs.gnugrep}/bin/grep "^connection.timestamp:" | ${pkgs.gawk}/bin/awk '{print $2}')
-      if [ -n "$timestamp" ] && [ "$timestamp" != "0" ]; then
-        current_time=$(date +%s)
-        uptime_sec=$((current_time - timestamp))
-        if [ $uptime_sec -lt 60 ]; then
-          uptime="''${uptime_sec}s"
-        elif [ $uptime_sec -lt 3600 ]; then
-          uptime="$((uptime_sec / 60))m $((uptime_sec % 60))s"
-        else
-          uptime="$((uptime_sec / 3600))h $((uptime_sec % 3600 / 60))m"
+      # Get DNS servers from resolv.conf
+      dns_servers=$(${pkgs.gnugrep}/bin/grep "^nameserver" /etc/resolv.conf 2>/dev/null | ${pkgs.gawk}/bin/awk '{print $2}' | ${pkgs.coreutils}/bin/tr '\n' ', ' | ${pkgs.gnused}/bin/sed 's/,$//' || echo "N/A")
+
+      # Get interface uptime from /sys
+      uptime="N/A"
+      if [ -f "/sys/class/net/$device/statistics/tx_bytes" ]; then
+        # Interface exists, try to get creation time
+        iface_time=$(stat -c %Y "/sys/class/net/$device" 2>/dev/null || echo "0")
+        if [ "$iface_time" != "0" ]; then
+          current_time=$(date +%s)
+          uptime_sec=$((current_time - iface_time))
+          if [ $uptime_sec -lt 60 ]; then
+            uptime="''${uptime_sec}s"
+          elif [ $uptime_sec -lt 3600 ]; then
+            uptime="$((uptime_sec / 60))m"
+          else
+            uptime="$((uptime_sec / 3600))h $((uptime_sec % 3600 / 60))m"
+          fi
         fi
-      else
-        uptime="N/A"
       fi
 
       # Build detailed tooltip
       tooltip="┌─ 󰖂 VPN CONNECTED ─────"
       tooltip="$tooltip\n│"
-      tooltip="$tooltip\n│ 🌍 Country:  $country"
+      tooltip="$tooltip\n│ 🌍 Location: $country"
       tooltip="$tooltip\n│ 📡 Server:   $vpn_name"
       tooltip="$tooltip\n│ 🔒 Protocol: $vpn_type"
       tooltip="$tooltip\n│"
       tooltip="$tooltip\n│ 🖧  Device:   $device"
       tooltip="$tooltip\n│ 🏠 Local IP: $local_ip"
       tooltip="$tooltip\n│ 🌐 Public IP: $public_ip"
-      tooltip="$tooltip\n│ 🚪 Gateway:  $gateway"
+      if [ "$gateway" != "N/A" ] && [ -n "$gateway" ]; then
+        tooltip="$tooltip\n│ 🚪 Gateway:  $gateway"
+      fi
       tooltip="$tooltip\n│"
       tooltip="$tooltip\n│ 🕐 Uptime:   $uptime"
-      if [ "$dns_servers" != "N/A" ]; then
+      if [ "$dns_servers" != "N/A" ] && [ -n "$dns_servers" ]; then
         tooltip="$tooltip\n│ 🔍 DNS:      $dns_servers"
       fi
       tooltip="$tooltip\n└────────────────────────"
