@@ -11,7 +11,7 @@ Personal NixOS configurations with flakes and home-manager.
 - **Hardware:** AMD Ryzen 7 PRO 8840HS + Radeon 780M
 - **Storage:** 1TB NVMe (LUKS + Btrfs)
 - **RAM:** 32GB
-- **NixOS:** 25.05
+- **NixOS:** 25.11
 
 **Features:**
 - Hyprland tiling window manager
@@ -64,7 +64,7 @@ dotfiles/
 
 ## Key Technologies
 
-- **NixOS 25.05** - Declarative Linux distribution
+- **NixOS 25.11** - Declarative Linux distribution
 - **Flakes** - Reproducible builds with locked dependencies
 - **Home Manager** - Declarative user environment
 - **Disko** - Declarative disk partitioning
