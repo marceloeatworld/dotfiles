@@ -94,11 +94,11 @@
       valign = center
     }
 
-    # User greeting
+    # User greeting (Ristretto yellow)
     label {
       monitor =
       text = Hi, $USER
-      color = rgba(250, 189, 47, 1.0)
+      color = rgba(249, 204, 108, 1.0)
       font_size = 20
       font_family = JetBrainsMono Nerd Font
       position = 0, -50

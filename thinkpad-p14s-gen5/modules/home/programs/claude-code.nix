@@ -17,45 +17,73 @@ let
     import json
     from pathlib import Path
 
-    # Sensitive file patterns to block
-    SENSITIVE_PATTERNS = {
-        '.env', '.pem', '.key', '.credential', '.token',
-        'credentials.json', 'service-account.json',
+    # Sensitive file extensions (without dot)
+    SENSITIVE_EXTENSIONS = frozenset({
+        'pem', 'key', 'p12', 'pfx', 'crt', 'cer',
+        'keystore', 'jks', 'gpg', 'asc'
+    })
+
+    # Sensitive file names (exact match)
+    SENSITIVE_NAMES = frozenset({
+        '.env', '.env.local', '.env.production', '.env.development',
+        'credentials.json', 'service-account.json', 'secrets.json',
         'id_rsa', 'id_ed25519', 'id_dsa', 'id_ecdsa',
-        '.p12', '.pfx', '.keystore', '.jks'
-    }
+        'id_rsa.pub', 'id_ed25519.pub', 'id_dsa.pub', 'id_ecdsa.pub',
+        'known_hosts', 'authorized_keys', 'config',
+        '.netrc', '.npmrc', '.pypirc', '.docker/config.json',
+        'htpasswd', 'shadow', 'passwd'
+    })
+
+    # Sensitive file name patterns (startswith)
+    SENSITIVE_PREFIXES = ('.env', 'secret', 'credential', 'token', 'password', 'apikey')
 
     # Sensitive directories to block
-    SENSITIVE_DIRS = {'.ssh', '.gnupg', '.aws', '.kube', 'secrets', 'credentials', '.password-store'}
+    SENSITIVE_DIRS = frozenset({
+        '.ssh', '.gnupg', '.aws', '.kube', '.docker',
+        'secrets', 'credentials', '.password-store',
+        '.local/share/keyrings', 'private'
+    })
+
+    def is_sensitive(file_path: Path) -> str | None:
+        """Check if file is sensitive. Returns reason or None."""
+        name = file_path.name.lower()
+        suffix = file_path.suffix.lstrip('.').lower()
+        parts = set(file_path.parts)
+
+        # Check directories
+        if blocked := SENSITIVE_DIRS & parts:
+            return f"directory '{next(iter(blocked))}/'"
+
+        # Check exact file names
+        if name in SENSITIVE_NAMES or file_path.name in SENSITIVE_NAMES:
+            return f"file '{file_path.name}'"
+
+        # Check extensions
+        if suffix in SENSITIVE_EXTENSIONS:
+            return f"extension '.{suffix}'"
+
+        # Check prefixes (e.g., .env.anything, secret_key.txt)
+        if any(name.startswith(p) for p in SENSITIVE_PREFIXES):
+            return f"pattern '{name}'"
+
+        return None
 
     def main():
         try:
             data = json.load(sys.stdin)
-            tool_input = data.get('tool_input', {})
-            file_path_str = tool_input.get('file_path')
+            file_path_str = data.get('tool_input', {}).get('file_path')
 
             if not file_path_str:
                 sys.exit(0)
 
-            file_path = Path(file_path_str)
-
-            # Block sensitive directories
-            for sensitive_dir in SENSITIVE_DIRS:
-                if sensitive_dir in file_path.parts:
-                    sys.stderr.write(
-                        f"SECURITY_POLICY_VIOLATION: Access to {sensitive_dir}/ directory blocked\n"
-                    )
-                    sys.exit(2)
-
-            # Block sensitive files by extension or name
-            if file_path.suffix.lstrip('.') in SENSITIVE_PATTERNS or file_path.name in SENSITIVE_PATTERNS:
-                sys.stderr.write(
-                    f"SECURITY_POLICY_VIOLATION: Access to sensitive file '{file_path.name}' blocked\n"
-                )
+            if reason := is_sensitive(Path(file_path_str)):
+                sys.stderr.write(f"SECURITY_POLICY_VIOLATION: Access to {reason} blocked\n")
                 sys.exit(2)
 
             sys.exit(0)
 
+        except json.JSONDecodeError:
+            sys.exit(0)  # Empty input, allow
         except Exception as e:
             sys.stderr.write(f"Hook error: {e}\n")
             sys.exit(1)
@@ -68,7 +96,8 @@ let
   settingsJson = builtins.toJSON {
     env = {
       CLAUDE_CODE_MAX_OUTPUT_TOKENS = "64000";
-      DISABLE_AUTOUPDATER = "1";  # Managed by Nix, no auto-updates needed
+      # Note: Auto-updater is automatically disabled on NixOS (read-only /nix/store)
+      # Updates are handled via: nix flake update && rebuild
     };
     permissions = {
       allow = [

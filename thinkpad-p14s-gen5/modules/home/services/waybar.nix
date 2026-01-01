@@ -1363,14 +1363,14 @@ in
 
       #workspaces button.active {
         background: #f9cc6c;
-        color: #2c2525;
+        color: #2c2421;
         border-bottom: 2px solid #f9cc6c;
         font-weight: bold;
       }
 
       #workspaces button.urgent {
         background: #fd6883;
-        color: #2c2525;
+        color: #2c2421;
         border-bottom: 2px solid #fd6883;
       }
 

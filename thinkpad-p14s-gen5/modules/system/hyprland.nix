@@ -2,8 +2,7 @@
 { pkgs, ... }:
 
 {
-  # Enable 32-bit graphics support (required for Steam and 32-bit games)
-  hardware.graphics.enable32Bit = true;
+  # NOTE: hardware.graphics.enable32Bit is in hardware-configuration.nix
 
   # Enable Hyprland with UWSM (recommended for NixOS 25.11)
   # Using nixpkgs version for stability and pre-compiled binaries

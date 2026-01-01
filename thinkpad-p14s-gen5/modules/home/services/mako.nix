@@ -8,7 +8,7 @@
     # Use settings instead of deprecated extraConfig (NixOS 25.05)
     settings = {
       # Ristretto theme - Global settings
-      background-color = "#2c2525";
+      background-color = "#2c2421";
       text-color = "#e6d9db";
       border-color = "#e6d9db";
       progress-color = "over #403e41";

@@ -61,6 +61,13 @@
               inherit (prev) lib fetchurl vscode;
             };
           })
+          # Claude Code Latest - Always use latest from npm (official Anthropic source)
+          # Update: overlays/claude-code-latest.nix (version + hash)
+          (final: prev: {
+            claude-code = import ./overlays/claude-code-latest.nix {
+              inherit (prev) lib fetchurl claude-code;
+            };
+          })
         ];
       };
 

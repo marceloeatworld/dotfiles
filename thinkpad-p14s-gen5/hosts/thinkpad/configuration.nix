@@ -49,16 +49,13 @@
     "qtwebengine-5.15.19"
   ];
 
-  # System packages
+  # System packages (minimal - user tools are in home-manager)
   environment.systemPackages = with pkgs; [
-    vim
-    wget
-    curl
-    git
-    htop
-    neofetch
-    usbutils
-    pciutils
+    git        # Required for flakes and system scripts
+    usbutils   # lsusb - hardware debugging
+    pciutils   # lspci - hardware debugging
+    # NOTE: vim/htop/neofetch removed - use nvim/btop/fastfetch via home-manager
+    # NOTE: wget/curl removed - installed via home-manager (home.nix)
   ];
 
   # Enable nix-ld for running unpatched dynamic binaries

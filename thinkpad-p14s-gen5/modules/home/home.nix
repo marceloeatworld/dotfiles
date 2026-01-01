@@ -29,6 +29,7 @@
     ./programs/nvim.nix           # Neovim with LazyVim
     ./programs/git.nix            # Git + delta diff viewer
     ./programs/development.nix    # VS Code, languages, tools
+    ./programs/claude-code.nix    # Claude Code AI assistant
 
     # ── Applications ──
     ./programs/browsers.nix       # Brave with Wayland flags
@@ -42,6 +43,9 @@
     # ── Communication ──
     ./programs/teamspeak.nix      # TeamSpeak 6
     ./programs/protonvpn.nix      # ProtonVPN GUI
+
+    # ── Gaming ──
+    ./programs/mangohud.nix       # In-game GPU/CPU/FPS overlay
 
     # ── Utilities ──
     ./programs/windows-vm.nix     # Windows 11 VM (Docker + RDP)

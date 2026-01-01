@@ -89,8 +89,5 @@
     hashcat        # GPU-accelerated password cracker
   ]);
 
-  # Enable OpenCL for AMD GPU (Radeon 780M) - Required for hashcat GPU acceleration
-  hardware.graphics.extraPackages = with pkgs; [
-    rocmPackages.clr.icd      # ROCm OpenCL ICD for AMD GPUs
-  ];
+  # NOTE: ROCm OpenCL for hashcat GPU is configured in amd-optimizations.nix
 }

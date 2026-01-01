@@ -14,7 +14,7 @@
 
   # SwayOSD style (Ristretto theme)
   xdg.configFile."swayosd/style.css".text = ''
-    @define-color background-color #2c2525;
+    @define-color background-color #2c2421;
     @define-color border-color #c3b7b8;
     @define-color label #c3b7b8;
     @define-color image #c3b7b8;
