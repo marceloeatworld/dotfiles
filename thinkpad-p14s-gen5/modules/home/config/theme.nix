@@ -61,33 +61,34 @@ let
 
     # ── Neobrutalist ───────────────────────────────────────────────────────
     # Ultra-minimal old-school terminal aesthetic
-    # Muted colors, functional for terminal, minimal for UI
+    # Eye-comfort optimized: dark gray instead of pure black
+    # Based on research: reduces eye strain while maintaining minimal aesthetic
     neobrutalist = {
       name = "Neobrutalist";
       description = "Ultra-minimal old-school";
       icon = "▪";
       colors = {
-        # Base - Pure black
-        background = "#0a0a0a";      # Near black
-        backgroundAlt = "#111111";   # Slightly lighter
-        surface = "#1a1a1a";         # Surface
-        foreground = "#c8c8c8";      # Soft white (not harsh)
-        foregroundDim = "#666666";   # Dim gray
-        # Accents - Muted but functional for terminal
-        red = "#b36060";             # Muted red (errors)
-        orange = "#a08060";          # Muted orange
-        yellow = "#b8a060";          # Muted gold (primary accent)
-        green = "#70a070";           # Muted green (success)
-        cyan = "#6090a0";            # Muted cyan
-        blue = "#6080a0";            # Muted blue
-        magenta = "#906090";         # Muted magenta
-        # UI - Minimal
-        border = "#333333";          # Dark border
-        selection = "#222222";       # Subtle selection
-        comment = "#555555";         # Dim comment
+        # Base - Eye-comfort dark grays (not pure black)
+        background = "#1e1e1e";      # VS Code dark standard - proven comfortable
+        backgroundAlt = "#252526";   # Slightly lighter for contrast
+        surface = "#2d2d30";         # Surface/panels
+        foreground = "#d4d4d4";      # Soft white (easier on eyes than pure white)
+        foregroundDim = "#808080";   # Dim gray (more visible)
+        # Accents - Slightly desaturated for dark mode comfort
+        red = "#c47070";             # Muted red (errors) - slightly brighter
+        orange = "#b89070";          # Muted orange
+        yellow = "#c8b070";          # Muted gold (primary accent)
+        green = "#80b080";           # Muted green (success)
+        cyan = "#70a0b0";            # Muted cyan
+        blue = "#7090b0";            # Muted blue
+        magenta = "#a070a0";         # Muted magenta
+        # UI - Minimal but visible
+        border = "#3e3e42";          # Visible border (VS Code style)
+        selection = "#264f78";       # Blue-tinted selection (VS Code)
+        comment = "#6a9955";         # Green-tinted comment (VS Code)
         # Terminal
-        brightBlack = "#444444";
-        brightWhite = "#e0e0e0";
+        brightBlack = "#555555";
+        brightWhite = "#e8e8e8";
       };
       fonts = {
         mono = "JetBrainsMono Nerd Font";
