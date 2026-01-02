@@ -42,7 +42,10 @@
 
                 logger "VPN-DNS-SWITCH: Configured VPN DNS: $VPN_DNS"
 
-                # Notify Waybar via systemd user service (clean approach)
+                # Notify Waybar - multiple methods for reliability
+                # Method 1: Direct pkill as user (most reliable)
+                su - marcelo -c 'pkill -RTMIN+8 waybar' 2>/dev/null || true
+                # Method 2: Systemd user service as fallback
                 systemctl --machine=marcelo@.host --user start waybar-vpn-refresh.service 2>/dev/null || true
               else
                 logger "VPN-DNS-SWITCH: WARNING - No DNS from VPN, keeping dnscrypt-proxy active"
@@ -81,7 +84,10 @@
 
               logger "VPN-DNS-SWITCH: Restored Quad9 DNS (127.0.0.1)"
 
-              # Notify Waybar via systemd user service (clean approach)
+              # Notify Waybar - multiple methods for reliability
+              # Method 1: Direct pkill as user (most reliable)
+              su - marcelo -c 'pkill -RTMIN+8 waybar' 2>/dev/null || true
+              # Method 2: Systemd user service as fallback
               systemctl --machine=marcelo@.host --user start waybar-vpn-refresh.service 2>/dev/null || true
             fi
             ;;

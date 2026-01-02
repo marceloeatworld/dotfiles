@@ -360,7 +360,7 @@ in
         "custom/vpn" = {
           exec = "~/.config/waybar/scripts/vpn-status.sh";
           return-type = "json";
-          interval = 2;  # Update every 2 seconds for faster detection
+          interval = 1;  # Update every 1 second for instant detection
           format = "{}";
           tooltip = true;
           on-click = "protonvpn-app";  # Open Proton VPN GUI

@@ -1,9 +1,28 @@
 #!/usr/bin/env bash
 # VPN Status Monitor: Detects any VPN connection (WireGuard, OpenVPN, etc.)
 # Optimized: Public IP fetched in background, cached for 60s
+# Fixed: Clear IP cache on VPN state change for accurate display
 
 PUBLIC_IP_CACHE="$HOME/.cache/vpn-public-ip"
+VPN_STATE_CACHE="$HOME/.cache/vpn-state"
 PUBLIC_IP_CACHE_DURATION=60  # seconds
+
+# Detect current VPN state first (before any caching logic)
+current_vpn_state="disconnected"
+for iface in $(ip link show 2>/dev/null | grep -oE "^[0-9]+: (wg|tun|proton|vpn|nordlynx)[^:@]*" | awk '{print $2}' || true); do
+  if ip addr show "$iface" 2>/dev/null | grep -q "inet "; then
+    current_vpn_state="connected"
+    break
+  fi
+done
+
+# Check if VPN state changed - if so, invalidate IP cache
+previous_state=$(cat "$VPN_STATE_CACHE" 2>/dev/null || echo "unknown")
+if [ "$current_vpn_state" != "$previous_state" ]; then
+  # State changed! Clear caches to force refresh
+  rm -f "$PUBLIC_IP_CACHE" 2>/dev/null
+  echo "$current_vpn_state" > "$VPN_STATE_CACHE"
+fi
 
 # Function to get cached public IP or fetch in background
 get_public_ip() {
