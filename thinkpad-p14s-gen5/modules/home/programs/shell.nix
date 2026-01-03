@@ -41,6 +41,63 @@ in
       vim = "nvim";
       ".." = "cd ..";
       "..." = "cd ../..";
+      # Keybindings cheatsheet
+      keys = "cat << 'EOF'
+━━━━━━━━━━━━━━━ HYPRLAND ━━━━━━━━━━━━━━━
+Super+Enter     Terminal (Ghostty)
+Super+B         Browser (Brave)
+Super+E         File manager (Nemo)
+Super+D         App launcher
+Super+Q         Close window
+Super+F         Fullscreen
+Super+Space     Toggle floating
+Super+1-9       Workspace 1-9
+Super+S         Special workspace
+Super+Esc       Lock screen
+
+━━━━━━━━━━━━━━━ WINDOWS ━━━━━━━━━━━━━━━
+Super+H/J/K/L       Move focus
+Super+Shift+HJKL    Move window
+Super+Ctrl+HJKL     Resize window
+Super+Alt+H/L       Prev/next workspace
+Super+Tab           Cycle windows
+
+━━━━━━━━━━━━━━━ UTILS ━━━━━━━━━━━━━━━
+Super+V         Clipboard history
+Super+C         Color picker
+Super+N         Blue light filter
+Super+M         Battery mode
+Print           Screenshot (region)
+
+━━━━━━━━━━━━━━━ NEOVIM ━━━━━━━━━━━━━━━
+Space           Leader key
+Space ?         Show all keybinds
+Space e         File explorer
+Space ff        Find file
+Space fg        Grep search
+Space w         Save | Space q  Quit
+jk              Exit insert mode
+
+━━━━━━━━━━ NEOVIM NAVIGATION ━━━━━━━━━━
+gd  Definition    gr  References
+K   Hover docs    Space ca  Code action
+Space cr  Rename  Space cf  Format
+[d / ]d   Prev/next diagnostic
+s         Flash jump
+
+━━━━━━━━━━━━ NEOVIM GIT ━━━━━━━━━━━━
+Space gg  LazyGit    Space gd  Diff view
+Space gb  Line blame Space gs  Stage hunk
+[c / ]c   Prev/next git hunk
+
+━━━━━━━━━━━━ TERMINAL ━━━━━━━━━━━━
+rebuild   Rebuild NixOS
+update    Update system
+clean     Clean generations
+ll / la   List files
+z <dir>   Smart cd (zoxide)
+Ctrl+R    History search
+EOF";
     };
     history = {
       size = 10000;

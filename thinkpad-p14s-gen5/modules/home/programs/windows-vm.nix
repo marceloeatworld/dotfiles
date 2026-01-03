@@ -291,7 +291,7 @@ let
         /u:"$WIN_USER" \
         /p:"$WIN_PASS" \
         /v:127.0.0.1:3389 \
-        -grab-keyboard \
+        /kbd:layout:0x0000040c \
         /sound \
         /microphone \
         /clipboard \

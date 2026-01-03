@@ -179,6 +179,7 @@ let
       notify-send -t 3000 "Error" "TLP is not installed" -i "dialog-error"
     fi
   '';
+
 in
 {
   wayland.windowManager.hyprland = {

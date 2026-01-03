@@ -119,5 +119,8 @@
 
     # Documentation
     zeal              # Offline documentation browser (Dash compatible)
+
+    # Database clients
+    postgresql        # PostgreSQL client tools (psql, pg_dump, etc.)
   ];
 }

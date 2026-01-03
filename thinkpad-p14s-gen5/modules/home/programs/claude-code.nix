@@ -101,72 +101,45 @@ let
     };
     permissions = {
       allow = [
-        # System monitoring (safe, read-only)
-        "Bash(pgrep:*)"
-        "Bash(ip addr:*)"
-        "Bash(curl:*)"
-        "Bash(resolvectl status:*)"
-        "Bash(systemctl status:*)"
-        "Bash(journalctl:*)"
-        "Bash(ip route:*)"
-        "Bash(dmesg:*)"
-        "Bash(kill:*)"
-        # Web access
+        # Web documentation (read-only)
         "WebSearch"
         "WebFetch(domain:github.com)"
-        "WebFetch(domain:wiki.hypr.land)"
         "WebFetch(domain:wiki.hyprland.org)"
         "WebFetch(domain:wiki.nixos.org)"
-        "WebFetch(domain:deepwiki.com)"
         "WebFetch(domain:docs.anthropic.com)"
+        "WebFetch(domain:deepwiki.com)"
         "WebFetch(domain:discourse.nixos.org)"
-        "WebFetch(domain:coolify.io)"
-        "WebFetch(domain:developers.cloudflare.com)"
-        "WebFetch(domain:orm.drizzle.team)"
-        # Hyprland tools
+        # System info (read-only, no modification possible)
+        "Bash(pgrep:*)"
+        "Bash(ps:*)"
+        "Bash(ip addr:*)"
+        "Bash(ip route:*)"
+        "Bash(resolvectl status:*)"
+        "Bash(systemctl status:*)"
+        "Bash(systemctl list-timers:*)"
+        "Bash(journalctl:*)"
+        "Bash(dmesg:*)"
+        "Bash(printenv:*)"
+        "Bash(nmcli connection:*)"
+        # Hyprland (read config only)
         "Bash(hyprctl getoption:*)"
         "Bash(hyprctl options:*)"
-        "Bash(hyprctl keyword:*)"
         "Bash(hyprctl version:*)"
-        "Bash(hyprctl reload:*)"
-        # Nix tools
+        # Nix (read/check only)
         "Bash(nix-instantiate:*)"
         "Bash(nix flake check:*)"
-        "Bash(nix flake lock:*)"
         "Bash(nix search:*)"
-        # UWSM
+        "Bash(nix hash to-sri:*)"
+        # Git (fetch only, no push/commit)
+        "Bash(git fetch:*)"
+        "Bash(git status:*)"
+        "Bash(git log:*)"
+        "Bash(git diff:*)"
+        "Bash(git branch:*)"
+        # UWSM (read-only)
         "Bash(uwsm check:*)"
         "Bash(uwsm list:*)"
         "Bash(Hyprland --help)"
-        # Git (read operations)
-        "Bash(git fetch:*)"
-        "Bash(git mv:*)"
-        # Node/Bun tools
-        "Bash(mkdir:*)"
-        "Bash(find:*)"
-        "Bash(cat:*)"
-        "Bash(echo:*)"
-        "Bash(grep:*)"
-        "Bash(bun run typecheck:*)"
-        "Bash(bunx tsc:*)"
-        "Bash(npm run lint:*)"
-        "Bash(npx tsc:*)"
-        "Bash(bun run lint)"
-        "Bash(bun add:*)"
-        "Bash(npx tsx:*)"
-        # Cloudflare/Wrangler
-        "Bash(wrangler kv namespace create:*)"
-        "Bash(npx wrangler d1 list:*)"
-        "Bash(npx wrangler:*)"
-        "Bash(bun scripts/build-cloudflare.ts:*)"
-        "Bash(bunx wrangler deploy:*)"
-        "Bash(npx wrangler@3 pages deploy:*)"
-        "Bash(npx wrangler@3 d1 execute:*)"
-        "Bash(npx wrangler@3 deploy:*)"
-        "Bash(npx wrangler@3 secret put:*)"
-        "Bash(node scripts/generate-pbkdf2-hash.mjs:*)"
-        # Systemctl
-        "Bash(systemctl:*)"
       ];
       deny = [
         # Environment files (secrets)

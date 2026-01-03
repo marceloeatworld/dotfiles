@@ -1,13 +1,13 @@
 # Hyprpaper wallpaper configuration
-{ config, ... }:
+{ config, pkgs, lib, ... }:
 
 {
-  # Configure hyprpaper to use custom wallpaper
+  # Configure hyprpaper with simple wallpaper
   xdg.configFile."hypr/hyprpaper.conf".text = ''
-    # Preload the wallpaper
+    # Preload wallpaper
     preload = ${config.home.homeDirectory}/Pictures/image.jpeg
 
-    # Set the wallpaper for all monitors
+    # Set wallpaper for all monitors
     wallpaper = DP-1,${config.home.homeDirectory}/Pictures/image.jpeg
     wallpaper = HDMI-A-1,${config.home.homeDirectory}/Pictures/image.jpeg
     wallpaper = eDP-1,${config.home.homeDirectory}/Pictures/image.jpeg
@@ -15,10 +15,10 @@
     # Fallback for any other monitor
     wallpaper = ,${config.home.homeDirectory}/Pictures/image.jpeg
 
-    # Enable splash screen
+    # Disable splash
     splash = false
 
-    # Enable IPC
+    # Enable IPC for wallpaper switching
     ipc = on
   '';
 }

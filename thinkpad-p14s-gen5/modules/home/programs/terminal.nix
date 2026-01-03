@@ -64,7 +64,9 @@ in
       link-url = true;
 
       # Performance
-      gtk-single-instance = true;
+      # gtk-single-instance disabled - can cause blank windows and theme issues
+      # when spawning new terminals quickly
+      gtk-single-instance = false;
 
       # Bell - Ghostty uses just "bell" option
       # audible-bell and visual-bell are not valid options
