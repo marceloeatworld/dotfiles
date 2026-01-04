@@ -127,4 +127,10 @@
     enable = true;
     runOnMount = true;  # Only run when BitBox is plugged in (saves power)
   };
+
+  # RTL-SDR and SDR device support
+  # Udev rules allow non-root access to SDR dongles
+  # Blacklist DVB-T kernel module (conflicts with SDR use)
+  services.udev.packages = [ pkgs.rtl-sdr ];
+  boot.blacklistedKernelModules = [ "dvb_usb_rtl28xxu" ];
 }

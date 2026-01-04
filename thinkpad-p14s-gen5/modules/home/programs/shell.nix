@@ -3,8 +3,187 @@
 
 let
   theme = config.theme;
+
+  # Keybindings cheatsheet content
+  keysContent = ''
+━━━━━━━━━━━━━━━ HYPRLAND ━━━━━━━━━━━━━━━
+Super+Enter     Terminal (Ghostty)
+Super+B         Browser (Brave)
+Super+E         File manager (Nemo)
+Super+D         App launcher
+Super+A         Audio control panel
+Super+Q         Close window
+
+━━━━━━━━━━━━━ WINDOWS ━━━━━━━━━━━━━
+Super+F         Fullscreen
+Super+Shift+F   Fullscreen (keep bar)
+Super+Space     Toggle floating
+Super+P         Pin (all workspaces)
+Super+T         Toggle split (H/V)
+Super+H/J/K/L       Move focus
+Super+Shift+HJKL    Move window
+Super+Ctrl+HJKL     Resize window
+Super+Mouse L       Move window (drag)
+Super+Mouse R       Resize window (drag)
+
+━━━━━━━━━━━━ WORKSPACES ━━━━━━━━━━━━
+Super+1-9/0     Workspace 1-10
+Super+Alt+H/L   Move to prev/next WS
+Super+S         Special workspace
+Super+Shift+S   Move to special WS
+
+━━━━━━━━━━━━━━━ UTILS ━━━━━━━━━━━━━━━
+Super+V         Clipboard history
+Super+Shift+V   Clear clipboard
+Super+C         Color picker
+Super+N         Blue light filter
+Super+Shift+N   Blue light off
+Super+M         Battery mode
+Super+Shift+M   Performance mode
+Super+Shift+R   Restart Waybar
+
+━━━━━━━━━━━━ SCREENSHOTS ━━━━━━━━━━━━
+Print           Region → clipboard
+Super+Print     Region → file
+Super+Shift+Print   Full screen → file
+
+━━━━━━━━━━━━━ SYSTEM ━━━━━━━━━━━━━
+Super+Esc       Lock screen
+Super+Shift+Esc Power off
+Super+Ctrl+Esc  Reboot
+
+━━━━━━━━━━━━━━━ NEOVIM ━━━━━━━━━━━━━━━
+Space           Leader key
+Space ?         Show all keybinds
+Space e         File explorer
+Space ff        Find file
+Space fg        Grep search
+Space w         Save | Space q  Quit
+jk              Exit insert mode
+
+━━━━━━━━━━ NEOVIM NAVIGATION ━━━━━━━━━━
+gd  Definition    gr  References
+K   Hover docs    Space ca  Code action
+Space cr  Rename  Space cf  Format
+[d / ]d   Prev/next diagnostic
+s         Flash jump
+
+━━━━━━━━━━━━ NEOVIM GIT ━━━━━━━━━━━━
+Space gg  LazyGit    Space gd  Diff view
+Space gb  Line blame Space gs  Stage hunk
+[c / ]c   Prev/next git hunk
+
+━━━━━━━━━━━━ TERMINAL ━━━━━━━━━━━━
+rebuild   Rebuild NixOS
+update    Update system
+clean     Clean generations
+ll / la   List files
+z <dir>   Smart cd (zoxide)
+Ctrl+R    History search
+
+━━━━━━━━━━━━━ VMs ━━━━━━━━━━━━━
+virt-manager           GUI VM manager
+virt-viewer <vm>       View VM display
+virsh list --all       List all VMs
+virsh start <vm>       Start VM
+virsh shutdown <vm>    Shutdown VM
+virsh snapshot-create-as <vm> <name>
+virsh snapshot-revert <vm> <name>
+
+VM Names: Windows-Dev, Windows-Malware
+
+━━━━━━━━━━ MALWARE VM ━━━━━━━━━━
+sudo malware-vm setup       Create networks
+malware-vm start            Start VM (isolated)
+malware-vm killswitch       Isolate network
+malware-vm network-on       Enable internet
+malware-vm verify           Check isolation
+malware-vm snapshot         Create snapshot
+malware-vm restore          Restore snapshot
+malware-vm status           Show VM status
+
+━━━━━━━━━━━━ DOCKER ━━━━━━━━━━━━
+docker ps              List containers
+docker compose up -d   Start services
+docker compose down    Stop services
+lazydocker             Docker TUI
+
+━━━━━━━━━━ SECURITY TOOLS ━━━━━━━━━━
+nmap -sV <ip>          Port scan + versions
+wireshark              Packet capture GUI
+aircrack-ng            WiFi audit suite
+hashcat                GPU password cracker
+john                   CPU password cracker
+sqlmap                 SQL injection
+hydra                  Brute force login
+ghidra                 Reverse engineering
+angr                   Binary analysis (Python)
+
+━━━━━━━━━━━━━ GIT ━━━━━━━━━━━━━
+gs         git status
+ga         git add
+gc         git commit
+gp         git push
+gl         git pull
+gd         git diff
+lazygit    Git TUI
+gitui      Git TUI (fast)
+
+━━━━━━━━━━━━ AI/LLM ━━━━━━━━━━━━
+ollama run <model>     Run local LLM
+ollama list            List models
+ollama pull <model>    Download model
+aichat                 CLI chat client
+
+━━━━━━━━━━━━━ NIX ━━━━━━━━━━━━━
+nix search nixpkgs <p> Search packages
+nix shell nixpkgs#<p>  Temp install
+nix run nixpkgs#<p>    Run without install
+nix flake update       Update inputs
+nix flake check        Validate flake
+nix-tree               Visualize deps
+
+━━━━━━━━━ MODERN CLI (Rust) ━━━━━━━━━
+eza / ll / la          Better ls
+bat                    Better cat (syntax)
+fd                     Better find
+rg                     Better grep (ripgrep)
+dust                   Better du (disk usage)
+duf                    Better df (filesystems)
+procs                  Better ps
+bottom                 Better top/htop
+zoxide / z             Smart cd
+
+━━━━━━━━━━━ DEBUGGING ━━━━━━━━━━━
+gdb                    GNU debugger
+gef                    GDB Enhanced Features
+valgrind               Memory leak detector
+strace                 System call tracer
+
+━━━━━━━━━━━━ SYSTEM ━━━━━━━━━━━━
+btop                   System monitor
+journalctl -xe         System logs
+systemctl status <s>   Service status
+systemctl --failed     Failed services
+tlp-stat               Battery/power info
+
+━━━━━━━━━━ SDR / RADIO ━━━━━━━━━━
+sdrpp                  SDR++ receiver (modern UI)
+gqrx                   GQRX receiver (GNU Radio)
+gnuradio-companion     GNU Radio flowgraph editor
+rtl_test               Test RTL-SDR dongle
+rtl_fm -f 98.5M -M fm  FM radio (98.5 MHz)
+rtl_tcp -a 127.0.0.1   Stream SDR over network
+kalibrate-rtl          Calibrate frequency offset
+audacity               Audio analysis
+'';
+
+  # Write content to a file and read it with cat
+  keysFile = pkgs.writeText "keys-cheatsheet" keysContent;
+  keys-script = pkgs.writeShellScriptBin "keys" "${pkgs.coreutils}/bin/cat ${keysFile}";
 in
 {
+  home.packages = [ keys-script ];
   programs.zsh = {
     enable = true;
     enableCompletion = true;
@@ -41,63 +220,6 @@ in
       vim = "nvim";
       ".." = "cd ..";
       "..." = "cd ../..";
-      # Keybindings cheatsheet
-      keys = "cat << 'EOF'
-━━━━━━━━━━━━━━━ HYPRLAND ━━━━━━━━━━━━━━━
-Super+Enter     Terminal (Ghostty)
-Super+B         Browser (Brave)
-Super+E         File manager (Nemo)
-Super+D         App launcher
-Super+Q         Close window
-Super+F         Fullscreen
-Super+Space     Toggle floating
-Super+1-9       Workspace 1-9
-Super+S         Special workspace
-Super+Esc       Lock screen
-
-━━━━━━━━━━━━━━━ WINDOWS ━━━━━━━━━━━━━━━
-Super+H/J/K/L       Move focus
-Super+Shift+HJKL    Move window
-Super+Ctrl+HJKL     Resize window
-Super+Alt+H/L       Prev/next workspace
-Super+Tab           Cycle windows
-
-━━━━━━━━━━━━━━━ UTILS ━━━━━━━━━━━━━━━
-Super+V         Clipboard history
-Super+C         Color picker
-Super+N         Blue light filter
-Super+M         Battery mode
-Print           Screenshot (region)
-
-━━━━━━━━━━━━━━━ NEOVIM ━━━━━━━━━━━━━━━
-Space           Leader key
-Space ?         Show all keybinds
-Space e         File explorer
-Space ff        Find file
-Space fg        Grep search
-Space w         Save | Space q  Quit
-jk              Exit insert mode
-
-━━━━━━━━━━ NEOVIM NAVIGATION ━━━━━━━━━━
-gd  Definition    gr  References
-K   Hover docs    Space ca  Code action
-Space cr  Rename  Space cf  Format
-[d / ]d   Prev/next diagnostic
-s         Flash jump
-
-━━━━━━━━━━━━ NEOVIM GIT ━━━━━━━━━━━━
-Space gg  LazyGit    Space gd  Diff view
-Space gb  Line blame Space gs  Stage hunk
-[c / ]c   Prev/next git hunk
-
-━━━━━━━━━━━━ TERMINAL ━━━━━━━━━━━━
-rebuild   Rebuild NixOS
-update    Update system
-clean     Clean generations
-ll / la   List files
-z <dir>   Smart cd (zoxide)
-Ctrl+R    History search
-EOF";
     };
     history = {
       size = 10000;

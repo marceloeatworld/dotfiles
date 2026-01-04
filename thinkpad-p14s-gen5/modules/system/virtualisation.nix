@@ -46,12 +46,22 @@
     qemu = {
       package = pkgs.qemu_kvm;
       runAsRoot = false;
-      swtpm.enable = true;
+      swtpm.enable = true;  # TPM emulation for Windows 11
+      # OVMF is now included by default in NixOS 25.11+
     };
   };
 
+  # Spice USB redirection (for USB passthrough to VMs)
+  virtualisation.spiceUSBRedirection.enable = true;
+
   # Virt-manager for GUI VM management
   programs.virt-manager.enable = true;
+
+  # Additional packages for VM management
+  environment.systemPackages = with pkgs; [
+    spice-gtk        # SPICE client (better clipboard, USB redirection)
+    virtio-win       # VirtIO drivers ISO for Windows (better performance)
+  ];
 
   # AppImage support (NixOS 24.11+)
   programs.appimage = {

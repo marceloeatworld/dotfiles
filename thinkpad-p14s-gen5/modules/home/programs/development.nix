@@ -54,6 +54,7 @@
     # C++ Development (complete modern toolchain)
     gcc              # GCC 14.3.0 - Primary C++ compiler with C++23 support
     gdb              # GDB debugger (essential for C++ debugging)
+    gef              # GDB Enhanced Features - better debugging UX
     gnumake          # Make build system
     cmake            # CMake build system
     ninja            # Ninja build system (faster than Make)

@@ -65,6 +65,13 @@
     cyberchef      # Cyber Swiss Army Knife - web-based data analysis
 
     # ============================================
+    # REVERSE ENGINEERING & BINARY ANALYSIS
+    # ============================================
+    python312Packages.angr      # Binary analysis platform (symbolic execution, CFG recovery)
+    python312Packages.angrcli   # Interactive angr CLI
+    python312Packages.angrop    # ROP gadget finder and chain builder
+
+    # ============================================
     # RECONNAISSANCE
     # ============================================
     whois          # Domain information lookup

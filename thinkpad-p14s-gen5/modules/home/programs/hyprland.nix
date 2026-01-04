@@ -344,7 +344,7 @@ in
         "$mod, F, fullscreen, 0"
         "$mod SHIFT, F, fullscreen, 1"
         "$mod, Space, togglefloating"
-        "$mod, P, pseudo"
+        "$mod, P, pin"  # Pin window (stays visible on all workspaces)
         "$mod, T, togglesplit"
         "$mod, left, movefocus, l"
         "$mod, right, movefocus, r"

@@ -141,8 +141,9 @@ in
     ./programs/mangohud.nix       # In-game GPU/CPU/FPS overlay
 
     # ── Utilities ──
-    ./programs/windows-vm.nix     # Windows 11 VM (Docker + RDP)
+    ./programs/malware-vm.nix     # Malware Analysis VM (libvirt + killswitch)
     ./programs/security-packages.nix # Security tools aliases & docs
+    ./programs/radio-sdr.nix      # SDR tools (SDR++, GQRX, rtl-sdr)
 
     # ── Services ──
     ./services/waybar.nix         # Status bar + custom scripts
