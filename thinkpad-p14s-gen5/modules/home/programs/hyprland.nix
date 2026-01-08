@@ -1,8 +1,11 @@
-# Hyprland - Using nixpkgs version (stable, pre-compiled)
+# Hyprland - Using nixpkgs-unstable for latest version
 { config, pkgs, pkgs-unstable, ... }:
 
 let
   theme = config.theme;
+
+  # Hyprland plugins from unstable
+  hyprlandPlugins = pkgs-unstable.hyprlandPlugins;
   # Helper to strip # from hex colors for Hyprland rgb() format
   stripHash = color: builtins.substring 1 6 color;
 in
@@ -318,12 +321,52 @@ in
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
-    # Using nixpkgs package (stable, pre-compiled) - no custom package needed
+    package = pkgs-unstable.hyprland;  # Latest from unstable
     # Disable home-manager systemd integration - conflicts with UWSM
     systemd.enable = false;
 
+    # Hyprland plugins
+    plugins = [
+      hyprlandPlugins.hyprexpo    # Workspace overview (SUPER+TAB)
+      hyprlandPlugins.hyprbars    # Window title bars
+    ];
+
     settings = {
       "debug:disable_logs" = true;
+
+      # === PLUGIN CONFIGURATIONS ===
+
+      # Hyprexpo - Workspace overview (like macOS Mission Control)
+      "plugin:hyprexpo" = {
+        columns = 3;
+        gap_size = 5;
+        bg_col = "rgb(${stripHash theme.colors.background})";
+        workspace_method = "first 1";  # Start from workspace 1
+        enable_gesture = true;  # 3-finger swipe up to trigger
+        gesture_fingers = 3;
+        gesture_distance = 300;
+        gesture_positive = false;  # Swipe up
+      };
+
+      # Hyprbars - Window title bars
+      "plugin:hyprbars" = {
+        bar_height = 24;
+        bar_color = "rgb(${stripHash theme.colors.background})";
+        "col.text" = "rgb(${stripHash theme.colors.foreground})";
+        bar_text_size = 10;
+        bar_text_font = "JetBrains Mono";
+        bar_part_of_window = true;
+        bar_precedence_over_border = true;
+
+        # Window buttons (close, maximize, minimize)
+        hyprbars-button = [
+          # color, size, icon, action
+          "rgb(${stripHash theme.colors.red}), 14, 󰖭, hyprctl dispatch killactive"
+          "rgb(${stripHash theme.colors.yellow}), 14, 󰖯, hyprctl dispatch fullscreen 1"
+          "rgb(${stripHash theme.colors.green}), 14, 󰖰, hyprctl dispatch movetoworkspacesilent special:minimized"
+        ];
+      };
+
       monitor = [
         "HDMI-A-1,1920x1080@60,0x0,1"
         "DP-1,1920x1080@60,0x0,1"
@@ -346,8 +389,11 @@ in
       ];
 
       # Cursor and GDK settings (system-level has the rest via environment.sessionVariables)
+      # Hyprcursor uses XCursor themes as fallback - Bibata works natively
       env = [
+        "XCURSOR_THEME,Bibata-Modern-Classic"
         "XCURSOR_SIZE,24"
+        "HYPRCURSOR_THEME,Bibata-Modern-Classic"
         "HYPRCURSOR_SIZE,24"
         "GDK_BACKEND,wayland,x11,*"
         "ELECTRON_OZONE_PLATFORM_HINT,wayland"
@@ -469,6 +515,7 @@ in
 
       bind = [
         "$mod, Return, exec, ghostty"
+        "$mod, Tab, hyprexpo:expo, toggle"  # Workspace overview (like macOS Mission Control)
         "$mod, B, exec, brave"
         "$mod, E, exec, nemo"
         "$mod, A, exec, hyprpwcenter"  # Audio control (Official Hyprland)
@@ -653,6 +700,7 @@ in
     hyprpaper                 # Wallpaper daemon
     hypridle                  # Idle daemon
     hyprlock                  # Screen locker
+    pkgs-unstable.hyprcursor  # Native Hyprland cursor library
     cliphist                  # Clipboard history manager
     brightnessctl             # Brightness control (for hypridle dim)
     pamixer                   # Volume control CLI (for scripts)

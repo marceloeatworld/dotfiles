@@ -10,7 +10,7 @@ Personal NixOS configuration with Hyprland and Ristretto theme.
 - **GPU:** Radeon 780M (RDNA 3)
 - **RAM:** 32GB
 - **Storage:** 1TB NVMe (LUKS + Btrfs)
-- **WM:** Hyprland (Wayland)
+- **WM:** Hyprland 0.53.1 (Wayland) + Plugins
 - **Theme:** Ristretto
 
 ## Quick Start
@@ -59,7 +59,11 @@ nix flake update
 
 ## Features
 
-- **Hyprland** - Tiling Wayland compositor with Ristretto theme
+- **Hyprland 0.53.1** - Tiling Wayland compositor with Ristretto theme
+  - **Hyprexpo plugin** - Workspace overview (macOS Mission Control style)
+  - **Hyprbars plugin** - Window title bars with buttons
+  - **Hyprcursor** - Native Hyprland cursor support
+- **Firejail** - Application sandboxing (Brave browser isolated)
 - **Walker** - Modern application launcher
 - **Kitty** - GPU-accelerated terminal
 - **Bitcoin Wallet Monitor** - Privacy-focused balance tracking (local zpub derivation, Waybar integration)
@@ -82,7 +86,8 @@ nix flake update
 |-----|--------|
 | `SUPER + D` | Walker launcher (Ristretto themed) |
 | `SUPER + Shift + D` | Walker launcher (alternative binding) |
-| `SUPER + Return` | Kitty terminal |
+| `SUPER + Tab` | **Workspace overview** (Hyprexpo - like macOS Mission Control) |
+| `SUPER + Return` | Ghostty terminal |
 | `SUPER + B` | Brave browser |
 | `SUPER + E` | Nemo file manager |
 | `SUPER + V` | Clipboard history (cliphist) |
@@ -680,6 +685,16 @@ All icons stored locally in `assets/icons/` (no internet download needed)
 - **Hyprlock** - Screen locker
 - **Hypridle** - Idle daemon
 - **Hyprsunset** - Blue light filter (8 temperature levels)
+- **Hyprcursor** - Native Hyprland cursor library
+
+**Hyprland Plugins**
+- **Hyprexpo** - Workspace overview (SUPER+Tab or 3-finger swipe up)
+- **Hyprbars** - Window title bars with close/maximize/minimize buttons
+
+**Security**
+- **Firejail** - Application sandboxing for Brave browser
+- **AppArmor** - Mandatory access control (enabled)
+- **OpenSnitch** - Application firewall
 
 **CLI Tools**
 - **eza** - Modern `ls` replacement with icons

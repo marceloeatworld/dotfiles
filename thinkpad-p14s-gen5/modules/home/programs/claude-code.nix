@@ -3,90 +3,226 @@
 { pkgs, ... }:
 
 let
-  # Security hook for blocking access to sensitive files
+  # Security hook for blocking access to sensitive files and dangerous commands
+  # Based on official Claude Code hooks documentation:
+  # https://code.claude.com/docs/en/hooks
+  # https://code.claude.com/docs/en/hooks-guide
   protectSensitiveFilesHook = pkgs.writeText "protect_sensitive_files.py" ''
     #!/usr/bin/env python3
     """
-    Security hook that blocks Claude Code from accessing sensitive files.
-    Exit codes:
-      0 - Allow operation
-      1 - Hook error (operation allowed)
-      2 - Block operation (security violation)
+    Claude Code Security Hook - Defense in Depth
+
+    This hook provides pattern-based protection that complements the sandbox's
+    literal path restrictions. On Linux, the bubblewrap sandbox only supports
+    literal paths, so this hook adds glob-like pattern matching.
+
+    Exit codes (per official docs):
+      0 - Allow operation (success)
+      1 - Hook error (non-blocking, logged in verbose mode)
+      2 - Block operation (security violation, stderr shown to Claude)
+
+    Supports tools: Read, Edit, Write, Bash
     """
     import sys
     import json
+    import os
     from pathlib import Path
 
-    # Sensitive file extensions (without dot)
+    # ══════════════════════════════════════════════════════════════════════════
+    # SENSITIVE FILE EXTENSIONS (without dot)
+    # ══════════════════════════════════════════════════════════════════════════
     SENSITIVE_EXTENSIONS = frozenset({
-        'pem', 'key', 'p12', 'pfx', 'crt', 'cer',
-        'keystore', 'jks', 'gpg', 'asc'
+        # Cryptographic keys and certificates
+        'pem', 'key', 'p12', 'pfx', 'crt', 'cer', 'der',
+        'keystore', 'jks', 'gpg', 'asc', 'pgp',
+        # Backup files that might contain secrets
+        'bak', 'backup', 'old',
     })
 
-    # Sensitive file names (exact match)
+    # ══════════════════════════════════════════════════════════════════════════
+    # SENSITIVE FILE NAMES (exact match, case-insensitive)
+    # ══════════════════════════════════════════════════════════════════════════
     SENSITIVE_NAMES = frozenset({
+        # Environment files
         '.env', '.env.local', '.env.production', '.env.development',
-        'credentials.json', 'service-account.json', 'secrets.json',
+        '.env.staging', '.env.test', '.envrc',
+        # SSH keys and config
         'id_rsa', 'id_ed25519', 'id_dsa', 'id_ecdsa',
         'id_rsa.pub', 'id_ed25519.pub', 'id_dsa.pub', 'id_ecdsa.pub',
-        'known_hosts', 'authorized_keys', 'config',
-        '.netrc', '.npmrc', '.pypirc', '.docker/config.json',
-        'htpasswd', 'shadow', 'passwd'
+        'known_hosts', 'authorized_keys',
+        # Credentials files
+        'credentials.json', 'service-account.json', 'secrets.json',
+        'credentials', '.credentials', 'client_secret.json',
+        # Package manager auth
+        '.netrc', '.npmrc', '.pypirc', '.gemrc', '.yarnrc',
+        # System files
+        'htpasswd', 'shadow', 'passwd', 'sudoers',
+        # Cloud provider configs
+        'config.json',  # Docker, various cloud CLIs
+        # History files (contain commands with potential secrets)
+        '.bash_history', '.zsh_history', '.python_history',
+        '.node_repl_history', '.psql_history', '.mysql_history',
     })
 
-    # Sensitive file name patterns (startswith)
-    SENSITIVE_PREFIXES = ('.env', 'secret', 'credential', 'token', 'password', 'apikey')
+    # ══════════════════════════════════════════════════════════════════════════
+    # SENSITIVE FILE NAME PREFIXES (startswith match)
+    # ══════════════════════════════════════════════════════════════════════════
+    SENSITIVE_PREFIXES = (
+        '.env',        # .env.anything
+        'secret',      # secret_key.txt, secrets.yaml
+        'credential',  # credentials_backup.json
+        'token',       # token.json, tokens.txt
+        'password',    # passwords.txt
+        'apikey',      # apikey.txt
+        'api_key',     # api_key.json
+        'private',     # private_key.pem
+        'auth',        # auth_token.json
+    )
 
-    # Sensitive directories to block
+    # ══════════════════════════════════════════════════════════════════════════
+    # SENSITIVE DIRECTORIES (any path component match)
+    # ══════════════════════════════════════════════════════════════════════════
     SENSITIVE_DIRS = frozenset({
-        '.ssh', '.gnupg', '.aws', '.kube', '.docker',
-        'secrets', 'credentials', '.password-store',
-        '.local/share/keyrings', 'private'
+        # SSH and GPG
+        '.ssh', '.gnupg', '.pgp',
+        # Cloud providers
+        '.aws', '.azure', '.gcloud', '.config/gcloud',
+        # Container and orchestration
+        '.kube', '.docker', '.helm',
+        # Password managers
+        '.password-store', '.local/share/keyrings',
+        # Generic sensitive directories
+        'secrets', 'credentials', 'private', 'keys',
+        # Git internals (can contain credentials in config)
+        '.git',
     })
 
-    def is_sensitive(file_path: Path) -> str | None:
-        """Check if file is sensitive. Returns reason or None."""
+    # ══════════════════════════════════════════════════════════════════════════
+    # DANGEROUS BASH COMMANDS (blocked patterns)
+    # ══════════════════════════════════════════════════════════════════════════
+    DANGEROUS_COMMANDS = (
+        # Destructive commands
+        'rm -rf /',
+        'rm -rf ~',
+        'rm -rf $HOME',
+        'rm -rf /*',
+        'mkfs.',
+        'dd if=',
+        ':(){:|:&};:',  # Fork bomb
+        # Permission escalation
+        'chmod 777',
+        'chmod -R 777',
+        'chown -R',
+        # Sensitive file access via shell
+        'cat ~/.ssh',
+        'cat ~/.aws',
+        'cat ~/.gnupg',
+        'cat /etc/shadow',
+        'cat /etc/passwd',
+        # History access
+        'history',
+        'cat ~/.bash_history',
+        'cat ~/.zsh_history',
+        # Credential extraction
+        'cat ~/.netrc',
+        'cat ~/.npmrc',
+        # Network exfiltration of secrets
+        'curl.*secret',
+        'wget.*secret',
+        'curl.*password',
+        'curl.*token',
+    )
+
+    def has_path_traversal(path_str: str) -> bool:
+        """Check for path traversal attempts."""
+        # Normalize and check for ..
+        normalized = os.path.normpath(path_str)
+        if '..' in normalized:
+            return True
+        # Check for encoded traversal
+        if '%2e%2e' in path_str.lower() or '..%2f' in path_str.lower():
+            return True
+        return False
+
+    def is_sensitive_file(file_path: Path) -> str | None:
+        """Check if file is sensitive. Returns reason string or None."""
+        path_str = str(file_path)
         name = file_path.name.lower()
         suffix = file_path.suffix.lstrip('.').lower()
-        parts = set(file_path.parts)
+        parts = set(p.lower() for p in file_path.parts)
 
-        # Check directories
-        if blocked := SENSITIVE_DIRS & parts:
-            return f"directory '{next(iter(blocked))}/'"
+        # 1. Check for path traversal
+        if has_path_traversal(path_str):
+            return "path traversal attempt detected"
 
-        # Check exact file names
+        # 2. Check sensitive directories
+        for sensitive_dir in SENSITIVE_DIRS:
+            if sensitive_dir.lower() in parts:
+                return f"sensitive directory '{sensitive_dir}'"
+
+        # 3. Check exact file names
         if name in SENSITIVE_NAMES or file_path.name in SENSITIVE_NAMES:
-            return f"file '{file_path.name}'"
+            return f"sensitive file '{file_path.name}'"
 
-        # Check extensions
+        # 4. Check extensions
         if suffix in SENSITIVE_EXTENSIONS:
-            return f"extension '.{suffix}'"
+            return f"sensitive extension '.{suffix}'"
 
-        # Check prefixes (e.g., .env.anything, secret_key.txt)
-        if any(name.startswith(p) for p in SENSITIVE_PREFIXES):
-            return f"pattern '{name}'"
+        # 5. Check prefixes
+        for prefix in SENSITIVE_PREFIXES:
+            if name.startswith(prefix):
+                return f"sensitive pattern '{name}'"
+
+        return None
+
+    def is_dangerous_command(command: str) -> str | None:
+        """Check if bash command is dangerous. Returns reason or None."""
+        cmd_lower = command.lower()
+
+        for pattern in DANGEROUS_COMMANDS:
+            if pattern.lower() in cmd_lower:
+                return f"dangerous command pattern '{pattern}'"
+
+        # Check for attempts to read sensitive files via bash
+        for sensitive_dir in SENSITIVE_DIRS:
+            if sensitive_dir in cmd_lower and ('cat ' in cmd_lower or 'less ' in cmd_lower or 'head ' in cmd_lower or 'tail ' in cmd_lower):
+                return f"attempt to read from '{sensitive_dir}'"
 
         return None
 
     def main():
         try:
             data = json.load(sys.stdin)
-            file_path_str = data.get('tool_input', {}).get('file_path')
-
-            if not file_path_str:
-                sys.exit(0)
-
-            if reason := is_sensitive(Path(file_path_str)):
-                sys.stderr.write(f"SECURITY_POLICY_VIOLATION: Access to {reason} blocked\n")
-                sys.exit(2)
-
+        except json.JSONDecodeError:
+            # Empty input or malformed JSON - allow (fail open for usability)
             sys.exit(0)
 
-        except json.JSONDecodeError:
-            sys.exit(0)  # Empty input, allow
-        except Exception as e:
-            sys.stderr.write(f"Hook error: {e}\n")
-            sys.exit(1)
+        tool_name = data.get('tool_name', "")
+        tool_input = data.get('tool_input', {})
+
+        # Handle file operations (Read, Edit, Write)
+        file_path_str = tool_input.get('file_path')
+        if file_path_str:
+            if reason := is_sensitive_file(Path(file_path_str)):
+                msg = f"SECURITY_POLICY: {tool_name} blocked - {reason}\n"
+                msg += f"File: {file_path_str}\n"
+                msg += "This file is protected by security policy."
+                sys.stderr.write(msg)
+                sys.exit(2)
+
+        # Handle Bash commands
+        if tool_name == 'Bash':
+            command = tool_input.get('command', "")
+            if command:
+                if reason := is_dangerous_command(command):
+                    msg = f"SECURITY_POLICY: Bash blocked - {reason}\n"
+                    msg += f"Command: {command[:100]}{'...' if len(command) > 100 else '''}\n"
+                    msg += "This command is blocked by security policy."
+                    sys.stderr.write(msg)
+                    sys.exit(2)
+
+        # Allow the operation
+        sys.exit(0)
 
     if __name__ == '__main__':
         main()
@@ -140,52 +276,59 @@ let
         "Bash(uwsm check:*)"
         "Bash(uwsm list:*)"
         "Bash(Hyprland --help)"
+        # Plugin scripts (Ralph Wiggum)
+        "Bash(/home/marcelo/.claude/plugins/cache/claude-code-plugins/ralph-wiggum/*)"
+        "Bash(/home/marcelo/.claude/plugins/cache/claude-plugins-official/ralph-wiggum/*)"
       ];
+      # NOTE: On Linux, glob patterns (**/*) are NOT supported by bubblewrap sandbox.
+      # Using literal paths instead. The Python hook provides additional pattern-based protection.
       deny = [
-        # Environment files (secrets)
-        "Read(**/.env*)"
-        "Read(**/*.env*)"
-        "Read(**/.env)"
-        # Cryptographic keys
-        "Read(**/*.pem)"
-        "Read(**/*.key)"
-        "Read(**/*.p12)"
-        "Read(**/*.pfx)"
-        "Read(**/*.crt)"
-        "Read(**/*.keystore)"
-        "Read(**/*.jks)"
-        # Credential directories
-        "Read(**/secrets/**)"
-        "Read(**/credentials/**)"
-        "Read(**/.aws/**)"
-        "Read(**/.ssh/**)"
-        "Read(**/.gnupg/**)"
-        "Read(**/.password-store/**)"
-        "Read(**/.kube/config)"
-        "Read(**/.docker/config.json)"
-        # SSH keys
-        "Read(**/id_rsa*)"
-        "Read(**/id_ed25519*)"
-        "Read(**/id_ecdsa*)"
-        "Read(**/id_dsa*)"
+        # ══════════════════════════════════════════════════════════════════════
+        # Environment files (secrets) - literal paths for Linux compatibility
+        # ══════════════════════════════════════════════════════════════════════
+        "Read(~/.env)"
+        "Read(~/.env.local)"
+        "Read(~/.env.production)"
+        "Read(~/.env.development)"
+
+        # ══════════════════════════════════════════════════════════════════════
+        # Credential directories - using ~ for home directory expansion
+        # ══════════════════════════════════════════════════════════════════════
+        "Read(~/.ssh)"
+        "Read(~/.aws)"
+        "Read(~/.gnupg)"
+        "Read(~/.password-store)"
+        "Read(~/.kube)"
+        "Read(~/.docker)"
+
+        # ══════════════════════════════════════════════════════════════════════
         # Sensitive config files
-        "Read(**/.netrc)"
-        "Read(**/.npmrc)"
-        "Read(**/.pypirc)"
-        # Generic sensitive patterns
-        "Read(**/*secret*)"
-        "Read(**/*token*)"
-        "Read(**/*password*)"
-        # Edit restrictions (same patterns)
-        "Edit(**/.env*)"
-        "Edit(**/*.env*)"
-        "Edit(**/.ssh/**)"
-        "Edit(**/*.key)"
-        "Edit(**/*.pem)"
-        "Edit(**/.gnupg/**)"
-        "Edit(**/.aws/**)"
-        "Edit(**/secrets/**)"
-        "Edit(**/credentials/**)"
+        # ══════════════════════════════════════════════════════════════════════
+        "Read(~/.netrc)"
+        "Read(~/.npmrc)"
+        "Read(~/.pypirc)"
+        "Read(~/.gitconfig-secrets)"
+
+        # ══════════════════════════════════════════════════════════════════════
+        # System sensitive files - using // for absolute paths on Linux
+        # ══════════════════════════════════════════════════════════════════════
+        "Read(//etc/passwd)"
+        "Read(//etc/shadow)"
+        "Read(//etc/sudoers)"
+        "Read(//etc/ssh)"
+
+        # ══════════════════════════════════════════════════════════════════════
+        # Edit restrictions - same directories
+        # ══════════════════════════════════════════════════════════════════════
+        "Edit(~/.env)"
+        "Edit(~/.env.local)"
+        "Edit(~/.ssh)"
+        "Edit(~/.aws)"
+        "Edit(~/.gnupg)"
+        "Edit(~/.password-store)"
+        "Edit(~/.kube)"
+        "Edit(~/.docker)"
+        "Edit(//etc)"
       ];
       defaultMode = "default";
     };
@@ -212,35 +355,22 @@ let
     # Extended thinking
     alwaysThinkingEnabled = true;
     # Hooks configuration - security hooks for file access control
+    # Based on official docs: https://code.claude.com/docs/en/hooks
     hooks = {
       # PreToolUse hooks run before tool execution
+      # Using regex matcher to handle multiple tools with a single hook (more efficient)
       PreToolUse = [
         {
-          # Hook for Read tool - blocks sensitive file access
-          matcher = "Read";
+          # Combined matcher for file operations AND bash commands
+          # Regex pattern matches: Read, Edit, Write, or Bash
+          matcher = "Read|Edit|Write|Bash";
           hooks = [
             {
               type = "command";
-              command = "python3 $HOME/.claude/hooks/protect_sensitive_files.py";
-            }
-          ];
-        }
-        {
-          # Hook for Edit tool - blocks sensitive file modification
-          matcher = "Edit";
-          hooks = [
-            {
-              type = "command";
-              command = "python3 $HOME/.claude/hooks/protect_sensitive_files.py";
-            }
-          ];
-        }
-        {
-          # Hook for Write tool - blocks sensitive file creation
-          matcher = "Write";
-          hooks = [
-            {
-              type = "command";
+              # Hook script handles all tool types and blocks:
+              # - Sensitive file access (Read/Edit/Write)
+              # - Dangerous bash commands (rm -rf, chmod 777, etc.)
+              # - Path traversal attempts (..)
               command = "python3 $HOME/.claude/hooks/protect_sensitive_files.py";
             }
           ];

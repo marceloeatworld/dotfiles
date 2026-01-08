@@ -2,6 +2,34 @@
 { pkgs, ... }:
 
 {
+  # === FIREJAIL SANDBOXING ===
+  # Isolates applications to limit their access to the system
+  # When enabled, running "brave" actually runs "firejail brave"
+  programs.firejail = {
+    enable = true;
+
+    # Wrap these applications with firejail automatically
+    wrappedBinaries = {
+      # Brave browser - sandboxed
+      # Limits file access, network isolation optional, GPU allowed
+      brave = {
+        executable = "${pkgs.brave}/bin/brave";
+        profile = "${pkgs.firejail}/etc/firejail/brave.profile";
+        extraArgs = [
+          # Wayland support
+          "--env=WAYLAND_DISPLAY"
+          "--env=XDG_RUNTIME_DIR"
+          # GPU acceleration (AMD)
+          "--env=LIBVA_DRIVER_NAME"
+          "--env=__GLX_VENDOR_LIBRARY_NAME"
+          # Allow downloads to ~/Downloads only
+          "--whitelist=~/Downloads"
+          "--whitelist=~/Pictures"
+        ];
+      };
+    };
+  };
+
   # Enable GnuPG agent
   programs.gnupg.agent = {
     enable = true;

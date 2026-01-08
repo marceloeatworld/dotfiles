@@ -50,6 +50,12 @@
     go
     rustup
     jdk                # Java Development Kit (latest LTS)
+    # .NET SDKs combined: .NET 9 (required by csharp-ls) + .NET 10 (for projects)
+    (dotnetCorePackages.combinePackages [
+      dotnetCorePackages.sdk_9_0
+      dotnetCorePackages.sdk_10_0
+    ])
+    icu                # Required by .NET for globalization support
 
     # C++ Development (complete modern toolchain)
     gcc              # GCC 14.3.0 - Primary C++ compiler with C++23 support
@@ -68,9 +74,9 @@
     pkg-config       # Library dependency management
     boost            # Boost C++ libraries (commonly used)
 
-    # NOTE: Clang tools excluded due to cpp collision with GCC
-    # For Clang features, use: nix shell nixpkgs#clang_19 nixpkgs#lldb nixpkgs#clang-tools
-    # Or create a project-specific shell.nix when needed
+    # NOTE: Full clang compiler excluded due to collision with GCC
+    # clang-tools (clangd, clang-tidy) is installed separately without collision
+    # For full Clang compiler, use: nix shell nixpkgs#clang_19 nixpkgs#lldb
 
     # Filesystem & Archive Tools
     squashfsTools    # SquashFS filesystem tools (unsquashfs, mksquashfs for ISO extraction)
@@ -109,6 +115,13 @@
     nil           # Nix LSP (for editing NixOS configs)
     nix-tree      # Visualize dependencies
     nix-index     # Search files
+
+    # Language Servers (for Claude Code LSP integration)
+    nodePackages.typescript-language-server  # TypeScript/JavaScript LSP
+    nodePackages.typescript                  # Required by typescript-language-server
+    pyright                                  # Python LSP (Microsoft)
+    clang-tools                              # clangd, clang-tidy, clang-format (no collision with GCC)
+    csharp-ls          # C# LSP (uses .NET 9 from combined SDK above)
 
     # AI/ML tools - Ollama TUI clients
     pkgs-unstable.aichat        # Ultra lightweight CLI for Ollama (Rust) - Daily use

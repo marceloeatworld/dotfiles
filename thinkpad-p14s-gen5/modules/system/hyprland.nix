@@ -1,16 +1,17 @@
 # Hyprland Wayland Compositor Configuration
-{ pkgs, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 {
   # NOTE: hardware.graphics.enable32Bit is in hardware-configuration.nix
 
   # Enable Hyprland with UWSM (recommended for NixOS 25.11)
-  # Using nixpkgs version for stability and pre-compiled binaries
+  # Using nixpkgs-unstable for latest version (0.53.1+)
   programs.hyprland = {
     enable = true;
     withUWSM = true;  # Universal Wayland Session Manager - recommended
     xwayland.enable = true;
-    # Using nixpkgs package (no flake) - stable, pre-compiled
+    package = pkgs-unstable.hyprland;  # Latest from unstable
+    portalPackage = pkgs-unstable.xdg-desktop-portal-hyprland;  # Match portal version
   };
 
   # XDG Desktop Portal configuration
