@@ -16,7 +16,7 @@
     };
 
     cursorTheme = {
-      name = "Bibata-Modern-Classic";
+      name = "Bibata-Modern-Amber";
       package = pkgs.bibata-cursors;
       size = 24;
     };
@@ -40,7 +40,7 @@
 
   home.pointerCursor = {
     gtk.enable = true;
-    name = "Bibata-Modern-Classic";
+    name = "Bibata-Modern-Amber";
     package = pkgs.bibata-cursors;
     size = 24;
   };

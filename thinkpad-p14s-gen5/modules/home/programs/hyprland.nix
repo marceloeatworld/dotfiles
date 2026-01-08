@@ -1,11 +1,11 @@
-# Hyprland - Using nixpkgs-unstable for latest version
-{ config, pkgs, pkgs-unstable, ... }:
+# Hyprland - Using official flake for latest version + plugin compatibility
+{ config, pkgs, pkgs-unstable, inputs, ... }:
 
 let
   theme = config.theme;
 
-  # Hyprland plugins from unstable
-  hyprlandPlugins = pkgs-unstable.hyprlandPlugins;
+  # Hyprland plugins from official flake (ensures version compatibility)
+  hyprlandPlugins = inputs.hyprland-plugins.packages.${pkgs.stdenv.hostPlatform.system};
   # Helper to strip # from hex colors for Hyprland rgb() format
   stripHash = color: builtins.substring 1 6 color;
 in
@@ -321,11 +321,11 @@ in
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
-    package = pkgs-unstable.hyprland;  # Latest from unstable
+    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;  # Official flake
     # Disable home-manager systemd integration - conflicts with UWSM
     systemd.enable = false;
 
-    # Hyprland plugins
+    # Hyprland plugins from official flake (version-matched)
     plugins = [
       hyprlandPlugins.hyprexpo    # Workspace overview (SUPER+TAB)
       hyprlandPlugins.hyprbars    # Window title bars
@@ -342,10 +342,6 @@ in
         gap_size = 5;
         bg_col = "rgb(${stripHash theme.colors.background})";
         workspace_method = "first 1";  # Start from workspace 1
-        enable_gesture = true;  # 3-finger swipe up to trigger
-        gesture_fingers = 3;
-        gesture_distance = 300;
-        gesture_positive = false;  # Swipe up
       };
 
       # Hyprbars - Window title bars
@@ -391,9 +387,9 @@ in
       # Cursor and GDK settings (system-level has the rest via environment.sessionVariables)
       # Hyprcursor uses XCursor themes as fallback - Bibata works natively
       env = [
-        "XCURSOR_THEME,Bibata-Modern-Classic"
+        "XCURSOR_THEME,Bibata-Modern-Amber"
         "XCURSOR_SIZE,24"
-        "HYPRCURSOR_THEME,Bibata-Modern-Classic"
+        "HYPRCURSOR_THEME,Bibata-Modern-Amber"
         "HYPRCURSOR_SIZE,24"
         "GDK_BACKEND,wayland,x11,*"
         "ELECTRON_OZONE_PLATFORM_HINT,wayland"
@@ -419,10 +415,18 @@ in
         sensitivity = 0;
       };
 
-      # Hyprland 0.51+ uses new gesture syntax
+      # Gestures - Hyprland 0.53 syntax
       gestures = {
-        gesture = "3, horizontal, workspace";  # 3-finger horizontal swipe for workspace switching
+        workspace_swipe_distance = 300;
+        workspace_swipe_cancel_ratio = 0.5;
+        workspace_swipe_min_speed_to_force = 30;
+        workspace_swipe_create_new = true;
       };
+
+      # Gesture bindings (new 0.53 syntax) - 3-finger horizontal for workspace switching
+      gesture = [
+        "3, horizontal, workspace"
+      ];
 
       general = {
         gaps_in = 0;
@@ -503,7 +507,17 @@ in
         force_default_wallpaper = 0;
         vfr = true;  # Variable frame rate - reduces GPU usage when idle
         focus_on_activate = false;  # Prevent windows from stealing focus
-        new_window_takes_over_fullscreen = 2;  # 0=behind, 1=over, 2=unfullscreen
+        on_focus_under_fullscreen = 2;  # 0=ignore, 1=takeover, 2=unfullscreen (Hyprland 0.53+)
+        close_special_on_empty = true;  # Close special workspace when empty
+        render_unfocused_fps = 15;  # Save GPU on unfocused windows
+      };
+
+      # Cursor settings (Hyprland 0.53+)
+      cursor = {
+        inactive_timeout = 3;  # Hide cursor after 3s of inactivity
+        hide_on_key_press = true;  # Hide cursor when typing
+        hide_on_touch = true;  # Hide cursor on touch input
+        enable_hyprcursor = true;  # Use hyprcursor (native Hyprland cursor)
       };
 
       # Render optimizations
@@ -522,11 +536,19 @@ in
         "$mod, D, exec, hyprlauncher"  # Toggle hyprlauncher (instant with daemon)
         "$mod SHIFT, D, exec, hyprlauncher"
         "$mod, Q, killactive"
+        "$mod SHIFT, Q, forcekillactive"  # Force kill (for frozen apps)
         "$mod, F, fullscreen, 0"
-        "$mod SHIFT, F, fullscreen, 1"
+        "$mod SHIFT, F, fullscreen, 1"  # Maximize (fake fullscreen)
         "$mod, Space, togglefloating"
         "$mod, P, pin"  # Pin window (stays visible on all workspaces)
         "$mod, T, togglesplit"
+        # Window groups (tabbed windows)
+        "$mod, G, togglegroup"  # Create/dissolve window group
+        "$mod, bracketright, changegroupactive, f"  # Next tab in group
+        "$mod, bracketleft, changegroupactive, b"  # Previous tab in group
+        "$mod SHIFT, G, lockactivegroup, toggle"  # Lock group (prevent changes)
+        # Center floating window
+        "$mod, W, centerwindow"
         "$mod, left, movefocus, l"
         "$mod, right, movefocus, r"
         "$mod, up, movefocus, u"
@@ -551,6 +573,7 @@ in
         "$mod CTRL, L, resizeactive, 40 0"
         "$mod CTRL, K, resizeactive, 0 -40"
         "$mod CTRL, J, resizeactive, 0 40"
+        # Workspaces - switch
         "$mod, 1, workspace, 1"
         "$mod, 2, workspace, 2"
         "$mod, 3, workspace, 3"
@@ -561,18 +584,37 @@ in
         "$mod, 8, workspace, 8"
         "$mod, 9, workspace, 9"
         "$mod, 0, workspace, 10"
+        # Workspaces - move window to workspace
+        "$mod SHIFT, 1, movetoworkspace, 1"
+        "$mod SHIFT, 2, movetoworkspace, 2"
+        "$mod SHIFT, 3, movetoworkspace, 3"
+        "$mod SHIFT, 4, movetoworkspace, 4"
+        "$mod SHIFT, 5, movetoworkspace, 5"
+        "$mod SHIFT, 6, movetoworkspace, 6"
+        "$mod SHIFT, 7, movetoworkspace, 7"
+        "$mod SHIFT, 8, movetoworkspace, 8"
+        "$mod SHIFT, 9, movetoworkspace, 9"
+        "$mod SHIFT, 0, movetoworkspace, 10"
         # Move window to workspace with arrow keys (easy for AZERTY)
         "$mod ALT, left, movetoworkspace, -1"
         "$mod ALT, right, movetoworkspace, +1"
         "$mod ALT, H, movetoworkspace, -1"
         "$mod ALT, L, movetoworkspace, +1"
+        # Special workspace (scratchpad)
         "$mod, S, togglespecialworkspace, magic"
         "$mod SHIFT, S, movetoworkspace, special:magic"
+        # Minimize to special workspace
+        "$mod, minus, movetoworkspacesilent, special:minimized"
+        "$mod SHIFT, minus, togglespecialworkspace, minimized"
         "$mod, V, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy"
         "$mod SHIFT, V, exec, cliphist wipe"
+        # System controls
         "$mod, Escape, exec, hyprlock"
         "$mod SHIFT, Escape, exec, systemctl poweroff"
         "$mod CTRL, Escape, exec, systemctl reboot"
+        "$mod ALT, Escape, exec, systemctl suspend"  # Suspend to RAM
+        # DPMS (monitor power)
+        "$mod CTRL SHIFT, Escape, dpms, off"  # Turn off monitors
         "$mod, C, exec, hyprpicker -a"
         "$mod, N, exec, ${bluelight-toggle}/bin/bluelight-toggle"
         "$mod SHIFT, N, exec, ${bluelight-off}/bin/bluelight-off"
@@ -611,84 +653,84 @@ in
         ", XF86MonBrightnessDown, exec, swayosd-client --brightness lower"
       ];
 
-      # Window rules - Hyprland 0.52 inline syntax
+      # Window rules - Hyprland 0.53+ new syntax
       windowrule = [
         # === GENERIC RULES ===
-        "suppressevent maximize, class:.*"
+        "suppress_event maximize, match:class .*"
 
         # === FLOAT WINDOWS ===
         # System tools & dialogs
-        "float, class:^(hyprpwcenter)$"
-        "float, class:^(hyprsysteminfo)$"
-        "float, class:^(hyprpolkitagent)$"
-        "float, class:^(nm-connection-editor)$"
-        "float, class:^(blueman-manager)$"
-        "float, class:^(pavucontrol)$"
-        "float, class:^(org.gnome.Calculator)$"
-        "float, class:^(file-roller)$"
-        "float, class:^(xdg-desktop-portal-gtk)$"
-        "float, class:^(org.gnome.FileRoller)$"
-        "float, class:^(confirm)$"
-        "float, class:^(dialog)$"
-        "float, class:^(download)$"
-        "float, class:^(notification)$"
-        "float, class:^(error)$"
-        "float, class:^(splash)$"
-        "float, title:^(Open File)$"
-        "float, title:^(Save File)$"
-        "float, title:^(Open Folder)$"
-        "float, title:^(Confirm)$"
-        "float, title:^(File Operation Progress)$"
+        "float on, match:class ^(hyprpwcenter)$"
+        "float on, match:class ^(hyprsysteminfo)$"
+        "float on, match:class ^(hyprpolkitagent)$"
+        "float on, match:class ^(nm-connection-editor)$"
+        "float on, match:class ^(blueman-manager)$"
+        "float on, match:class ^(pavucontrol)$"
+        "float on, match:class ^(org.gnome.Calculator)$"
+        "float on, match:class ^(file-roller)$"
+        "float on, match:class ^(xdg-desktop-portal-gtk)$"
+        "float on, match:class ^(org.gnome.FileRoller)$"
+        "float on, match:class ^(confirm)$"
+        "float on, match:class ^(dialog)$"
+        "float on, match:class ^(download)$"
+        "float on, match:class ^(notification)$"
+        "float on, match:class ^(error)$"
+        "float on, match:class ^(splash)$"
+        "float on, match:title ^(Open File)$"
+        "float on, match:title ^(Save File)$"
+        "float on, match:title ^(Open Folder)$"
+        "float on, match:title ^(Confirm)$"
+        "float on, match:title ^(File Operation Progress)$"
 
         # === OPACITY RULES ===
         # Terminals - slight transparency
-        "opacity 0.95, class:^(com.mitchellh.ghostty)$"
-        "opacity 0.95, class:^(Alacritty)$"
+        "opacity 0.95, match:class ^(com.mitchellh.ghostty)$"
+        "opacity 0.95, match:class ^(Alacritty)$"
 
         # File managers - slight transparency
-        "opacity 0.95, class:^(thunar)$"
-        "opacity 0.95, class:^(nemo)$"
+        "opacity 0.95, match:class ^(thunar)$"
+        "opacity 0.95, match:class ^(nemo)$"
 
         # Browsers - full opacity (important for video)
-        "tile, class:^(Brave-browser)$"
-        "opacity 1.0 override, class:^(Brave-browser)$"
-        "opacity 1.0 override, class:^(firefox)$"
-        "opacity 1.0 override, class:^(chromium)$"
+        "tile on, match:class ^(Brave-browser)$"
+        "opacity 1.0 override, match:class ^(Brave-browser)$"
+        "opacity 1.0 override, match:class ^(firefox)$"
+        "opacity 1.0 override, match:class ^(chromium)$"
 
         # Media content - full opacity
-        "opacity 1.0 override, title:^.*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*$"
+        "opacity 1.0 override, match:title .*(YouTube|Netflix|Twitch|Zoom|Meet|Discord).*"
 
         # IDEs - full opacity
-        "opacity 1.0 override, class:^(code-url-handler)$"
-        "opacity 1.0 override, class:^(Code)$"
-        "opacity 1.0 override, class:^(jetbrains-.*)$"
+        "opacity 1.0 override, match:class ^(code-url-handler)$"
+        "opacity 1.0 override, match:class ^(Code)$"
+        "opacity 1.0 override, match:class ^(jetbrains-.*)$"
 
         # === SPECIAL WINDOWS ===
         # Picture-in-Picture
-        "float, title:^(Picture-in-Picture)$"
-        "pin, title:^(Picture-in-Picture)$"
-        "size 640 360, title:^(Picture-in-Picture)$"
-        "move 100%-650 100%-370, title:^(Picture-in-Picture)$"
-        "opacity 1.0 override, title:^(Picture-in-Picture)$"
+        "float on, match:title ^(Picture-in-Picture)$"
+        "pin on, match:title ^(Picture-in-Picture)$"
+        "size 640 360, match:title ^(Picture-in-Picture)$"
+        "move 100%-650 100%-370, match:title ^(Picture-in-Picture)$"
+        "opacity 1.0 override, match:title ^(Picture-in-Picture)$"
 
         # YouTube webapp - floating on the right
-        "float, class:^(brave-youtube\\.com__-Default)$"
-        "size 960 720, class:^(brave-youtube\\.com__-Default)$"
-        "move 100%-970 10, class:^(brave-youtube\\.com__-Default)$"
+        "float on, match:class ^(brave-youtube\\.com__-Default)$"
+        "size 960 720, match:class ^(brave-youtube\\.com__-Default)$"
+        "move 100%-970 10, match:class ^(brave-youtube\\.com__-Default)$"
 
         # Hyprlauncher
-        "float, class:^(hyprlauncher)$"
-        "center, class:^(hyprlauncher)$"
-        "stayfocused, class:^(hyprlauncher)$"
+        "float on, match:class ^(hyprlauncher)$"
+        "center on, match:class ^(hyprlauncher)$"
+        "stay_focused on, match:class ^(hyprlauncher)$"
 
         # Quick notes - floating centered window
-        "float, class:^(quick-notes)$"
-        "size 800 600, class:^(quick-notes)$"
-        "center, class:^(quick-notes)$"
+        "float on, match:class ^(quick-notes)$"
+        "size 800 600, match:class ^(quick-notes)$"
+        "center on, match:class ^(quick-notes)$"
 
         # Prevent idle when watching video
-        "idleinhibit fullscreen, class:.*"
-        "idleinhibit focus, class:^(mpv|vlc)$"
+        "idle_inhibit fullscreen, match:class .*"
+        "idle_inhibit focus, match:class ^(mpv|vlc)$"
       ];
 
     };
