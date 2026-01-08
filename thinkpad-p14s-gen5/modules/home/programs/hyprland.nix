@@ -499,6 +499,7 @@ in
       misc = {
         disable_hyprland_logo = true;
         disable_splash_rendering = true;
+        disable_watchdog_warning = true;  # Suppress UWSM/start-hyprland warning (NixOS official method)
         mouse_move_enables_dpms = true;
         key_press_enables_dpms = true;
         vrr = 2;  # Variable refresh rate (0=off, 1=on, 2=fullscreen only)
@@ -565,14 +566,6 @@ in
         "$mod SHIFT, L, movewindow, r"
         "$mod SHIFT, K, movewindow, u"
         "$mod SHIFT, J, movewindow, d"
-        "$mod CTRL, left, resizeactive, -40 0"
-        "$mod CTRL, right, resizeactive, 40 0"
-        "$mod CTRL, up, resizeactive, 0 -40"
-        "$mod CTRL, down, resizeactive, 0 40"
-        "$mod CTRL, H, resizeactive, -40 0"
-        "$mod CTRL, L, resizeactive, 40 0"
-        "$mod CTRL, K, resizeactive, 0 -40"
-        "$mod CTRL, J, resizeactive, 0 40"
         # Workspaces - switch
         "$mod, 1, workspace, 1"
         "$mod, 2, workspace, 2"
@@ -632,6 +625,18 @@ in
       bindm = [
         "$mod, mouse:272, movewindow"
         "$mod, mouse:273, resizewindow"
+      ];
+
+      # Window resize (binde = repeat when held)
+      binde = [
+        "$mod CTRL, left, resizeactive, -40 0"
+        "$mod CTRL, right, resizeactive, 40 0"
+        "$mod CTRL, up, resizeactive, 0 -40"
+        "$mod CTRL, down, resizeactive, 0 40"
+        "$mod CTRL, H, resizeactive, -40 0"
+        "$mod CTRL, L, resizeactive, 40 0"
+        "$mod CTRL, K, resizeactive, 0 -40"
+        "$mod CTRL, J, resizeactive, 0 40"
       ];
 
       # Audio/Brightness controls using SwayOSD (native OSD)
