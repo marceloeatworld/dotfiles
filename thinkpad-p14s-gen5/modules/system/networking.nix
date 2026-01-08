@@ -69,4 +69,15 @@
 
   # Bluetooth manager
   services.blueman.enable = true;
+
+  # OpenSnitch - Application-level firewall
+  # Monitors and controls outgoing connections per application
+  # Works alongside networking.firewall (which handles incoming connections)
+  services.opensnitch = {
+    enable = true;
+    settings = {
+      DefaultAction = "allow";  # No pop-ups, everything allowed by default
+      LogLevel = 1;             # Log connections (viewable in UI)
+    };
+  };
 }

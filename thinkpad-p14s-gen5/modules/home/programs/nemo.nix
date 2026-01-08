@@ -1,5 +1,8 @@
 { pkgs, config, ... }:
 
+let
+  theme = config.theme;
+in
 {
   # Nemo file manager with full integration
   home.packages = with pkgs; [
@@ -26,21 +29,22 @@
   dconf.settings = {
     # Nemo preferences
     "org/nemo/preferences" = {
-      # Default folder view
+      # Default folder view - list view is cleaner/neobrutalist
       default-folder-viewer = "list-view";
 
-      # Show hidden files
+      # Show hidden files - off by default
       show-hidden-files = false;
 
-      # Thumbnail settings - INCREASED for better preview support
-      thumbnail-limit = 104857600;  # 100MB (was 10MB)
+      # Thumbnail settings
+      thumbnail-limit = 104857600;  # 100MB
       show-directory-item-counts = "local-only";
 
       # Behavior
       click-policy = "double";
-      executable-text-activation = "display";  # FIXED: Open text files directly, no dialog
+      executable-text-activation = "display";  # Open text files directly
       enable-delete = true;
       confirm-trash = false;
+      confirm-move-to-trash = false;  # No confirmation for trash
 
       # Preview
       show-image-thumbnails = "always";
@@ -48,6 +52,16 @@
 
       # Context menu
       context-menus-show-all = true;
+
+      # Neobrutalist: compact, no decorations
+      show-location-entry = true;  # Text path bar (not breadcrumbs)
+      show-new-folder-icon-toolbar = true;
+      show-open-in-terminal-toolbar = true;
+      show-edit-icon-toolbar = false;
+      show-reload-icon-toolbar = true;
+      show-home-icon-toolbar = true;
+      show-computer-icon-toolbar = false;
+      show-search-icon-toolbar = true;
     };
 
     # Configure Ghostty as default terminal for Nemo "Open in Terminal"
@@ -56,29 +70,47 @@
       exec-arg = "";
     };
 
+    # GNOME terminal fallback (some apps check this)
+    "org/gnome/desktop/applications/terminal" = {
+      exec = "ghostty";
+      exec-arg = "";
+    };
+
     # Nemo window settings
     "org/nemo/window-state" = {
-      sidebar-width = 200;
+      sidebar-width = 180;  # Narrower sidebar - neobrutalist
       start-with-sidebar = true;
       maximized = false;
+      geometry = "1200x800+100+100";  # Default window size
     };
 
     # Icon view settings
     "org/nemo/icon-view" = {
-      default-zoom-level = "standard";
+      default-zoom-level = "small";  # Smaller icons - more minimal
+      captions = ["size" "none" "none"];  # Only show size caption
     };
 
-    # List view settings
+    # List view settings - optimized for neobrutalist
     "org/nemo/list-view" = {
-      default-zoom-level = "standard";
-      default-column-order = ["name" "size" "type" "date_modified"];
-      default-visible-columns = ["name" "size" "type" "date_modified"];
+      default-zoom-level = "smaller";  # Compact rows
+      default-column-order = ["name" "size" "type" "date_modified" "permissions"];
+      default-visible-columns = ["name" "size" "date_modified"];  # Minimal columns
+    };
+
+    # Compact view
+    "org/nemo/compact-view" = {
+      default-zoom-level = "small";
     };
 
     # Desktop settings (disable desktop icons)
     "org/nemo/desktop" = {
       desktop-layout = "false";
       show-desktop-icons = false;
+    };
+
+    # Plugins
+    "org/nemo/plugins" = {
+      disabled-actions = [];  # Enable all actions
     };
   };
 
@@ -101,7 +133,7 @@
     [Nemo Action]
     Name=Open Terminal Here
     Comment=Open Ghostty terminal in current folder
-    Exec=ghostty
+    Exec=ghostty --working-directory=%P
     Icon-Name=utilities-terminal
     Selection=None
     Extensions=any;
@@ -199,6 +231,17 @@
     Extensions=any;
   '';
 
+  # Open current folder in VS Code (right-click on empty space)
+  home.file.".config/nemo/actions/open-vscode-here.nemo_action".text = ''
+    [Nemo Action]
+    Name=Open Folder in VS Code
+    Comment=Open current folder in Visual Studio Code
+    Exec=code %P
+    Icon-Name=visual-studio-code
+    Selection=None
+    Extensions=any;
+  '';
+
   # === FILE OPERATIONS ===
 
   # Open with default app (force)
@@ -290,4 +333,102 @@
   '';
 
   # NOTE: MIME types are centralized in ../config/mimeapps.nix
+
+  # === NEMO GTK CSS - Neobrutalist theme override ===
+  # Matches the neobrutalist theme: sharp corners, minimal, high contrast
+  home.file.".config/gtk-3.0/nemo.css".text = ''
+    /* Neobrutalist Nemo - Sharp, minimal, functional */
+
+    /* Remove all rounded corners */
+    .nemo-window,
+    .nemo-window .sidebar,
+    .nemo-window .view,
+    .nemo-window button,
+    .nemo-window entry,
+    .nemo-window .path-bar button {
+      border-radius: 0;
+    }
+
+    /* Sidebar - clean and minimal */
+    .nemo-window .sidebar {
+      background-color: ${theme.colors.backgroundAlt};
+      border-right: 1px solid ${theme.colors.border};
+    }
+
+    .nemo-window .sidebar row {
+      padding: 4px 8px;
+      border-radius: 0;
+    }
+
+    .nemo-window .sidebar row:selected {
+      background-color: ${theme.colors.selection};
+    }
+
+    /* Main view */
+    .nemo-window .view {
+      background-color: ${theme.colors.background};
+      color: ${theme.colors.foreground};
+    }
+
+    /* Selection highlight */
+    .nemo-window .view:selected {
+      background-color: ${theme.colors.selection};
+      color: ${theme.colors.foreground};
+    }
+
+    /* Path bar - flat buttons */
+    .nemo-window .path-bar button {
+      background: transparent;
+      border: none;
+      padding: 4px 8px;
+    }
+
+    .nemo-window .path-bar button:hover {
+      background-color: ${theme.colors.surface};
+    }
+
+    /* Toolbar - minimal */
+    .nemo-window toolbar {
+      background-color: ${theme.colors.backgroundAlt};
+      border-bottom: 1px solid ${theme.colors.border};
+      padding: 2px;
+    }
+
+    /* Toolbar buttons - flat */
+    .nemo-window toolbar button {
+      background: transparent;
+      border: none;
+      padding: 6px;
+      border-radius: 0;
+    }
+
+    .nemo-window toolbar button:hover {
+      background-color: ${theme.colors.surface};
+    }
+
+    /* Status bar - subtle */
+    .nemo-window statusbar {
+      background-color: ${theme.colors.backgroundAlt};
+      border-top: 1px solid ${theme.colors.border};
+      padding: 2px 8px;
+      font-size: 0.9em;
+      color: ${theme.colors.foregroundDim};
+    }
+
+    /* Scrollbars - thin and minimal */
+    .nemo-window scrollbar {
+      background-color: transparent;
+    }
+
+    .nemo-window scrollbar slider {
+      background-color: ${theme.colors.border};
+      border-radius: 0;
+      min-width: 6px;
+      min-height: 6px;
+    }
+
+    .nemo-window scrollbar slider:hover {
+      background-color: ${theme.colors.foregroundDim};
+    }
+  '';
 }

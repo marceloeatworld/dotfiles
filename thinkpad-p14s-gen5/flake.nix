@@ -161,6 +161,7 @@
           ./modules/system/security-tools.nix  # Security audit tools (nmap, wireshark, aircrack-ng, hashcat)
           ./modules/system/nh.nix  # NH - Modern Nix Helper
           ./modules/system/performance.nix  # Zram, ananicy-cpp, earlyoom, gamemode
+          ./modules/system/opensnitch-rules.nix  # OpenSnitch firewall rules (block telemetry)
 
           # Home Manager
           home-manager.nixosModules.home-manager

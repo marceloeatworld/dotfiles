@@ -87,10 +87,14 @@ virt-viewer <vm>       View VM display
 virsh list --all       List all VMs
 virsh start <vm>       Start VM
 virsh shutdown <vm>    Shutdown VM
+virsh suspend <vm>     Pause VM
+virsh resume <vm>      Resume VM
 virsh snapshot-create-as <vm> <name>
 virsh snapshot-revert <vm> <name>
+virsh snapshot-list <vm>
+virsh snapshot-delete <vm> <name>
 
-VM Names: Windows-Dev, Windows-Malware
+VM Names: Windows-VM, Windows-Malware
 
 ━━━━━━━━━━ MALWARE VM ━━━━━━━━━━
 sudo malware-vm setup       Create networks
@@ -299,7 +303,7 @@ in
 
         echo ""
         echo "Downloading Claude Code $LATEST..."
-        local HASH=$(nix-prefetch-url --unpack "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-$LATEST.tgz" 2>/dev/null)
+        local HASH=$(nix-prefetch-url "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-$LATEST.tgz" 2>/dev/null)
         if [[ -z "$HASH" ]]; then
           echo "⚠ Failed to download Claude Code $LATEST"
           return 1

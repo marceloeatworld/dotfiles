@@ -84,25 +84,54 @@ in
         "ctrl+shift+v=paste_from_clipboard"
         "ctrl+insert=copy_to_clipboard"
         "shift+insert=paste_from_clipboard"
+
         # Tab management
         "ctrl+shift+t=new_tab"
         "ctrl+shift+w=close_surface"
         "ctrl+shift+right=next_tab"
         "ctrl+shift+left=previous_tab"
-        # Split management
+        "ctrl+shift+one=goto_tab:1"
+        "ctrl+shift+two=goto_tab:2"
+        "ctrl+shift+three=goto_tab:3"
+        "ctrl+shift+four=goto_tab:4"
+        "ctrl+shift+five=goto_tab:5"
+
+        # Split management - create
         "ctrl+shift+enter=new_split:down"
         "ctrl+shift+backslash=new_split:right"
+        "ctrl+alt+enter=new_split:up"
+        "ctrl+alt+backslash=new_split:left"
+
+        # Split navigation - vim style (hjkl)
+        "ctrl+shift+h=goto_split:left"
+        "ctrl+shift+j=goto_split:bottom"
+        "ctrl+shift+k=goto_split:top"
+        "ctrl+shift+l=goto_split:right"
         "ctrl+shift+]=goto_split:next"
         "ctrl+shift+[=goto_split:previous"
+
+        # Split resize
+        "ctrl+alt+h=resize_split:left,50"
+        "ctrl+alt+j=resize_split:down,50"
+        "ctrl+alt+k=resize_split:up,50"
+        "ctrl+alt+l=resize_split:right,50"
+
+        # Split equalize
+        "ctrl+shift+e=equalize_splits"
+
         # Font size
         "ctrl+shift+equal=increase_font_size:1"
         "ctrl+shift+minus=decrease_font_size:1"
         "ctrl+shift+zero=reset_font_size"
+
         # Scrollback
         "ctrl+shift+up=scroll_page_up"
         "ctrl+shift+down=scroll_page_down"
         "ctrl+shift+home=scroll_to_top"
         "ctrl+shift+end=scroll_to_bottom"
+
+        # Quick commands
+        "ctrl+shift+u=write_screen_file:open"
       ];
     };
   };

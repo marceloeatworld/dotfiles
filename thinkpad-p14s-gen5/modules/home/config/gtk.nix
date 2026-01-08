@@ -45,9 +45,9 @@
     size = 24;
   };
 
-  # GTK3 CSS - Light customizations on top of Catppuccin
+  # GTK3 CSS - Global tweaks + app-specific imports
   home.file.".config/gtk-3.0/gtk.css".text = ''
-    /* Catppuccin Mocha with custom tweaks */
+    /* Global GTK3 tweaks */
 
     /* Disable backdrop dimming effects */
     * {
@@ -57,5 +57,8 @@
     *:backdrop {
       opacity: 1.0;
     }
+
+    /* Import app-specific CSS */
+    @import url("nemo.css");
   '';
 }

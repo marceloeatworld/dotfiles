@@ -104,7 +104,11 @@ nix flake update
 | `SUPER + Escape` | Lock screen (Swaylock) |
 | `SUPER + C` | Color picker (Hyprpicker) |
 | `SUPER + N` | Blue light filter toggle (8 levels: Off → 5500K → 4500K → 3500K → 2500K → 2000K → 1500K → 1200K) |
+| `SUPER + Shift + N` | Blue light filter off (instant disable) |
 | `SUPER + M` | Battery charge mode (Conservation 55-60% → Balanced 75-80% → Full 95-100%) |
+| `SUPER + Shift + M` | Performance mode toggle (disable blur/shadows/animations) |
+| `SUPER + O` | Quick notes (floating nvim in ~/Notes/) |
+| `SUPER + I` | System info panel (CPU, RAM, battery, network, services) |
 | `SUPER + Shift + V` | Clear clipboard history |
 
 **Screenshots**
@@ -160,7 +164,7 @@ nix flake update
 
 ---
 
-### Kitty Terminal
+### Ghostty Terminal
 
 **Copy/Paste**
 | Key | Action |
@@ -169,48 +173,61 @@ nix flake update
 | `Ctrl + Shift + V` | Paste from clipboard |
 | `Ctrl + Insert` | Copy to clipboard (alternative) |
 | `Shift + Insert` | Paste from clipboard (alternative) |
-| `Ctrl + Shift + S` | Copy to selection buffer |
-| `Ctrl + Shift + A` | Select all |
-| `Escape` | Clear selection |
 | **Mouse Selection** | **Auto-copy** to clipboard (enabled) |
-
-**Scrollback Navigation**
-| Key | Action |
-|-----|--------|
-| `Ctrl + Shift + Up/Down` | Scroll line up/down |
-| `Ctrl + Shift + Page Up/Down` | Scroll page up/down |
-| `Ctrl + Shift + Home/End` | Scroll to top/bottom |
-| `Ctrl + Shift + H` | Show scrollback in pager (less) |
-
-**Window Management**
-| Key | Action |
-|-----|--------|
-| `Ctrl + Shift + Enter` | New window |
-| `Ctrl + Shift + W` | Close window |
-| `Ctrl + Shift + ]` | Next window |
-| `Ctrl + Shift + [` | Previous window |
 
 **Tab Management**
 | Key | Action |
 |-----|--------|
 | `Ctrl + Shift + T` | New tab |
-| `Ctrl + Shift + Q` | Close tab |
+| `Ctrl + Shift + W` | Close surface/tab |
 | `Ctrl + Shift + Right` | Next tab |
 | `Ctrl + Shift + Left` | Previous tab |
+| `Ctrl + Shift + 1-5` | Go to tab 1-5 |
+
+**Split Management**
+| Key | Action |
+|-----|--------|
+| `Ctrl + Shift + Enter` | New split (down) |
+| `Ctrl + Shift + \` | New split (right) |
+| `Ctrl + Alt + Enter` | New split (up) |
+| `Ctrl + Alt + \` | New split (left) |
+| `Ctrl + Shift + E` | Equalize splits |
+
+**Split Navigation (Vim-style)**
+| Key | Action |
+|-----|--------|
+| `Ctrl + Shift + H` | Go to split left |
+| `Ctrl + Shift + J` | Go to split down |
+| `Ctrl + Shift + K` | Go to split up |
+| `Ctrl + Shift + L` | Go to split right |
+| `Ctrl + Shift + ]` | Next split |
+| `Ctrl + Shift + [` | Previous split |
+
+**Split Resize**
+| Key | Action |
+|-----|--------|
+| `Ctrl + Alt + H` | Resize split left |
+| `Ctrl + Alt + J` | Resize split down |
+| `Ctrl + Alt + K` | Resize split up |
+| `Ctrl + Alt + L` | Resize split right |
+
+**Scrollback Navigation**
+| Key | Action |
+|-----|--------|
+| `Ctrl + Shift + Up/Down` | Scroll page up/down |
+| `Ctrl + Shift + Home/End` | Scroll to top/bottom |
 
 **Font Size**
 | Key | Action |
 |-----|--------|
 | `Ctrl + Shift + =` | Increase font size |
 | `Ctrl + Shift + -` | Decrease font size |
-| `Ctrl + Shift + 0` | Restore default font size |
+| `Ctrl + Shift + 0` | Reset font size |
 
-**Mouse Actions**
-- **Left Click (URL)**: Open URL in browser
-- **Middle Click**: Paste from selection
-- **Right Click**: Extend selection to command output
-- **Ctrl + Alt + Drag**: Rectangle select mode
-- **Shift + Click**: Select from cursor to click
+**Other**
+| Key | Action |
+|-----|--------|
+| `Ctrl + Shift + U` | Write screen to file |
 
 ---
 

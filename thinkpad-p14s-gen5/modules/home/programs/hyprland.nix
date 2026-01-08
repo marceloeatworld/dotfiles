@@ -115,6 +115,139 @@ let
     fi
   '';
 
+  # Quick notes - Open floating terminal with nvim for quick note-taking
+  quick-notes = pkgs.writeShellScriptBin "quick-notes" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Notes directory (create if doesn't exist)
+    NOTES_DIR="$HOME/Notes"
+    mkdir -p "$NOTES_DIR"
+
+    # Generate filename with timestamp
+    DATE=$(date +%Y-%m-%d)
+    TIME=$(date +%H-%M-%S)
+    NOTE_FILE="$NOTES_DIR/quick-$DATE-$TIME.md"
+
+    # Create note template
+    cat > "$NOTE_FILE" << EOF
+# Quick Note - $(date '+%Y-%m-%d %H:%M')
+
+---
+
+EOF
+
+    # Open in floating Ghostty with nvim
+    # The window rule in Hyprland will make it float
+    ghostty --class="quick-notes" -e nvim "+normal G" "$NOTE_FILE"
+  '';
+
+  # System info panel - Shows system stats in a notification or floating window
+  sysinfo-panel = pkgs.writeShellScriptBin "sysinfo-panel" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Colors for output
+    BOLD='\033[1m'
+    DIM='\033[2m'
+    RESET='\033[0m'
+    YELLOW='\033[33m'
+    CYAN='\033[36m'
+    GREEN='\033[32m'
+    RED='\033[31m'
+
+    # Gather system info
+    HOSTNAME=$(hostname)
+    KERNEL=$(uname -r)
+    UPTIME=$(uptime -p | sed 's/up //')
+
+    # CPU info
+    CPU_MODEL=$(${pkgs.gawk}/bin/awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
+    CPU_USAGE=$(${pkgs.procps}/bin/ps -A -o pcpu | ${pkgs.gawk}/bin/awk '{s+=$1} END {printf "%.1f", s}')
+    CPU_TEMP=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null | ${pkgs.gawk}/bin/awk '{printf "%.1f", $1/1000}')
+
+    # Memory info
+    MEM_INFO=$(free -h | ${pkgs.gawk}/bin/awk '/^Mem:/{print $3 "/" $2}')
+    MEM_PERCENT=$(free | ${pkgs.gawk}/bin/awk '/^Mem:/{printf "%.0f", $3/$2*100}')
+
+    # Disk info
+    DISK_INFO=$(df -h / | ${pkgs.gawk}/bin/awk 'NR==2{print $3 "/" $2 " (" $5 ")"}')
+
+    # Battery info
+    if [ -f /sys/class/power_supply/BAT0/capacity ]; then
+      BAT_CAP=$(cat /sys/class/power_supply/BAT0/capacity)
+      BAT_STATUS=$(cat /sys/class/power_supply/BAT0/status)
+      # Get charge thresholds if available
+      if [ -f /sys/class/power_supply/BAT0/charge_control_start_threshold ]; then
+        BAT_START=$(cat /sys/class/power_supply/BAT0/charge_control_start_threshold)
+        BAT_END=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold)
+        BAT_THRESHOLDS="[$BAT_START-$BAT_END%]"
+      else
+        BAT_THRESHOLDS=""
+      fi
+      BATTERY="$BAT_CAP% ($BAT_STATUS) $BAT_THRESHOLDS"
+    else
+      BATTERY="N/A"
+    fi
+
+    # Network info
+    NET_IFACE=$(ip route | ${pkgs.gawk}/bin/awk '/default/{print $5; exit}')
+    if [ -n "$NET_IFACE" ]; then
+      NET_IP=$(ip -4 addr show "$NET_IFACE" | ${pkgs.gawk}/bin/awk '/inet /{print $2}' | cut -d'/' -f1)
+      # Check for VPN
+      if ip link show | grep -q "proton"; then
+        VPN_STATUS="🔒 ProtonVPN"
+      else
+        VPN_STATUS="No VPN"
+      fi
+    else
+      NET_IP="Disconnected"
+      VPN_STATUS="No VPN"
+    fi
+
+    # GPU info (AMD)
+    if [ -f /sys/class/drm/card1/device/gpu_busy_percent ]; then
+      GPU_USAGE=$(cat /sys/class/drm/card1/device/gpu_busy_percent 2>/dev/null || echo "N/A")
+      GPU_USAGE="$GPU_USAGE%"
+    else
+      GPU_USAGE="N/A"
+    fi
+
+    # Services status
+    OLLAMA_STATUS=$(systemctl is-active ollama 2>/dev/null || echo "inactive")
+    DOCKER_STATUS=$(systemctl is-active docker 2>/dev/null || echo "inactive")
+
+    # Blue light filter status
+    BLUELIGHT_STATE=$(cat "$HOME/.config/bluelight-state" 2>/dev/null || echo "off")
+    if [ "$BLUELIGHT_STATE" = "off" ]; then
+      BLUELIGHT="Off"
+    else
+      BLUELIGHT="$BLUELIGHT_STATE K"
+    fi
+
+    # Format output for notification
+    INFO="<b>󰌢 $HOSTNAME</b>
+<small>$DIM Kernel: $KERNEL</small>
+<small>$DIM Uptime: $UPTIME</small>
+
+<b>󰻠 CPU</b>  $CPU_USAGE% @ $CPU_TEMP°C
+<b>󰍛 RAM</b>  $MEM_INFO ($MEM_PERCENT%)
+<b>󰋊 Disk</b>  $DISK_INFO
+<b>󰂄 Battery</b>  $BATTERY
+<b>󰢮 GPU</b>  $GPU_USAGE
+
+<b>󰖩 Network</b>  $NET_IP
+<b>󰦝 VPN</b>  $VPN_STATUS
+<b>󰖨 Filter</b>  $BLUELIGHT
+
+<b>Services</b>
+  Ollama: $OLLAMA_STATUS
+  Docker: $DOCKER_STATUS"
+
+    # Show notification with longer timeout
+    notify-send -t 10000 "System Info" "$INFO" -i "utilities-system-monitor"
+  '';
+
   battery-mode = pkgs.writeShellScriptBin "battery-mode" ''
     #!/usr/bin/env bash
     # Battery charge mode selector for ThinkPad (requires sudo privileges)
@@ -209,6 +342,7 @@ in
         "hypridle"
         "${bluelight-auto}/bin/bluelight-auto"  # Auto-enable blue light filter at night
         "sleep 2 && nm-applet"  # Delay tray applet to avoid "no icon" errors
+        "sleep 3 && opensnitch-ui"  # Application firewall GUI (tray icon)
       ];
 
       # Cursor and GDK settings (system-level has the rest via environment.sessionVariables)
@@ -397,6 +531,8 @@ in
         "$mod SHIFT, N, exec, ${bluelight-off}/bin/bluelight-off"
         "$mod, M, exec, ${battery-mode}/bin/battery-mode"
         "$mod SHIFT, M, exec, ${perf-mode}/bin/perf-mode"
+        "$mod, O, exec, ${quick-notes}/bin/quick-notes"  # Quick note-taking
+        "$mod, I, exec, ${sysinfo-panel}/bin/sysinfo-panel"  # System info panel
         ", Print, exec, grim -g \"$(slurp)\" - | wl-copy && notify-send 'Screenshot' 'Copied to clipboard'"
         "$mod, Print, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png && notify-send 'Screenshot' 'Saved to Pictures/Screenshots'"
         "SHIFT, Print, exec, grim - | wl-copy && notify-send 'Screenshot' 'Full screen copied'"
@@ -498,6 +634,11 @@ in
         "center, class:^(hyprlauncher)$"
         "stayfocused, class:^(hyprlauncher)$"
 
+        # Quick notes - floating centered window
+        "float, class:^(quick-notes)$"
+        "size 800 600, class:^(quick-notes)$"
+        "center, class:^(quick-notes)$"
+
         # Prevent idle when watching video
         "idleinhibit fullscreen, class:.*"
         "idleinhibit focus, class:^(mpv|vlc)$"
@@ -521,6 +662,8 @@ in
     bluelight-auto            # Auto-enable at night (runs on boot)
     battery-mode              # Battery charge mode script
     perf-mode                 # Performance mode toggle
+    quick-notes               # Quick note-taking (SUPER+O)
+    sysinfo-panel             # System info panel (SUPER+I)
     wofi                      # dmenu-like picker for clipboard history
   ];
 }
