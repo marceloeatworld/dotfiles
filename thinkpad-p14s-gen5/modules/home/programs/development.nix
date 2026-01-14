@@ -1,5 +1,5 @@
 # Development tools configuration
-{ pkgs, pkgs-unstable, config, ... }:
+{ pkgs, pkgs-unstable, pkgs-ghidra, lib, config, ... }:
 
 {
   # NPM configuration for NixOS
@@ -10,18 +10,6 @@
   home.sessionPath = [
     "$HOME/.npm-global/bin"
   ];
-
-  # Home activation scripts
-  home.activation.installGeminiCLI = config.lib.dag.entryAfter ["writeBoundary"] ''
-    $DRY_RUN_CMD ${pkgs.bash}/bin/bash -c "
-      if ! ${pkgs.nodejs_22}/bin/npm list -g @google/gemini-cli &>/dev/null; then
-        echo 'Installing Gemini CLI globally...'
-        ${pkgs.nodejs_22}/bin/npm install -g @google/gemini-cli
-      else
-        echo 'Gemini CLI already installed'
-      fi
-    "
-  '';
 
   # Development packages
   # VS Code - Latest version from Microsoft (updated via overlays/vscode-latest.nix)
@@ -118,7 +106,7 @@
 
     # Language Servers (for Claude Code LSP integration)
     nodePackages.typescript-language-server  # TypeScript/JavaScript LSP
-    nodePackages.typescript                  # Required by typescript-language-server
+    (lib.lowPrio nodePackages.typescript)    # Low priority to avoid collision with wrangler's bundled typescript
     pyright                                  # Python LSP (Microsoft)
     clang-tools                              # clangd, clang-tidy, clang-format (no collision with GCC)
     csharp-ls          # C# LSP (uses .NET 9 from combined SDK above)
@@ -128,8 +116,15 @@
     # NOTE: parllama not available in nixpkgs, install via pip if needed:
     # python3 -m pip install --user parllama
 
+    # AI Coding Agents
+    opencode          # OpenCode - AI coding agent for terminal (latest from overlay)
+    # To update: run update-apps or edit overlays/opencode-latest.nix
+
+    # Cloud Development
+    wrangler          # Cloudflare Workers CLI (from nixpkgs)
+
     # Reverse Engineering
-    pkgs-unstable.ghidra  # NSA Software Reverse Engineering (SRE) suite - compiled from source (11.4.2)
+    pkgs-ghidra.ghidra  # NSA SRE suite (pinned nixpkgs - unstable has Gradle 8.12 build issues)
 
     # Documentation
     zeal              # Offline documentation browser (Dash compatible)

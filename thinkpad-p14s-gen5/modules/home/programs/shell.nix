@@ -316,7 +316,8 @@ in
         echo "✓ Updated to Claude Code $LATEST"
       }
 
-      # Update all custom overlays
+      # Update all custom overlays (VS Code + Claude Code)
+      # Note: OpenCode uses nixpkgs version (complex build, can't override easily)
       function update-overlays() {
         update-vscode
         update-claude-code

@@ -1,5 +1,5 @@
 # Desktop entries for applications (Neovim, Ghidra, Security Tools, etc.)
-{ pkgs, pkgs-unstable, ... }:
+{ pkgs, pkgs-unstable, pkgs-ghidra, ... }:
 
 let
   # Editor launcher for Neovim
@@ -61,7 +61,7 @@ in
       name = "Ghidra";
       genericName = "Reverse Engineering";
       comment = "NSA Software Reverse Engineering Suite";
-      exec = "${pkgs-unstable.ghidra}/bin/ghidra";
+      exec = "${pkgs-ghidra.ghidra}/bin/ghidra";
       icon = "ghidra";
       terminal = false;
       type = "Application";

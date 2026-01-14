@@ -55,6 +55,27 @@
       # Runtime power management
       RUNTIME_PM_ON_AC = "on";
       RUNTIME_PM_ON_BAT = "auto";
+
+      # Disk power saving (SATA/NVMe)
+      DISK_DEVICES = "nvme0n1";
+      DISK_APM_LEVEL_ON_AC = "254";      # Max performance
+      DISK_APM_LEVEL_ON_BAT = "128";     # Power saving with spindown
+
+      # USB autosuspend (saves ~0.5W per idle device)
+      USB_AUTOSUSPEND = 1;
+
+      # WiFi power saving
+      WIFI_PWR_ON_AC = "off";
+      WIFI_PWR_ON_BAT = "on";
+
+      # Audio power saving (snd_hda_intel)
+      SOUND_POWER_SAVE_ON_AC = 0;
+      SOUND_POWER_SAVE_ON_BAT = 1;
+      SOUND_POWER_SAVE_CONTROLLER = "Y";
+
+      # Platform profile (AMD-specific)
+      PLATFORM_PROFILE_ON_AC = "performance";
+      PLATFORM_PROFILE_ON_BAT = "low-power";
     };
   };
 

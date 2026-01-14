@@ -29,6 +29,33 @@ let
     from pathlib import Path
 
     # ══════════════════════════════════════════════════════════════════════════
+    # SAFE CODE EXTENSIONS (always allowed, never blocked by prefix rules)
+    # These are legitimate source code files that should never be blocked
+    # ══════════════════════════════════════════════════════════════════════════
+    SAFE_CODE_EXTENSIONS = frozenset({
+        # JavaScript/TypeScript
+        'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs',
+        # Web
+        'html', 'css', 'scss', 'sass', 'less', 'vue', 'svelte',
+        # Backend
+        'py', 'rb', 'php', 'go', 'rs', 'java', 'kt', 'scala', 'cs',
+        # Systems
+        'c', 'cpp', 'cc', 'h', 'hpp',
+        # Config/Data (non-sensitive)
+        'yaml', 'yml', 'toml', 'xml', 'json',
+        # Documentation
+        'md', 'rst', 'txt',
+        # Shell scripts
+        'sh', 'bash', 'zsh', 'fish',
+        # Nix
+        'nix',
+        # Dart/Flutter
+        'dart',
+        # Other
+        'sql', 'graphql', 'proto',
+    })
+
+    # ══════════════════════════════════════════════════════════════════════════
     # SENSITIVE FILE EXTENSIONS (without dot)
     # ══════════════════════════════════════════════════════════════════════════
     SENSITIVE_EXTENSIONS = frozenset({
@@ -151,24 +178,29 @@ let
         suffix = file_path.suffix.lstrip('.').lower()
         parts = set(p.lower() for p in file_path.parts)
 
-        # 1. Check for path traversal
+        # 1. Check for path traversal (always blocked)
         if has_path_traversal(path_str):
             return "path traversal attempt detected"
 
-        # 2. Check sensitive directories
+        # 2. Check sensitive directories (always blocked)
         for sensitive_dir in SENSITIVE_DIRS:
             if sensitive_dir.lower() in parts:
                 return f"sensitive directory '{sensitive_dir}'"
 
-        # 3. Check exact file names
+        # 3. Check exact file names (always blocked)
         if name in SENSITIVE_NAMES or file_path.name in SENSITIVE_NAMES:
             return f"sensitive file '{file_path.name}'"
 
-        # 4. Check extensions
+        # 4. Check extensions - block sensitive, but SAFE CODE files bypass prefix checks
         if suffix in SENSITIVE_EXTENSIONS:
             return f"sensitive extension '.{suffix}'"
 
-        # 5. Check prefixes
+        # 5. If file has a safe code extension, skip prefix checks entirely
+        #    This allows auth.api.ts, AuthCallback.tsx, etc.
+        if suffix in SAFE_CODE_EXTENSIONS:
+            return None
+
+        # 6. Check prefixes (only for non-code files)
         for prefix in SENSITIVE_PREFIXES:
             if name.startswith(prefix):
                 return f"sensitive pattern '{name}'"

@@ -5,18 +5,6 @@
 {
   # Desktop entries for web apps
   xdg.desktopEntries = {
-    # Windows 11 VM
-    windows-vm = {
-      name = "Windows 11";
-      genericName = "Virtual Machine";
-      comment = "Windows 11 VM via Docker with RDP";
-      exec = "windows-vm launch";
-      icon = "windows";
-      terminal = false;
-      type = "Application";
-      categories = [ "System" "Emulator" ];
-    };
-
     # WhatsApp Web
     whatsapp-web = {
       name = "WhatsApp";

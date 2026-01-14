@@ -10,8 +10,71 @@ let
     sha256 = "sha256-vBEMR83ZMV/o8wPR9mm2eZt44CulHxdUuK4Y7O/xwzs=";
     stripRoot = false;
   };
+
+  # OpenShot AppImage from GitHub releases
+  openshot-appimage = pkgs.appimageTools.wrapType2 {
+    pname = "openshot-qt";
+    version = "3.4.0";
+    src = pkgs.fetchurl {
+      url = "https://github.com/OpenShot/openshot-qt/releases/download/v3.4.0/OpenShot-v3.4.0-x86_64.AppImage";
+      sha256 = "sha256-Lvi8dzsq2KaBHP39bXGH3H6VooSp85Az6sZnXPeO7yw=";
+    };
+    extraPkgs = pkgs: with pkgs; [
+      python3
+      ffmpeg
+      libGL
+      libGLU
+      xorg.libX11
+      xorg.libXrender
+      xorg.libXext
+      qt5.qtbase
+      qt5.qtsvg
+      qt5.qtmultimedia
+    ];
+  };
+
+  # MPV wrapper to ensure correct binary path for desktop files
+  mpv-wrapped = pkgs.mpv;
 in
 {
+  # OpenShot desktop entry
+  xdg.desktopEntries.openshot-qt = {
+    name = "OpenShot Video Editor";
+    genericName = "Video Editor";
+    comment = "Create and edit videos and movies";
+    exec = "${openshot-appimage}/bin/openshot-qt %F";
+    icon = "openshot-qt";
+    terminal = false;
+    type = "Application";
+    categories = [ "AudioVideo" "Video" "AudioVideoEditing" ];
+    mimeType = [
+      "application/vnd.openshot-qt-project"
+      "video/mp4" "video/x-matroska" "video/webm" "video/avi"
+      "video/quicktime" "video/mpeg" "video/ogg"
+    ];
+  };
+
+  # Custom mpv.desktop that works correctly on NixOS
+  # The default mpv.desktop uses TryExec=mpv which may fail
+  xdg.desktopEntries.mpv = {
+    name = "mpv Media Player";
+    genericName = "Multimedia player";
+    comment = "Play movies and songs";
+    exec = "${mpv-wrapped}/bin/mpv --player-operation-mode=pseudo-gui -- %U";
+    icon = "mpv";
+    terminal = false;
+    type = "Application";
+    categories = [ "AudioVideo" "Audio" "Video" "Player" "TV" ];
+    mimeType = [
+      "video/mp4" "video/x-matroska" "video/webm" "video/avi" "video/x-msvideo"
+      "video/quicktime" "video/mpeg" "video/x-flv" "video/x-ms-wmv" "video/ogg"
+      "video/3gpp" "video/3gpp2" "audio/mpeg" "audio/mp3" "audio/flac"
+      "audio/ogg" "audio/wav" "audio/aac" "audio/mp4" "audio/webm"
+    ];
+    settings = {
+      StartupWMClass = "mpv";
+    };
+  };
   # MPV video player - Full configuration
   programs.mpv = {
     enable = true;
@@ -170,7 +233,9 @@ in
   };
 
   # Additional media packages
-  home.packages = (with pkgs; [
+  home.packages = [
+    openshot-appimage # Video editor v3.4.0 (AppImage from GitHub)
+  ] ++ (with pkgs; [
     spotify
     vlc
     obs-studio      # Screen recording and streaming

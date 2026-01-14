@@ -283,14 +283,14 @@
         local dashboard = require("alpha.themes.dashboard")
 
         dashboard.section.header.val = {
-          [[                                                    ]],
-          [[ ███╗   ██╗███████╗ ██████╗ ██╗   ██╗██╗███╗   ███╗ ]],
-          [[ ████╗  ██║██╔════╝██╔═══██╗██║   ██║██║████╗ ████║ ]],
-          [[ ██╔██╗ ██║█████╗  ██║   ██║██║   ██║██║██╔████╔██║ ]],
-          [[ ██║╚██╗██║██╔══╝  ██║   ██║╚██╗ ██╔╝██║██║╚██╔╝██║ ]],
-          [[ ██║ ╚████║███████╗╚██████╔╝ ╚████╔╝ ██║██║ ╚═╝ ██║ ]],
-          [[ ╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝ ]],
-          [[                                                    ]],
+          [[                                                                            ]],
+          [[  ██████╗██╗   ██╗████████╗███████╗██████╗  █████╗ ████████╗ █████╗         ]],
+          [[ ██╔════╝██║   ██║╚══██╔══╝██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗        ]],
+          [[ ██║     ██║   ██║   ██║   █████╗  ██║  ██║███████║   ██║   ███████║        ]],
+          [[ ██║     ██║   ██║   ██║   ██╔══╝  ██║  ██║██╔══██║   ██║   ██╔══██║        ]],
+          [[ ╚██████╗╚██████╔╝   ██║   ███████╗██████╔╝██║  ██║   ██║   ██║  ██║        ]],
+          [[  ╚═════╝ ╚═════╝    ╚═╝   ╚══════╝╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝        ]],
+          [[                                                                            ]],
         }
 
         dashboard.section.buttons.val = {
@@ -820,6 +820,51 @@
       -- ─────────────────────────────────────────────────────────────
       keymap("n", "<Esc>", "<cmd>noh<CR><Esc>", { desc = "Clear search highlight" })
       keymap("i", "jk", "<Esc>", { desc = "Exit insert mode" })
+      keymap("i", "kj", "<Esc>", { desc = "Exit insert mode (alt)" })
+
+      -- ─────────────────────────────────────────────────────────────
+      -- BEGINNER-FRIENDLY KEYMAPS
+      -- These provide familiar shortcuts for those coming from other editors
+      -- ─────────────────────────────────────────────────────────────
+      -- Save with Ctrl+S (works in all modes)
+      keymap("n", "<C-s>", "<cmd>w<CR>", { desc = "Save file" })
+      keymap("i", "<C-s>", "<Esc><cmd>w<CR>a", { desc = "Save file" })
+      keymap("v", "<C-s>", "<Esc><cmd>w<CR>", { desc = "Save file" })
+
+      -- Undo/Redo with Ctrl+Z and Ctrl+Y
+      keymap("n", "<C-z>", "u", { desc = "Undo" })
+      keymap("i", "<C-z>", "<Esc>ua", { desc = "Undo" })
+      keymap("n", "<C-y>", "<C-r>", { desc = "Redo" })
+      keymap("i", "<C-y>", "<Esc><C-r>a", { desc = "Redo" })
+
+      -- Select all with Ctrl+A
+      keymap("n", "<C-a>", "ggVG", { desc = "Select all" })
+
+      -- Copy/Cut/Paste with Ctrl (uses system clipboard)
+      keymap("v", "<C-c>", '"+y', { desc = "Copy to clipboard" })
+      keymap("v", "<C-x>", '"+d', { desc = "Cut to clipboard" })
+      keymap("n", "<C-v>", '"+p', { desc = "Paste from clipboard" })
+      keymap("i", "<C-v>", '<Esc>"+pa', { desc = "Paste from clipboard" })
+
+      -- Duplicate line with Ctrl+D
+      keymap("n", "<C-d>", "yyp", { desc = "Duplicate line" })
+      keymap("i", "<C-d>", "<Esc>yypa", { desc = "Duplicate line" })
+
+      -- Delete line with Ctrl+Shift+K (like VS Code)
+      keymap("n", "<C-S-k>", "dd", { desc = "Delete line" })
+      keymap("i", "<C-S-k>", "<Esc>dda", { desc = "Delete line" })
+
+      -- Find with Ctrl+F (search in file)
+      keymap("n", "<C-f>", "/", { desc = "Search in file" })
+
+      -- Go to line with Ctrl+G
+      keymap("n", "<C-g>", ":", { desc = "Go to line (type number)" })
+
+      -- Close buffer with Ctrl+W
+      keymap("n", "<C-w>q", "<cmd>lua require('mini.bufremove').delete(0, false)<CR>", { desc = "Close buffer" })
+
+      -- New file
+      keymap("n", "<C-n>", "<cmd>enew<CR>", { desc = "New file" })
 
       -- Better window navigation
       keymap("n", "<C-h>", "<C-w>h", { desc = "Go to left window" })
@@ -971,6 +1016,90 @@
         { "<leader>uc", "<cmd>set cursorline!<CR>", desc = "Toggle cursor line" },
         { "<leader>ud", function() vim.diagnostic.enable(not vim.diagnostic.is_enabled()) end, desc = "Toggle diagnostics" },
         { "<leader>uh", function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end, desc = "Toggle inlay hints" },
+
+        -- ═══════════════════════════════════════════════════════════
+        -- [v]im learning - Cheatsheet and practice
+        -- ═══════════════════════════════════════════════════════════
+        { "<leader>v", group = "Vim Learning" },
+        { "<leader>vc", function()
+          local cheatsheet = [[
+╔══════════════════════════════════════════════════════════════════════╗
+║                     VIM CHEATSHEET - ESSENTIALS                      ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ MODES (press Esc to go back to Normal mode)                          ║
+║   i     → Insert mode (type text)     a → Insert after cursor        ║
+║   v     → Visual mode (select)        V → Select whole lines         ║
+║   :     → Command mode                / → Search mode                ║
+║   jk    → Exit insert (custom)        Esc → Return to Normal         ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ MOVEMENT (Normal mode)                                               ║
+║   h j k l → Left/Down/Up/Right        w → Next word   b → Back word  ║
+║   0     → Start of line               $ → End of line                ║
+║   gg    → Top of file                 G → Bottom of file             ║
+║   Ctrl+d → Page down                  Ctrl+u → Page up               ║
+║   {  }  → Previous/Next paragraph     %  → Jump to matching bracket  ║
+║   f{c}  → Jump to char {c}            F{c} → Jump back to char       ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ EDITING (Normal mode)                                                ║
+║   x     → Delete character            dd → Delete line               ║
+║   yy    → Copy (yank) line            p  → Paste after cursor        ║
+║   u     → Undo                        Ctrl+r → Redo                  ║
+║   .     → Repeat last command         o  → New line below            ║
+║   O     → New line above              A  → Insert at end of line     ║
+║   ciw   → Change inner word           diw → Delete inner word        ║
+║   cc    → Change whole line           C  → Change to end of line     ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ VISUAL MODE (select text, then act)                                  ║
+║   v     → Start selecting             V  → Select lines              ║
+║   y     → Copy selection              d  → Delete selection          ║
+║   >     → Indent right                <  → Indent left               ║
+║   gc    → Toggle comment              gw → Format selection          ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ SEARCH & REPLACE                                                     ║
+║   /text → Search forward              ?text → Search backward        ║
+║   n     → Next result                 N  → Previous result           ║
+║   *     → Search word under cursor    :%s/old/new/g → Replace all    ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ WINDOWS & BUFFERS                                                    ║
+║   Ctrl+w v → Split vertical           Ctrl+w s → Split horizontal    ║
+║   Ctrl+h/j/k/l → Navigate windows     Space bd → Close buffer        ║
+║   Alt+1-9 → Go to buffer by number    Space bb → Switch buffer       ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ YOUR LEADER KEYS (Space = Leader)                                    ║
+║   Space ?  → Show ALL keybinds        Space e  → File explorer       ║
+║   Space ff → Find file                Space fg → Find text (grep)    ║
+║   Space w  → Save                     Space q  → Quit                ║
+║   Space gg → LazyGit                  Space ca → Code actions        ║
+║   gd       → Go to definition         K        → Show documentation  ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ VS-CODE STYLE (your custom shortcuts)                                ║
+║   Ctrl+s → Save    Ctrl+z → Undo    Ctrl+y → Redo    Ctrl+a → Select ║
+║   Ctrl+c → Copy    Ctrl+x → Cut     Ctrl+v → Paste   Ctrl+d → Dupe   ║
+║   Ctrl+f → Search  Ctrl+n → New     Ctrl+Shift+k → Delete line       ║
+╚══════════════════════════════════════════════════════════════════════╝
+          ]]
+          -- Show in a floating window
+          local buf = vim.api.nvim_create_buf(false, true)
+          local lines = vim.split(cheatsheet, "\n")
+          vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+          local width = 76
+          local height = #lines
+          local win = vim.api.nvim_open_win(buf, true, {
+            relative = "editor",
+            width = width,
+            height = height,
+            col = math.floor((vim.o.columns - width) / 2),
+            row = math.floor((vim.o.lines - height) / 2),
+            style = "minimal",
+            border = "rounded",
+          })
+          vim.api.nvim_buf_set_option(buf, "modifiable", false)
+          vim.api.nvim_buf_set_keymap(buf, "n", "q", ":close<CR>", { noremap = true, silent = true })
+          vim.api.nvim_buf_set_keymap(buf, "n", "<Esc>", ":close<CR>", { noremap = true, silent = true })
+        end, desc = "Show Vim Cheatsheet" },
+        { "<leader>vt", "<cmd>Tutor<CR>", desc = "Start Vim Tutor" },
+        { "<leader>vh", "<cmd>help<CR>", desc = "Open Vim Help" },
+        { "<leader>vk", "<cmd>Telescope keymaps<CR>", desc = "Search Keymaps" },
 
         -- ═══════════════════════════════════════════════════════════
         -- [t]erminal

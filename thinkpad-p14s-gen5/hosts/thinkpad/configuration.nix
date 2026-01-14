@@ -56,6 +56,11 @@
     pciutils   # lspci - hardware debugging
     # NOTE: vim/htop/neofetch removed - use nvim/btop/fastfetch via home-manager
     # NOTE: wget/curl removed - installed via home-manager (home.nix)
+
+    # XDG/MIME infrastructure (required for file associations)
+    desktop-file-utils  # update-desktop-database command
+    shared-mime-info    # MIME type database
+    xdg-utils           # xdg-open, xdg-mime, etc.
   ];
 
   # Enable nix-ld for running unpatched dynamic binaries

@@ -4,6 +4,8 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Pinned nixpkgs for ghidra (before Gradle 8.12 broke the build)
+    nixpkgs-ghidra.url = "github:NixOS/nixpkgs/5912c1772a44e31bf1c63c0390b90501e5026886";
 
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";
@@ -22,9 +24,13 @@
       url = "github:hyprwm/hyprland-plugins";
       inputs.hyprland.follows = "hyprland";
     };
+
+    # Ghostty tip (nightly) - fixes memory leak with Claude Code
+    # See: https://mitchellh.com/writing/ghostty-memory-leak-fix
+    ghostty.url = "github:ghostty-org/ghostty";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, disko, hyprland, hyprland-plugins, ... } @ inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-ghidra, home-manager, nixos-hardware, disko, hyprland, hyprland-plugins, ghostty, ... } @ inputs:
     let
       system = "x86_64-linux";
 
@@ -70,6 +76,14 @@
               inherit (prev) lib fetchurl claude-code;
             };
           })
+          # OpenCode - using nixpkgs version (complex build from GitHub sources)
+          # Note: Cannot easily override version like claude-code (npm-based)
+          # Updates come from nixpkgs-unstable
+
+          # Ghostty tip (nightly) - fixes memory leak with Claude Code
+          (final: prev: {
+            ghostty = ghostty.packages.${system}.default;
+          })
         ];
       };
 
@@ -82,11 +96,18 @@
       # Keep pkgs-unstable alias for backwards compatibility
       pkgs-unstable = pkgs;
 
+      # Pinned packages for ghidra (working version before Gradle 8.12)
+      pkgs-ghidra = import nixpkgs-ghidra {
+        inherit system;
+        config.allowUnfree = true;
+      };
+
       # Common special args passed to all modules
       specialArgs = {
         inherit inputs;
         inherit pkgs-unstable;
         inherit pkgs-stable;
+        inherit pkgs-ghidra;
       };
     in
     {
@@ -129,6 +150,10 @@
                 claude-code = import ./overlays/claude-code-latest.nix {
                   inherit (prev) lib fetchurl claude-code;
                 };
+              })
+              # Ghostty tip (nightly) - fixes memory leak with Claude Code
+              (final: prev: {
+                ghostty = ghostty.packages.${system}.default;
               })
             ];
           }

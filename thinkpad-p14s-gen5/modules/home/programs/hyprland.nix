@@ -87,35 +87,107 @@ let
     fi
   '';
 
-  # Toggle performance mode (blur/shadows/animations)
+  # Toggle performance mode - cycles through 3 modes
+  # BATTERY SAVER → BALANCED → MAX PERFORMANCE → BATTERY SAVER
   perf-mode = pkgs.writeShellScriptBin "perf-mode" ''
     #!/usr/bin/env bash
     set -euo pipefail
 
     STATE_FILE="$HOME/.config/perf-mode-state"
 
-    # Read current state
-    if [ -f "$STATE_FILE" ]; then
-      CURRENT=$(cat "$STATE_FILE")
-    else
-      CURRENT="quality"
-    fi
+    # Read current state (default to balanced)
+    CURRENT=$(cat "$STATE_FILE" 2>/dev/null || echo "balanced")
 
-    if [ "$CURRENT" = "quality" ]; then
-      # Switch to performance mode (disable effects)
-      hyprctl keyword decoration:blur:enabled false
-      hyprctl keyword decoration:shadow:enabled false
-      hyprctl keyword animations:enabled false
-      echo "performance" > "$STATE_FILE"
-      notify-send -t 2000 "Performance Mode" "Effects disabled for battery/GPU savings" -i "battery-good"
-    else
-      # Switch to quality mode (enable effects)
-      hyprctl keyword decoration:blur:enabled true
-      hyprctl keyword decoration:shadow:enabled true
-      hyprctl keyword animations:enabled true
-      echo "quality" > "$STATE_FILE"
-      notify-send -t 2000 "Quality Mode" "Visual effects enabled" -i "video-display"
+    case "$CURRENT" in
+      battery)
+        # Switch to BALANCED (some animations, moderate FPS)
+        hyprctl keyword animations:enabled true
+        hyprctl keyword misc:render_unfocused_fps 10
+        echo "balanced" > "$STATE_FILE"
+        notify-send -t 2000 "⚖️ Balanced Mode" "Animations ON, moderate savings" -i "battery-good"
+        ;;
+      balanced)
+        # Switch to MAX PERFORMANCE (all effects, high FPS)
+        hyprctl keyword animations:enabled true
+        hyprctl keyword misc:render_unfocused_fps 60
+        hyprctl keyword decoration:blur:enabled true
+        hyprctl keyword decoration:shadow:enabled true
+        echo "max" > "$STATE_FILE"
+        notify-send -t 2000 "🚀 Max Performance" "All effects ON (uses more power)" -i "video-display"
+        ;;
+      max|*)
+        # Switch to BATTERY SAVER (no effects, minimal FPS)
+        hyprctl keyword animations:enabled false
+        hyprctl keyword misc:render_unfocused_fps 5
+        hyprctl keyword decoration:blur:enabled false
+        hyprctl keyword decoration:shadow:enabled false
+        echo "battery" > "$STATE_FILE"
+        notify-send -t 2000 "🔋 Battery Saver" "All effects OFF (max battery life)" -i "battery-caution"
+        ;;
+    esac
+  '';
+
+  # Auto-apply performance mode on battery at startup
+  perf-mode-auto = pkgs.writeShellScriptBin "perf-mode-auto" ''
+    #!/usr/bin/env bash
+    STATE_FILE="$HOME/.config/perf-mode-state"
+
+    # Check if on battery
+    if [ -f /sys/class/power_supply/BAT0/status ]; then
+      BAT_STATUS=$(cat /sys/class/power_supply/BAT0/status)
+
+      if [ "$BAT_STATUS" = "Discharging" ]; then
+        # On battery - enable performance mode
+        hyprctl keyword animations:enabled false
+        hyprctl keyword misc:render_unfocused_fps 5
+        echo "performance" > "$STATE_FILE"
+      else
+        # On AC - restore saved state or default to quality
+        SAVED_STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "quality")
+        if [ "$SAVED_STATE" = "performance" ]; then
+          hyprctl keyword animations:enabled false
+          hyprctl keyword misc:render_unfocused_fps 5
+        else
+          hyprctl keyword animations:enabled true
+          hyprctl keyword misc:render_unfocused_fps 15
+        fi
+      fi
     fi
+  '';
+
+  # Battery-aware performance daemon (monitors power state changes)
+  perf-mode-daemon = pkgs.writeShellScriptBin "perf-mode-daemon" ''
+    #!/usr/bin/env bash
+    # Monitors power state and auto-switches performance mode
+    # Runs in background, checks every 30 seconds
+
+    STATE_FILE="$HOME/.config/perf-mode-state"
+    LAST_STATUS=""
+
+    while true; do
+      if [ -f /sys/class/power_supply/BAT0/status ]; then
+        CURRENT_STATUS=$(cat /sys/class/power_supply/BAT0/status)
+
+        # Only act on state change
+        if [ "$CURRENT_STATUS" != "$LAST_STATUS" ]; then
+          if [ "$CURRENT_STATUS" = "Discharging" ]; then
+            # Switched to battery - enable performance mode silently
+            hyprctl keyword animations:enabled false
+            hyprctl keyword misc:render_unfocused_fps 5
+            echo "performance" > "$STATE_FILE"
+            notify-send -t 2000 "Battery Mode" "󰂃 Performance mode auto-enabled" -i "battery-good"
+          elif [ "$LAST_STATUS" = "Discharging" ]; then
+            # Switched to AC - restore animations
+            hyprctl keyword animations:enabled true
+            hyprctl keyword misc:render_unfocused_fps 15
+            echo "quality" > "$STATE_FILE"
+            notify-send -t 2000 "AC Power" "󰂄 Quality mode restored" -i "battery-full-charging"
+          fi
+          LAST_STATUS="$CURRENT_STATUS"
+        fi
+      fi
+      sleep 30
+    done
   '';
 
   # Quick notes - Open floating terminal with nvim for quick note-taking
@@ -143,6 +215,77 @@ EOF
     # Open in floating Ghostty with nvim
     # The window rule in Hyprland will make it float
     ghostty --class="quick-notes" -e nvim "+normal G" "$NOTE_FILE"
+  '';
+
+  # Hyprland keybindings cheatsheet - shows all shortcuts in a notification
+  hypr-keys = pkgs.writeShellScriptBin "hypr-keys" ''
+    #!/usr/bin/env bash
+
+    # Get current states
+    PERF_STATE=$(cat "$HOME/.config/perf-mode-state" 2>/dev/null || echo "quality")
+    BAT_MODE=$(cat "$HOME/.config/battery-mode-state" 2>/dev/null || echo "conservation")
+    BLUELIGHT=$(cat "$HOME/.config/bluelight-state" 2>/dev/null || echo "off")
+
+    if [ "$PERF_STATE" = "performance" ]; then
+      PERF_ICON="󰂃"
+    else
+      PERF_ICON="󰂄"
+    fi
+
+    case "$BAT_MODE" in
+      conservation) BAT_ICON="󰂃 55-60%" ;;
+      balanced) BAT_ICON="󰂀 75-80%" ;;
+      full) BAT_ICON="󰁹 95-100%" ;;
+      *) BAT_ICON="?" ;;
+    esac
+
+    if [ "$BLUELIGHT" = "off" ]; then
+      BL_ICON="󰖙 Off"
+    else
+      BL_ICON="󰖨 $BLUELIGHT K"
+    fi
+
+    INFO="<b>═══ WINDOWS ═══</b>
+<tt>Super+Q</tt>         Kill window
+<tt>Super+F</tt>         Fullscreen
+<tt>Super+Space</tt>     Float toggle
+<tt>Super+P</tt>         Pin (all workspaces)
+<tt>Super+G</tt>         Group windows (tabs)
+<tt>Super+[ ]</tt>       Switch tabs in group
+
+<b>═══ WORKSPACES ═══</b>
+<tt>Super+1-9</tt>       Switch workspace
+<tt>Super+Shift+1-9</tt> Move window to WS
+<tt>Super+Tab</tt>       Workspace overview
+<tt>Super+S</tt>         Scratchpad toggle
+<tt>Super+-</tt>         Minimize to special
+
+<b>═══ APPS ═══</b>
+<tt>Super+Return</tt>    Terminal (Ghostty)
+<tt>Super+B</tt>         Browser (Brave)
+<tt>Super+E</tt>         Files (Nemo)
+<tt>Super+D</tt>         App launcher
+<tt>Super+V</tt>         Clipboard history
+<tt>Super+O</tt>         Quick notes
+
+<b>═══ SYSTEM ═══</b>
+<tt>Super+Escape</tt>    Lock screen
+<tt>Super+I</tt>         System info
+<tt>Print</tt>           Screenshot (region)
+<tt>Super+C</tt>         Color picker
+
+<b>═══ BATTERY & DISPLAY ═══</b>
+<tt>Super+M</tt>         Battery mode cycle → $BAT_ICON
+<tt>Super+Shift+M</tt>   Performance toggle → $PERF_ICON $PERF_STATE
+<tt>Super+N</tt>         Blue light cycle → $BL_ICON
+<tt>Super+Shift+N</tt>   Blue light off
+
+<b>═══ RESIZE ═══</b>
+<tt>Super+Ctrl+HJKL</tt> Resize window
+<tt>Super+Drag</tt>      Move window
+<tt>Super+RClick</tt>    Resize window"
+
+    notify-send -t 20000 "⌨ Hyprland Shortcuts" "$INFO" -i "input-keyboard"
   '';
 
   # System info panel - Shows system stats in a notification or floating window
@@ -328,7 +471,6 @@ in
     # Hyprland plugins from official flake (version-matched)
     plugins = [
       hyprlandPlugins.hyprexpo    # Workspace overview (SUPER+TAB)
-      hyprlandPlugins.hyprbars    # Window title bars
     ];
 
     settings = {
@@ -344,24 +486,6 @@ in
         workspace_method = "first 1";  # Start from workspace 1
       };
 
-      # Hyprbars - Window title bars
-      "plugin:hyprbars" = {
-        bar_height = 24;
-        bar_color = "rgb(${stripHash theme.colors.background})";
-        "col.text" = "rgb(${stripHash theme.colors.foreground})";
-        bar_text_size = 10;
-        bar_text_font = "JetBrains Mono";
-        bar_part_of_window = true;
-        bar_precedence_over_border = true;
-
-        # Window buttons (close, maximize, minimize)
-        hyprbars-button = [
-          # color, size, icon, action
-          "rgb(${stripHash theme.colors.red}), 14, 󰖭, hyprctl dispatch killactive"
-          "rgb(${stripHash theme.colors.yellow}), 14, 󰖯, hyprctl dispatch fullscreen 1"
-          "rgb(${stripHash theme.colors.green}), 14, 󰖰, hyprctl dispatch movetoworkspacesilent special:minimized"
-        ];
-      };
 
       monitor = [
         "HDMI-A-1,1920x1080@60,0x0,1"
@@ -380,6 +504,8 @@ in
         "hyprlauncher -d"  # Start hyprlauncher daemon
         "hypridle"
         "${bluelight-auto}/bin/bluelight-auto"  # Auto-enable blue light filter at night
+        "${perf-mode-auto}/bin/perf-mode-auto"  # Auto-enable performance mode on battery
+        "${perf-mode-daemon}/bin/perf-mode-daemon"  # Monitor power state changes
         "sleep 2 && nm-applet"  # Delay tray applet to avoid "no icon" errors
         "sleep 3 && opensnitch-ui"  # Application firewall GUI (tray icon)
       ];
@@ -431,14 +557,11 @@ in
       general = {
         gaps_in = 0;
         gaps_out = 0;
-        border_size = 1;
+        border_size = 0;  # No borders
         layout = "dwindle";
-        resize_on_border = true;
+        resize_on_border = true;  # Invisible resize zone on edges
+        extend_border_grab_area = 15;  # 15px grab area for resizing
         allow_tearing = false;
-
-        # Border colors from theme
-        "col.active_border" = "rgb(${stripHash theme.colors.foreground})";
-        "col.inactive_border" = "rgba(${stripHash theme.colors.border}80)";
       };
 
       decoration = {
@@ -462,7 +585,7 @@ in
       };
 
       animations = {
-        enabled = true;
+        enabled = false;  # Disabled by default for battery savings (toggle with SUPER+SHIFT+M)
         bezier = [
           "fluent_decel, 0.0, 0.2, 0.4, 1.0"
           "easeOutCirc, 0, 0.55, 0.45, 1"
@@ -477,7 +600,8 @@ in
           "fade, 1, 5, easeOutCubic"
           "fadeIn, 1, 5, easeOutCubic"
           "fadeOut, 1, 5, easeOutCubic"
-          "border, 1, 4, easeOutCubic"
+          "border, 0"  # Disable border animation (fixes flickering)
+          "borderangle, 0"  # Disable border angle animation
           "workspaces, 1, 5, easeOutCubic, slide"
           "specialWorkspace, 1, 5, easeInOutQuart, slidevert"
         ];
@@ -510,7 +634,7 @@ in
         focus_on_activate = false;  # Prevent windows from stealing focus
         on_focus_under_fullscreen = 2;  # 0=ignore, 1=takeover, 2=unfullscreen (Hyprland 0.53+)
         close_special_on_empty = true;  # Close special workspace when empty
-        render_unfocused_fps = 15;  # Save GPU on unfocused windows
+        render_unfocused_fps = 5;  # Aggressive GPU savings on unfocused windows (default for battery)
       };
 
       # Cursor settings (Hyprland 0.53+)
@@ -615,6 +739,7 @@ in
         "$mod SHIFT, M, exec, ${perf-mode}/bin/perf-mode"
         "$mod, O, exec, ${quick-notes}/bin/quick-notes"  # Quick note-taking
         "$mod, I, exec, ${sysinfo-panel}/bin/sysinfo-panel"  # System info panel
+        "$mod, F1, exec, ${hypr-keys}/bin/hypr-keys"  # Show keybindings cheatsheet (SUPER+F1)
         ", Print, exec, grim -g \"$(slurp)\" - | wl-copy && notify-send 'Screenshot' 'Copied to clipboard'"
         "$mod, Print, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png && notify-send 'Screenshot' 'Saved to Pictures/Screenshots'"
         "SHIFT, Print, exec, grim - | wl-copy && notify-send 'Screenshot' 'Full screen copied'"
@@ -756,9 +881,12 @@ in
     bluelight-off             # Quick disable (SUPER+SHIFT+N)
     bluelight-auto            # Auto-enable at night (runs on boot)
     battery-mode              # Battery charge mode script
-    perf-mode                 # Performance mode toggle
+    perf-mode                 # Performance mode toggle (SUPER+SHIFT+M)
+    perf-mode-auto            # Auto-enable on battery at startup
+    perf-mode-daemon          # Monitor power state changes
     quick-notes               # Quick note-taking (SUPER+O)
     sysinfo-panel             # System info panel (SUPER+I)
+    hypr-keys                 # Keybindings cheatsheet (SUPER+/)
     wofi                      # dmenu-like picker for clipboard history
   ];
 }

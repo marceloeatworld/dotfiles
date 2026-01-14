@@ -71,8 +71,11 @@ in
       # Bell - Ghostty uses just "bell" option
       # audible-bell and visual-bell are not valid options
 
-      # Scrollback
-      scrollback-limit = 10000;
+      # Scrollback - limit in bytes to reduce memory usage
+      # Bug: Ghostty 1.2.x has memory leak with Claude Code output (fixed in 1.3)
+      # See: https://mitchellh.com/writing/ghostty-memory-leak-fix
+      # 10MB = 10485760 bytes (default), using 5MB to be safer
+      scrollback-limit = 5242880;
 
       # Confirm close
       confirm-close-surface = false;

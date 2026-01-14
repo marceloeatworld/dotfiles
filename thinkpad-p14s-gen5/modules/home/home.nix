@@ -267,14 +267,17 @@ in
     --ozone-platform=wayland
   '';
 
-  # OpenSnitch UI settings - force allow by default
-  # This prevents the UI from overriding the system config
+  # OpenSnitch UI settings - allow by default + disable popups
+  # default_action: 0=deny, 1=allow, 2=reject
+  # default_duration: 7=always (permanent rules)
+  # disable_popups: true = no annoying prompts, just log connections
   home.file.".config/opensnitch/settings.conf".text = ''
     [global]
     default_action=1
-    default_duration=6
+    default_duration=7
     default_target=0
     default_timeout=30
+    disable_popups=true
   '';
 
   # XDG user directories
