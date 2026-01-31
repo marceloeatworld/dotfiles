@@ -38,11 +38,8 @@
     go
     rustup
     jdk                # Java Development Kit (latest LTS)
-    # .NET SDKs combined: .NET 9 (required by csharp-ls) + .NET 10 (for projects)
-    (dotnetCorePackages.combinePackages [
-      dotnetCorePackages.sdk_9_0
-      dotnetCorePackages.sdk_10_0
-    ])
+    # .NET SDK 10 (latest)
+    dotnetCorePackages.sdk_10_0
     icu                # Required by .NET for globalization support
 
     # C++ Development (complete modern toolchain)

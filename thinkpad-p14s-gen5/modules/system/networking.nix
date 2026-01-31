@@ -77,6 +77,7 @@
     enable = true;
     settings = {
       DefaultAction = "allow";  # No pop-ups, everything allowed by default
+      DefaultDuration = "always";  # Rules persist forever (not just until reboot)
       LogLevel = 1;             # Log connections (viewable in UI)
     };
   };

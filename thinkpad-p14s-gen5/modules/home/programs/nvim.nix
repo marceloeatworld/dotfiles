@@ -431,10 +431,8 @@
       telescope.load_extension('fzf')
 
       -- ════════════════════════════════════════════════════════════════════
-      -- LSP CONFIGURATION
+      -- LSP CONFIGURATION (Neovim 0.11+ native API)
       -- ════════════════════════════════════════════════════════════════════
-      -- Note: lspconfig deprecation warning can be ignored until v3.0.0
-      local lspconfig = require('lspconfig')
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
       -- Diagnostic configuration
@@ -460,7 +458,7 @@
         vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
       end
 
-      -- LSP servers configuration
+      -- LSP servers configuration using vim.lsp.config (Neovim 0.11+)
       local servers = {
         nil_ls = {},  -- Nix
         lua_ls = {
@@ -492,10 +490,14 @@
         bashls = {},
       }
 
+      -- Configure each LSP server using the new native API
       for server, config in pairs(servers) do
         config.capabilities = capabilities
-        lspconfig[server].setup(config)
+        vim.lsp.config[server] = config
       end
+
+      -- Enable all configured servers
+      vim.lsp.enable(vim.tbl_keys(servers))
 
       -- LSP Signature (show function params while typing)
       require("lsp_signature").setup({

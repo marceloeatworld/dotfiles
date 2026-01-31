@@ -23,6 +23,11 @@ in
     nvim-launcher
     pkgs.rustdesk-flutter           # RustDesk (stable version - unstable has FFmpeg build issues)
     pkgs.popsicle                   # USB flasher (System76) - lightweight, GTK native
+    pkgs.woeusb-ng                   # Windows USB flasher - for Windows ISO
+    pkgs.ntfs3g                      # NTFS support - required by woeusb-ng
+    pkgs.parted                      # Disk partitioning tool
+    pkgs.exfatprogs                  # exFAT formatting (mkfs.exfat)
+    pkgs.gparted                     # GUI disk partitioning
   ];
 
   # Desktop entries for desktop applications
