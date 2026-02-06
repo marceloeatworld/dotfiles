@@ -108,10 +108,108 @@
     clang-tools                              # clangd, clang-tidy, clang-format (no collision with GCC)
     csharp-ls          # C# LSP (uses .NET 9 from combined SDK above)
 
-    # AI/ML tools - Ollama TUI clients
-    pkgs-unstable.aichat        # Ultra lightweight CLI for Ollama (Rust) - Daily use
-    # NOTE: parllama not available in nixpkgs, install via pip if needed:
-    # python3 -m pip install --user parllama
+    # AI/ML tools - llama.cpp local inference
+    pkgs-unstable.aichat        # Ultra lightweight CLI chat client (Rust) - Daily use
+    # NOTE: llama-cpp package is in environment.systemPackages (configuration.nix)
+    # CLI tools available: llama-server, llama-cli, llama-quantize, etc.
+
+    # llm - Quick model launcher for llama.cpp (replaces "ollama run <model>")
+    (pkgs.writeShellScriptBin "llm" ''
+      #!/usr/bin/env bash
+      MODELS_DIR="$HOME/models"
+
+      # Available models with display names
+      declare -A MODEL_NAMES=(
+        ["qwen3-8b"]="Qwen3-8B-Q5_K_M.gguf"
+        ["qwen3-4b"]="Qwen3-4B-Q8_0.gguf"
+        ["dolphin-q4"]="Dolphin-X1-8B-Q4_K_M.gguf"
+        ["dolphin-q8"]="Dolphin-X1-8B-Q8_0.gguf"
+        ["mediphi"]="MediPhi-Instruct.Q8_0.gguf"
+        ["fara"]="Fara-7B-Q8_0.gguf"
+        ["bitnet"]="BitNet-2B.gguf"
+        ["bitnet-xl"]="BitNet-XL-Q8_0.gguf"
+      )
+
+      usage() {
+        echo "Usage: llm [model] [extra-args...]"
+        echo "       llm                   Chat with default model ($DEFAULT_MODEL)"
+        echo "       llm list              List available models"
+        echo "       llm server [model]    Start as OpenAI-compatible server"
+        echo ""
+        echo "Models:"
+        for key in dolphin-q8 dolphin-q4 qwen3-8b qwen3-4b fara mediphi bitnet bitnet-xl; do
+          local file="''${MODEL_NAMES[$key]}"
+          local size=""
+          if [ -f "$MODELS_DIR/$file" ]; then
+            size=" ($(du -h "$MODELS_DIR/$file" | cut -f1))"
+          fi
+          echo "  $key  →  $file$size"
+        done
+      }
+
+      # Default model when no args
+      DEFAULT_MODEL="dolphin-q8"
+
+      if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        usage
+        exit 0
+      fi
+
+      # No args → chat with default model
+      if [ -z "$1" ]; then
+        set -- "$DEFAULT_MODEL"
+      fi
+
+      if [ "$1" = "list" ]; then
+        echo "Models in $MODELS_DIR:"
+        ls -lh "$MODELS_DIR"/*.gguf 2>/dev/null | awk '{print "  " $NF " (" $5 ")"}'
+        exit 0
+      fi
+
+      # Server mode
+      if [ "$1" = "server" ]; then
+        MODEL_KEY="''${2:-$DEFAULT_MODEL}"
+        MODEL_FILE="''${MODEL_NAMES[$MODEL_KEY]}"
+        if [ -z "$MODEL_FILE" ]; then
+          # Try as direct filename
+          MODEL_FILE="$MODEL_KEY"
+        fi
+        MODEL_PATH="$MODELS_DIR/$MODEL_FILE"
+        if [ ! -f "$MODEL_PATH" ]; then
+          echo "Model not found: $MODEL_PATH"
+          exit 1
+        fi
+        echo "Starting llama-server with $MODEL_FILE..."
+        echo "API: http://127.0.0.1:8080/v1"
+        exec llama-server -m "$MODEL_PATH" --host 127.0.0.1 --port 8080 -ngl 99 "''${@:3}"
+      fi
+
+      # Interactive chat mode
+      MODEL_KEY="$1"
+      MODEL_FILE="''${MODEL_NAMES[$MODEL_KEY]}"
+      if [ -z "$MODEL_FILE" ]; then
+        # Try as direct .gguf filename
+        if [ -f "$MODELS_DIR/$MODEL_KEY" ]; then
+          MODEL_FILE="$MODEL_KEY"
+        elif [ -f "$MODEL_KEY" ]; then
+          # Full path provided
+          exec llama-cli -m "$MODEL_KEY" -ngl 99 --conversation "''${@:2}"
+        else
+          echo "Unknown model: $MODEL_KEY"
+          echo ""
+          usage
+          exit 1
+        fi
+      fi
+
+      MODEL_PATH="$MODELS_DIR/$MODEL_FILE"
+      if [ ! -f "$MODEL_PATH" ]; then
+        echo "Model file not found: $MODEL_PATH"
+        exit 1
+      fi
+
+      exec llama-cli -m "$MODEL_PATH" -ngl 99 --conversation "''${@:2}"
+    '')
 
     # AI Coding Agents
     opencode          # OpenCode - AI coding agent for terminal (latest from overlay)

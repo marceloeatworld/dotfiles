@@ -253,9 +253,6 @@ in
     satty             # Screenshot annotation
     blueman           # Bluetooth manager GUI
 
-    # Security
-    opensnitch-ui     # Application firewall GUI (daemon in system/networking.nix)
-
     # NOTE: Fonts are installed system-wide in modules/system/fonts.nix
     # This is REQUIRED for Hyprland/Waybar and other Wayland apps
     # Do NOT install fonts in home.packages - use fonts.packages instead
@@ -265,19 +262,6 @@ in
   home.file.".config/code-flags.conf".text = ''
     --enable-features=UseOzonePlatform,WaylandWindowDecorations
     --ozone-platform=wayland
-  '';
-
-  # OpenSnitch UI settings - allow by default + disable popups
-  # default_action: 0=deny, 1=allow, 2=reject
-  # default_duration: 7=always (permanent rules)
-  # disable_popups: true = no annoying prompts, just log connections
-  home.file.".config/opensnitch/settings.conf".text = ''
-    [global]
-    default_action=1
-    default_duration=7
-    default_target=0
-    default_timeout=30
-    disable_popups=true
   '';
 
   # XDG user directories

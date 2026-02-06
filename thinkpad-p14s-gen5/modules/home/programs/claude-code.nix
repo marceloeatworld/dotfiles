@@ -369,12 +369,10 @@ let
       "frontend-design@claude-code-plugins" = true;
       "typescript-lsp@claude-plugins-official" = true;
       "pyright-lsp@claude-plugins-official" = true;
-      "csharp-lsp@claude-plugins-official" = true;
       "stripe@claude-plugins-official" = true;
       "code-review@claude-code-plugins" = true;
       "claude-mem@thedotmack" = true;
       "pg@aiguide" = true;
-      "ralph-wiggum@claude-plugins-official" = true;
       "clangd-lsp@claude-plugins-official" = true;
       "pr-review-toolkit@claude-code-plugins" = true;
       "ralph-wiggum@claude-code-plugins" = true;

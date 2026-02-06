@@ -28,7 +28,7 @@ claude_cmd="$HOME/.claude/commands"
 echo "Installing for Claude Code..."
 mkdir -p "$claude_skill" "$claude_cmd"
 rm -rf "${claude_skill}/${SKILL_NAME}"
-cp -r "${tmp_dir}/skill/${SKILL_NAME}" "${claude_skill}/"
+cp -r "${tmp_dir}/skills/${SKILL_NAME}" "${claude_skill}/"
 cp "${tmp_dir}/command/${SKILL_NAME}.md" "${claude_cmd}/"
 echo "  -> ${claude_skill}/${SKILL_NAME}/"
 
@@ -40,7 +40,7 @@ if $with_opencode; then
   echo "Installing for OpenCode..."
   mkdir -p "$opencode_skill" "$opencode_cmd"
   rm -rf "${opencode_skill}/${SKILL_NAME}"
-  cp -r "${tmp_dir}/skill/${SKILL_NAME}" "${opencode_skill}/"
+  cp -r "${tmp_dir}/skills/${SKILL_NAME}" "${opencode_skill}/"
   cp "${tmp_dir}/command/${SKILL_NAME}.md" "${opencode_cmd}/"
   echo "  -> ${opencode_skill}/${SKILL_NAME}/"
 fi

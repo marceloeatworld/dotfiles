@@ -54,6 +54,7 @@
     git        # Required for flakes and system scripts
     usbutils   # lsusb - hardware debugging
     pciutils   # lspci - hardware debugging
+    llama-cpp  # llama-server, llama-cli, etc. (used by llm script)
     # NOTE: vim/htop/neofetch removed - use nvim/btop/fastfetch via home-manager
     # NOTE: wget/curl removed - installed via home-manager (home.nix)
 

@@ -80,6 +80,13 @@
           # Note: Cannot easily override version like claude-code (npm-based)
           # Updates come from nixpkgs-unstable
 
+          # llama.cpp Latest - Local LLM inference with ROCm + native optimizations
+          # Update: overlays/llama-cpp-latest.nix (version + hash)
+          (final: prev: {
+            llama-cpp = import ./overlays/llama-cpp-latest.nix {
+              inherit (prev) lib llama-cpp fetchFromGitHub;
+            };
+          })
           # Ghostty tip (nightly) - fixes memory leak with Claude Code
           (final: prev: {
             ghostty = ghostty.packages.${system}.default;
@@ -151,6 +158,12 @@
                   inherit (prev) lib fetchurl claude-code;
                 };
               })
+              # llama.cpp Latest
+              (final: prev: {
+                llama-cpp = import ./overlays/llama-cpp-latest.nix {
+                  inherit (prev) lib llama-cpp fetchFromGitHub;
+                };
+              })
               # Ghostty tip (nightly) - fixes memory leak with Claude Code
               (final: prev: {
                 ghostty = ghostty.packages.${system}.default;
@@ -190,7 +203,6 @@
           ./modules/system/security-tools.nix  # Security audit tools (nmap, wireshark, aircrack-ng, hashcat)
           ./modules/system/nh.nix  # NH - Modern Nix Helper
           ./modules/system/performance.nix  # Zram, ananicy-cpp, earlyoom, gamemode
-          ./modules/system/opensnitch-rules.nix  # OpenSnitch firewall rules (block telemetry)
 
           # Home Manager
           home-manager.nixosModules.home-manager

@@ -360,7 +360,7 @@ EOF
     fi
 
     # Services status
-    OLLAMA_STATUS=$(systemctl is-active ollama 2>/dev/null || echo "inactive")
+    LLAMA_STATUS=$(systemctl is-active llama-cpp 2>/dev/null || echo "inactive")
     DOCKER_STATUS=$(systemctl is-active docker 2>/dev/null || echo "inactive")
 
     # Blue light filter status
@@ -387,7 +387,7 @@ EOF
 <b>󰖨 Filter</b>  $BLUELIGHT
 
 <b>Services</b>
-  Ollama: $OLLAMA_STATUS
+  llama.cpp: $LLAMA_STATUS
   Docker: $DOCKER_STATUS"
 
     # Show notification with longer timeout
@@ -507,7 +507,6 @@ in
         "${perf-mode-auto}/bin/perf-mode-auto"  # Auto-enable performance mode on battery
         "${perf-mode-daemon}/bin/perf-mode-daemon"  # Monitor power state changes
         "sleep 2 && nm-applet"  # Delay tray applet to avoid "no icon" errors
-        "sleep 3 && opensnitch-ui"  # Application firewall GUI (tray icon)
       ];
 
       # Cursor and GDK settings (system-level has the rest via environment.sessionVariables)

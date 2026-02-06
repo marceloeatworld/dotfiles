@@ -134,9 +134,10 @@ lazygit    Git TUI
 gitui      Git TUI (fast)
 
 ━━━━━━━━━━━━ AI/LLM ━━━━━━━━━━━━
-ollama run <model>     Run local LLM
-ollama list            List models
-ollama pull <model>    Download model
+llm                    Chat (default: dolphin-q8)
+llm <model>            Chat with specific model
+llm list               List available models
+llm server [model]     Start OpenAI-compatible server
 aichat                 CLI chat client
 
 ━━━━━━━━━━━━━ NIX ━━━━━━━━━━━━━
@@ -316,11 +317,61 @@ in
         echo "✓ Updated to Claude Code $LATEST"
       }
 
-      # Update all custom overlays (VS Code + Claude Code)
-      # Note: OpenCode uses nixpkgs version (complex build, can't override easily)
+      # llama.cpp auto-update function (fetches latest from GitHub releases)
+      function update-llama-cpp() {
+        local OVERLAY="$HOME/dotfiles/thinkpad-p14s-gen5/overlays/llama-cpp-latest.nix"
+
+        echo ""
+        echo "══════════════════════════════════════════"
+        echo "  llama.cpp Update Check"
+        echo "══════════════════════════════════════════"
+
+        local LATEST_TAG=$(curl -s "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest" 2>/dev/null | jq -r '.tag_name')
+        local LATEST=$(echo "$LATEST_TAG" | sed 's/^b//')
+        local CURRENT=$(grep 'version = ' "$OVERLAY" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+        echo "Current: b$CURRENT"
+        echo "Latest:  $LATEST_TAG"
+
+        if [[ -z "$LATEST" || "$LATEST" = "null" ]]; then
+          echo "⚠ Could not fetch latest version (network error?)"
+          return 0
+        fi
+
+        if [[ "$CURRENT" = "$LATEST" ]]; then
+          echo "✓ Already up to date!"
+          return 0
+        fi
+
+        echo ""
+        echo "Downloading llama.cpp $LATEST_TAG..."
+        local HASH=$(nix-prefetch-url --unpack "https://github.com/ggml-org/llama.cpp/archive/refs/tags/$LATEST_TAG.tar.gz" 2>/dev/null)
+        if [[ -z "$HASH" ]]; then
+          echo "⚠ Failed to download llama.cpp $LATEST_TAG"
+          return 1
+        fi
+        local SRI=$(nix hash convert --hash-algo sha256 --to sri "$HASH")
+
+        sed -i "s/version = \".*\"/version = \"$LATEST\"/" "$OVERLAY"
+        sed -i "s|hash = \".*\"|hash = \"$SRI\"|" "$OVERLAY"
+
+        echo "✓ Updated to llama.cpp $LATEST_TAG"
+      }
+
+      # Update quick overlays (VS Code + Claude Code only)
       function update-overlays() {
         update-vscode
         update-claude-code
+      }
+
+      # Update llama.cpp separately (long compile time)
+      function update-llama() {
+        update-llama-cpp
+        echo ""
+        echo "══════════════════════════════════════════"
+        echo "  Rebuilding NixOS with llama.cpp..."
+        echo "══════════════════════════════════════════"
+        nh os switch
       }
 
       # Update Cloudflare skill for Claude Code (and optionally OpenCode)

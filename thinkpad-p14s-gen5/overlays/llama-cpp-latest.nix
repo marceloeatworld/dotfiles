@@ -13,8 +13,8 @@
 
 let
   # AUTO-UPDATED BY update-llama-cpp SCRIPT
-  version = "7946";
-  hash = "sha256-ui34KjTQ8iPBKW5TYPkK6QGvFDyy5Kr3loZdub+rLe4=";
+  version = "7955";
+  hash = "sha256-EqB9auXdlHA5MQbFiekrtNbAgYzp7+OdBkK01Df4ypQ=";
 in
 (llama-cpp.override {
   rocmSupport = true;   # AMD GPU acceleration via ROCm

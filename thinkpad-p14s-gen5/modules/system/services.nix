@@ -122,24 +122,25 @@
     # Note: localuser option removed in modern NixOS (only for findutils)
   };
 
-  # Ollama - Local LLM inference with AMD GPU acceleration
-  services.ollama = {
+  # llama.cpp - Local LLM inference with AMD GPU acceleration (replaces Ollama)
+  # API compatible with OpenAI format on http://127.0.0.1:8080
+  # Models: ~/models/*.gguf (downloaded from Hugging Face)
+  services.llama-cpp = {
     enable = true;
-    package = pkgs-unstable.ollama;  # Use latest version from unstable for new models
-    acceleration = "rocm";  # AMD GPU support via ROCm
-
-    # AMD Radeon 780M (gfx1103) requires override
-    environmentVariables = {
-      HSA_OVERRIDE_GFX_VERSION = "11.0.0";  # Fix for RDNA 3 iGPU
-      ROCR_VISIBLE_DEVICES = "0";           # Use first GPU
-      ROC_ENABLE_PRE_VEGA = "1";            # Compatibility
-    };
-
-    # Host address (IP only, port is separate)
     host = "127.0.0.1";
-    port = 11434;
+    port = 8080;
+    model = "/home/marcelo/models/Dolphin-X1-8B-Q8_0.gguf";  # Default model for server
+    extraFlags = [
+      "-ngl" "99"       # Offload all layers to GPU
+      "--no-mmap"       # Better for iGPU with shared memory
+    ];
+  };
 
-    # Models will be stored in /var/lib/ollama
+  # AMD Radeon 780M (gfx1103) ROCm environment for llama-cpp
+  systemd.services.llama-cpp.environment = {
+    HSA_OVERRIDE_GFX_VERSION = "11.0.0";  # Fix for RDNA 3 iGPU
+    ROCR_VISIBLE_DEVICES = "0";           # Use first GPU
+    ROC_ENABLE_PRE_VEGA = "1";            # Compatibility
   };
 
   # BitBox Bridge - Hardware wallet communication bridge
