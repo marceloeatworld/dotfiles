@@ -127,7 +127,7 @@ in
     ./programs/browsers.nix       # Brave with Wayland flags
     ./programs/webapps.nix        # Web apps (WhatsApp, Spotify, etc.)
     ./programs/desktop-apps.nix   # Desktop entries for apps
-    ./programs/media.nix          # Media players (mpv, swayimg)
+    ./programs/media.nix          # Media tools (swayimg, PhotoGIMP, OpenShot)
     ./programs/yt-dlp.nix         # YouTube downloader
     ./programs/nemo.nix           # Nemo file manager
     ./programs/xournalpp.nix      # PDF annotation
