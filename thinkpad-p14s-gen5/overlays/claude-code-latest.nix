@@ -10,8 +10,8 @@
 { lib, claude-code, fetchurl, ... }:
 
 let
-  version = "2.1.34";
-  hash = "sha256-9poksTheZl3zwxmGwTNwAmUmTooZCY5huFqe73RYh1A=";
+  version = "2.1.37";
+  hash = "sha256-JBarNxtzDn6sdgl5yLPIUgrrUoyDZNjiLqrYVPPpjlo=";
 in
 claude-code.overrideAttrs (oldAttrs: {
   inherit version;

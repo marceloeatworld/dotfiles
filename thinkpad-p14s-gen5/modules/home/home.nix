@@ -215,7 +215,7 @@ in
     transmission_4-gtk  # Torrent client (GTK interface)
 
     # Media
-    mpv
+    # mpv removed - using VLC as default media player
     # swayimg moved to media.nix
 
     # Documents

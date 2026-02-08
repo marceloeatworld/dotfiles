@@ -2,21 +2,8 @@
 { pkgs, ... }:
 
 {
-  # Brave - Main browser with custom flags
-  home.packages = with pkgs; [
-    (brave.override {
-      commandLineArgs = [
-        "--ozone-platform=wayland"
-        "--ozone-platform-hint=wayland"
-        "--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,WaylandWindowDecorations"
-        "--disable-features=WaylandWpColorManagerV1,AsyncDns"
-        "--dns-over-https-mode=off"
-        "--enable-gpu-rasterization"
-        "--enable-zero-copy"
-        "--enable-smooth-scrolling"
-      ];
-    })
-  ];
+  # Brave is installed via Firejail wrappedBinaries in modules/system/security.nix
+  # with Wayland flags and sandboxing. No need to install it here separately.
 
   # NOTE: MIME types are centralized in ../config/mimeapps.nix
 }

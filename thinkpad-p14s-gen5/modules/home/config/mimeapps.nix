@@ -70,42 +70,42 @@
       "image/x-icon" = "swayimg.desktop";
 
       # ============================================
-      # VIDEOS → mpv
+      # VIDEOS → VLC
       # ============================================
-      "video/mp4" = "mpv.desktop";
-      "video/x-matroska" = "mpv.desktop";
-      "video/webm" = "mpv.desktop";
-      "video/avi" = "mpv.desktop";
-      "video/x-msvideo" = "mpv.desktop";
-      "video/quicktime" = "mpv.desktop";
-      "video/mpeg" = "mpv.desktop";
-      "video/x-flv" = "mpv.desktop";
-      "video/x-ms-wmv" = "mpv.desktop";
-      "video/ogg" = "mpv.desktop";
-      "video/3gpp" = "mpv.desktop";
-      "video/3gpp2" = "mpv.desktop";
+      "video/mp4" = "vlc.desktop";
+      "video/x-matroska" = "vlc.desktop";
+      "video/webm" = "vlc.desktop";
+      "video/avi" = "vlc.desktop";
+      "video/x-msvideo" = "vlc.desktop";
+      "video/quicktime" = "vlc.desktop";
+      "video/mpeg" = "vlc.desktop";
+      "video/x-flv" = "vlc.desktop";
+      "video/x-ms-wmv" = "vlc.desktop";
+      "video/ogg" = "vlc.desktop";
+      "video/3gpp" = "vlc.desktop";
+      "video/3gpp2" = "vlc.desktop";
 
       # ============================================
-      # AUDIO → mpv
+      # AUDIO → VLC
       # ============================================
-      "audio/mpeg" = "mpv.desktop";
-      "audio/mp3" = "mpv.desktop";
-      "audio/x-mp3" = "mpv.desktop";
-      "audio/flac" = "mpv.desktop";
-      "audio/x-flac" = "mpv.desktop";
-      "audio/ogg" = "mpv.desktop";
-      "audio/x-vorbis+ogg" = "mpv.desktop";
-      "audio/wav" = "mpv.desktop";
-      "audio/x-wav" = "mpv.desktop";
-      "audio/aac" = "mpv.desktop";
-      "audio/mp4" = "mpv.desktop";
-      "audio/x-m4a" = "mpv.desktop";
-      "audio/x-aac" = "mpv.desktop";
-      "audio/opus" = "mpv.desktop";
-      "audio/webm" = "mpv.desktop";
-      "audio/x-aiff" = "mpv.desktop";
-      "audio/aiff" = "mpv.desktop";
-      "audio/x-ms-wma" = "mpv.desktop";
+      "audio/mpeg" = "vlc.desktop";
+      "audio/mp3" = "vlc.desktop";
+      "audio/x-mp3" = "vlc.desktop";
+      "audio/flac" = "vlc.desktop";
+      "audio/x-flac" = "vlc.desktop";
+      "audio/ogg" = "vlc.desktop";
+      "audio/x-vorbis+ogg" = "vlc.desktop";
+      "audio/wav" = "vlc.desktop";
+      "audio/x-wav" = "vlc.desktop";
+      "audio/aac" = "vlc.desktop";
+      "audio/mp4" = "vlc.desktop";
+      "audio/x-m4a" = "vlc.desktop";
+      "audio/x-aac" = "vlc.desktop";
+      "audio/opus" = "vlc.desktop";
+      "audio/webm" = "vlc.desktop";
+      "audio/x-aiff" = "vlc.desktop";
+      "audio/aiff" = "vlc.desktop";
+      "audio/x-ms-wma" = "vlc.desktop";
 
       # ============================================
       # ARCHIVES → file-roller (via Nemo)

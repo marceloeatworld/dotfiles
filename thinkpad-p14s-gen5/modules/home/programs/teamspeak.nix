@@ -13,7 +13,7 @@ let
 in
 {
   home.packages = [
-    pkgs.teamspeak3  # TeamSpeak 3 client (stable, from nixpkgs)
-    teamspeak6-beta        # TeamSpeak 6 (beta, from official servers)
+    # NOTE: TeamSpeak 3 removed - depends on qtwebengine-5.15.19 (insecure, ~1h30 compile time)
+    teamspeak6-beta  # TeamSpeak 6 (pre-compiled binary from official servers)
   ];
 }

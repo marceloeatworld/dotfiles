@@ -43,11 +43,7 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
-  # Allow insecure packages (qtwebengine-5.15.19 required by some Qt5 apps)
-  # TODO: Remove when upstream apps migrate to Qt6
-  nixpkgs.config.permittedInsecurePackages = [
-    "qtwebengine-5.15.19"
-  ];
+  # NOTE: qtwebengine-5.15.19 insecure permit removed (was needed by TeamSpeak 3, now removed)
 
   # System packages (minimal - user tools are in home-manager)
   environment.systemPackages = with pkgs; [

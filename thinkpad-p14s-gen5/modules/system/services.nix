@@ -42,11 +42,8 @@
       START_CHARGE_THRESH_BAT0 = 55;
       STOP_CHARGE_THRESH_BAT0 = 60;
 
-      # GPU power management
-      RADEON_DPM_PERF_LEVEL_ON_AC = "auto";
-      RADEON_DPM_PERF_LEVEL_ON_BAT = "low";
-      RADEON_POWER_PROFILE_ON_AC = "high";
-      RADEON_POWER_PROFILE_ON_BAT = "low";
+      # NOTE: RADEON_DPM/RADEON_POWER_PROFILE removed - only for legacy radeon driver
+      # Radeon 780M uses amdgpu driver, managed via kernel sysfs and TLP's AMDGPU_ABM_LEVEL
 
       # PCIe power saving
       PCIE_ASPM_ON_AC = "default";
@@ -56,10 +53,8 @@
       RUNTIME_PM_ON_AC = "on";
       RUNTIME_PM_ON_BAT = "auto";
 
-      # Disk power saving (SATA/NVMe)
+      # Disk devices (NVMe - APM not applicable, NVMe uses APST natively)
       DISK_DEVICES = "nvme0n1";
-      DISK_APM_LEVEL_ON_AC = "254";      # Max performance
-      DISK_APM_LEVEL_ON_BAT = "128";     # Power saving with spindown
 
       # USB autosuspend (saves ~0.5W per idle device)
       USB_AUTOSUSPEND = 1;
@@ -82,10 +77,10 @@
   # Alternative: auto-cpufreq (comment out TLP if using this)
   # services.auto-cpufreq.enable = true;
 
-  # Enable laptop mode
+  # Enable laptop mode (powertop auto-tune disabled - conflicts with TLP)
   powerManagement = {
     enable = true;
-    powertop.enable = true;
+    powertop.enable = false;
   };
 
   # Enable upower for battery monitoring

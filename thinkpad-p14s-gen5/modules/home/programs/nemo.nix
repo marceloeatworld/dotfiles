@@ -308,13 +308,13 @@ in
 
   # === MEDIA ACTIONS ===
 
-  # Play with MPV
-  home.file.".config/nemo/actions/play-mpv.nemo_action".text = ''
+  # Play with VLC
+  home.file.".config/nemo/actions/play-vlc.nemo_action".text = ''
     [Nemo Action]
-    Name=Play with MPV
-    Comment=Play media file with MPV
-    Exec=mpv %F
-    Icon-Name=mpv
+    Name=Play with VLC
+    Comment=Play media file with VLC
+    Exec=vlc %F
+    Icon-Name=vlc
     Selection=any
     Extensions=mp4;mkv;avi;webm;mov;mp3;flac;ogg;wav;m4a;
   '';

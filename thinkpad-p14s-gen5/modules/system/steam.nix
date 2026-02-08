@@ -20,12 +20,8 @@
     ];
   };
 
-  # Gaming packages
-  environment.systemPackages = with pkgs; [
-    mangohud       # Also available outside Steam
-    # Usage: mangohud %command% in Steam launch options
-    # Or: MANGOHUD=1 game-executable
-  ];
+  # NOTE: mangohud is installed via programs.mangohud in home-manager (mangohud.nix)
+  # and also provided in Steam extraPackages above for the FHS environment
 
   # Note: GameMode is configured in performance.nix (with notifications)
   # Note: hardware.graphics configured in hardware-configuration.nix

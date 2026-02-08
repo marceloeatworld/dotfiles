@@ -67,7 +67,7 @@
   # Sysctl tweaks for AMD
   boot.kernel.sysctl = {
     # VM (Virtual Memory) optimizations
-    "vm.swappiness" = 10; # Reduce swap usage (we have 16GB+ RAM)
+    "vm.swappiness" = 180; # High value optimal for zram (prefer compressed RAM over disk I/O)
     "vm.vfs_cache_pressure" = 50; # Keep more inodes/dentries in cache
 
     # Disable watchdog (can cause issues with AMD)

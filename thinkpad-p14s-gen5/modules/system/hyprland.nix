@@ -97,7 +97,6 @@
     # XWayland
     xwayland
 
-    # Portal
-    xdg-utils
+    # NOTE: xdg-utils is in configuration.nix (environment.systemPackages)
   ];
 }

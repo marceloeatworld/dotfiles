@@ -137,20 +137,33 @@ let
       BAT_STATUS=$(cat /sys/class/power_supply/BAT0/status)
 
       if [ "$BAT_STATUS" = "Discharging" ]; then
-        # On battery - enable performance mode
+        # On battery - enable battery saver mode
         hyprctl keyword animations:enabled false
         hyprctl keyword misc:render_unfocused_fps 5
-        echo "performance" > "$STATE_FILE"
+        hyprctl keyword decoration:blur:enabled false
+        hyprctl keyword decoration:shadow:enabled false
+        echo "battery" > "$STATE_FILE"
       else
-        # On AC - restore saved state or default to quality
-        SAVED_STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "quality")
-        if [ "$SAVED_STATE" = "performance" ]; then
-          hyprctl keyword animations:enabled false
-          hyprctl keyword misc:render_unfocused_fps 5
-        else
-          hyprctl keyword animations:enabled true
-          hyprctl keyword misc:render_unfocused_fps 15
-        fi
+        # On AC - restore saved state or default to balanced
+        SAVED_STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "balanced")
+        case "$SAVED_STATE" in
+          battery)
+            hyprctl keyword animations:enabled false
+            hyprctl keyword misc:render_unfocused_fps 5
+            hyprctl keyword decoration:blur:enabled false
+            hyprctl keyword decoration:shadow:enabled false
+            ;;
+          max)
+            hyprctl keyword animations:enabled true
+            hyprctl keyword misc:render_unfocused_fps 60
+            hyprctl keyword decoration:blur:enabled true
+            hyprctl keyword decoration:shadow:enabled true
+            ;;
+          *)
+            hyprctl keyword animations:enabled true
+            hyprctl keyword misc:render_unfocused_fps 10
+            ;;
+        esac
       fi
     fi
   '';
@@ -171,17 +184,19 @@ let
         # Only act on state change
         if [ "$CURRENT_STATUS" != "$LAST_STATUS" ]; then
           if [ "$CURRENT_STATUS" = "Discharging" ]; then
-            # Switched to battery - enable performance mode silently
+            # Switched to battery - enable battery saver mode
             hyprctl keyword animations:enabled false
             hyprctl keyword misc:render_unfocused_fps 5
-            echo "performance" > "$STATE_FILE"
-            notify-send -t 2000 "Battery Mode" "󰂃 Performance mode auto-enabled" -i "battery-good"
+            hyprctl keyword decoration:blur:enabled false
+            hyprctl keyword decoration:shadow:enabled false
+            echo "battery" > "$STATE_FILE"
+            notify-send -t 2000 "Battery Mode" "󰂃 Battery saver auto-enabled" -i "battery-good"
           elif [ "$LAST_STATUS" = "Discharging" ]; then
-            # Switched to AC - restore animations
+            # Switched to AC - restore balanced mode
             hyprctl keyword animations:enabled true
-            hyprctl keyword misc:render_unfocused_fps 15
-            echo "quality" > "$STATE_FILE"
-            notify-send -t 2000 "AC Power" "󰂄 Quality mode restored" -i "battery-full-charging"
+            hyprctl keyword misc:render_unfocused_fps 10
+            echo "balanced" > "$STATE_FILE"
+            notify-send -t 2000 "AC Power" "󰂄 Balanced mode restored" -i "battery-full-charging"
           fi
           LAST_STATUS="$CURRENT_STATUS"
         fi
@@ -222,15 +237,15 @@ EOF
     #!/usr/bin/env bash
 
     # Get current states
-    PERF_STATE=$(cat "$HOME/.config/perf-mode-state" 2>/dev/null || echo "quality")
+    PERF_STATE=$(cat "$HOME/.config/perf-mode-state" 2>/dev/null || echo "balanced")
     BAT_MODE=$(cat "$HOME/.config/battery-mode-state" 2>/dev/null || echo "conservation")
     BLUELIGHT=$(cat "$HOME/.config/bluelight-state" 2>/dev/null || echo "off")
 
-    if [ "$PERF_STATE" = "performance" ]; then
-      PERF_ICON="󰂃"
-    else
-      PERF_ICON="󰂄"
-    fi
+    case "$PERF_STATE" in
+      battery) PERF_ICON="󰂃" ;;
+      max)     PERF_ICON="🚀" ;;
+      *)       PERF_ICON="󰂄" ;;
+    esac
 
     case "$BAT_MODE" in
       conservation) BAT_ICON="󰂃 55-60%" ;;
@@ -859,7 +874,7 @@ in
 
         # Prevent idle when watching video
         "idle_inhibit fullscreen, match:class .*"
-        "idle_inhibit focus, match:class ^(mpv|vlc)$"
+        "idle_inhibit focus, match:class ^(vlc)$"
       ];
 
     };
@@ -874,7 +889,7 @@ in
     pkgs-unstable.hyprcursor  # Native Hyprland cursor library
     cliphist                  # Clipboard history manager
     brightnessctl             # Brightness control (for hypridle dim)
-    pamixer                   # Volume control CLI (for scripts)
+    # NOTE: pamixer is in system/sound.nix (environment.systemPackages)
     pkgs-unstable.hyprsunset  # Blue light filter (v0.3.3+ with SIGTERM/SIGINT fixes)
     bluelight-toggle          # Custom toggle script (SUPER+N)
     bluelight-off             # Quick disable (SUPER+SHIFT+N)

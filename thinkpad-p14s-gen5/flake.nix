@@ -4,9 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Pinned nixpkgs for ghidra (before Gradle 8.12 broke the build)
-    nixpkgs-ghidra.url = "github:NixOS/nixpkgs/5912c1772a44e31bf1c63c0390b90501e5026886";
-
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -30,68 +27,66 @@
     ghostty.url = "github:ghostty-org/ghostty";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-ghidra, home-manager, nixos-hardware, disko, hyprland, hyprland-plugins, ghostty, ... } @ inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, disko, hyprland, hyprland-plugins, ghostty, ... } @ inputs:
     let
       system = "x86_64-linux";
+
+      # Shared overlays (used by both pkgs and nixpkgs.overlays)
+      sharedOverlays = [
+        # Fix proton-core bcrypt test failures (password >72 bytes incompatibility)
+        (final: prev: {
+          python3 = prev.python3.override {
+            packageOverrides = pyfinal: pyprev: {
+              proton-core = pyprev.proton-core.overridePythonAttrs (old: {
+                doCheck = false;
+                doInstallCheck = false;
+              });
+            };
+          };
+          python313 = prev.python313.override {
+            packageOverrides = pyfinal: pyprev: {
+              proton-core = pyprev.proton-core.overridePythonAttrs (old: {
+                doCheck = false;
+                doInstallCheck = false;
+              });
+            };
+          };
+        })
+        # VS Code Latest - Always use the latest version from Microsoft
+        # Update: overlays/vscode-latest.nix (version + sha256)
+        (final: prev: let
+          vscodeInfo = import ./overlays/vscode-latest.nix {
+            inherit (prev) lib fetchurl vscode;
+          };
+        in {
+          vscode = vscodeInfo;
+          vscode-fhs = (prev.vscode.fhs.override { vscode = vscodeInfo; });
+        })
+        # Claude Code Latest - Always use latest from npm (official Anthropic source)
+        # Update: overlays/claude-code-latest.nix (version + hash)
+        (final: prev: {
+          claude-code = import ./overlays/claude-code-latest.nix {
+            inherit (prev) lib fetchurl claude-code;
+          };
+        })
+        # llama.cpp Latest - Local LLM inference with ROCm + native optimizations
+        # Update: overlays/llama-cpp-latest.nix (version + hash)
+        (final: prev: {
+          llama-cpp = import ./overlays/llama-cpp-latest.nix {
+            inherit (prev) lib llama-cpp fetchFromGitHub;
+          };
+        })
+        # Ghostty tip (nightly) - fixes memory leak with Claude Code
+        (final: prev: {
+          ghostty = ghostty.packages.${system}.default;
+        })
+      ];
 
       # Use unstable as default for latest software versions
       pkgs = import nixpkgs-unstable {
         inherit system;
         config.allowUnfree = true;
-        overlays = [
-          # Fix proton-core bcrypt test failures (password >72 bytes incompatibility)
-          (final: prev: {
-            python3 = prev.python3.override {
-              packageOverrides = pyfinal: pyprev: {
-                proton-core = pyprev.proton-core.overridePythonAttrs (old: {
-                  doCheck = false;
-                  doInstallCheck = false;
-                });
-              };
-            };
-            python313 = prev.python313.override {
-              packageOverrides = pyfinal: pyprev: {
-                proton-core = pyprev.proton-core.overridePythonAttrs (old: {
-                  doCheck = false;
-                  doInstallCheck = false;
-                });
-              };
-            };
-          })
-          # VS Code Latest - Always use the latest version from Microsoft
-          # Update: overlays/vscode-latest.nix (version + sha256)
-          (final: prev: let
-            # Import version info from overlay file
-            vscodeInfo = import ./overlays/vscode-latest.nix {
-              inherit (prev) lib fetchurl vscode;
-            };
-          in {
-            vscode = vscodeInfo;
-            vscode-fhs = (prev.vscode.fhs.override { vscode = vscodeInfo; });
-          })
-          # Claude Code Latest - Always use latest from npm (official Anthropic source)
-          # Update: overlays/claude-code-latest.nix (version + hash)
-          (final: prev: {
-            claude-code = import ./overlays/claude-code-latest.nix {
-              inherit (prev) lib fetchurl claude-code;
-            };
-          })
-          # OpenCode - using nixpkgs version (complex build from GitHub sources)
-          # Note: Cannot easily override version like claude-code (npm-based)
-          # Updates come from nixpkgs-unstable
-
-          # llama.cpp Latest - Local LLM inference with ROCm + native optimizations
-          # Update: overlays/llama-cpp-latest.nix (version + hash)
-          (final: prev: {
-            llama-cpp = import ./overlays/llama-cpp-latest.nix {
-              inherit (prev) lib llama-cpp fetchFromGitHub;
-            };
-          })
-          # Ghostty tip (nightly) - fixes memory leak with Claude Code
-          (final: prev: {
-            ghostty = ghostty.packages.${system}.default;
-          })
-        ];
+        overlays = sharedOverlays;
       };
 
       # Stable packages (for rare cases where stability is preferred)
@@ -103,18 +98,11 @@
       # Keep pkgs-unstable alias for backwards compatibility
       pkgs-unstable = pkgs;
 
-      # Pinned packages for ghidra (working version before Gradle 8.12)
-      pkgs-ghidra = import nixpkgs-ghidra {
-        inherit system;
-        config.allowUnfree = true;
-      };
-
       # Common special args passed to all modules
       specialArgs = {
         inherit inputs;
         inherit pkgs-unstable;
         inherit pkgs-stable;
-        inherit pkgs-ghidra;
       };
     in
     {
@@ -126,49 +114,7 @@
           # Configure nixpkgs for this system
           {
             nixpkgs.config.allowUnfree = true;
-            nixpkgs.overlays = [
-              # Fix proton-core bcrypt test failures
-              (final: prev: {
-                python3 = prev.python3.override {
-                  packageOverrides = pyfinal: pyprev: {
-                    proton-core = pyprev.proton-core.overridePythonAttrs (old: {
-                      doCheck = false;
-                      doInstallCheck = false;
-                    });
-                  };
-                };
-                python313 = prev.python313.override {
-                  packageOverrides = pyfinal: pyprev: {
-                    proton-core = pyprev.proton-core.overridePythonAttrs (old: {
-                      doCheck = false;
-                      doInstallCheck = false;
-                    });
-                  };
-                };
-              })
-              # VS Code Latest
-              (final: prev: {
-                vscode = import ./overlays/vscode-latest.nix {
-                  inherit (prev) lib fetchurl vscode;
-                };
-              })
-              # Claude Code Latest
-              (final: prev: {
-                claude-code = import ./overlays/claude-code-latest.nix {
-                  inherit (prev) lib fetchurl claude-code;
-                };
-              })
-              # llama.cpp Latest
-              (final: prev: {
-                llama-cpp = import ./overlays/llama-cpp-latest.nix {
-                  inherit (prev) lib llama-cpp fetchFromGitHub;
-                };
-              })
-              # Ghostty tip (nightly) - fixes memory leak with Claude Code
-              (final: prev: {
-                ghostty = ghostty.packages.${system}.default;
-              })
-            ];
+            nixpkgs.overlays = sharedOverlays;
           }
 
           # Disko for declarative disk partitioning

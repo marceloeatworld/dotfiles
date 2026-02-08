@@ -1,5 +1,5 @@
 # Development tools configuration
-{ pkgs, pkgs-unstable, pkgs-ghidra, lib, config, ... }:
+{ pkgs, pkgs-unstable, lib, config, ... }:
 
 {
   # NPM configuration for NixOS
@@ -219,7 +219,7 @@
     wrangler          # Cloudflare Workers CLI (from nixpkgs)
 
     # Reverse Engineering
-    pkgs-ghidra.ghidra  # NSA SRE suite (pinned nixpkgs - unstable has Gradle 8.12 build issues)
+    ghidra  # NSA SRE suite
 
     # Documentation
     zeal              # Offline documentation browser (Dash compatible)
