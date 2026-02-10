@@ -48,6 +48,7 @@
       runAsRoot = false;
       swtpm.enable = true;  # TPM emulation for Windows 11
       # OVMF is now included by default in NixOS 25.11+
+      vhostUserPackages = [ pkgs.virtiofsd ];  # VirtioFS for shared folders
     };
   };
 

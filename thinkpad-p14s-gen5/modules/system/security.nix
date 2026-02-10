@@ -31,9 +31,9 @@ in
         executable = "${brave-wayland}/bin/brave";
         profile = "${pkgs.firejail}/etc/firejail/brave.profile";
         extraArgs = [
-          # Allow downloads to ~/Downloads only
-          "--whitelist=~/Downloads"
-          "--whitelist=~/Pictures"
+          # Allow access to entire home directory for file uploads
+          # System directories outside $HOME remain restricted
+          "--whitelist=~/"
         ];
       };
 
