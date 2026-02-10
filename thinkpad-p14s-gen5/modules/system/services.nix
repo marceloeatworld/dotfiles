@@ -68,6 +68,11 @@
       SOUND_POWER_SAVE_ON_BAT = 1;
       SOUND_POWER_SAVE_CONTROLLER = "Y";
 
+      # AMD Adaptive Backlight Management (saves power by adjusting panel brightness at GPU level)
+      # Values: 0=off, 1=light, 2=medium, 3=aggressive, 4=maximum
+      AMDGPU_ABM_LEVEL_ON_AC = 0;
+      AMDGPU_ABM_LEVEL_ON_BAT = 3;
+
       # Platform profile (AMD-specific)
       PLATFORM_PROFILE_ON_AC = "performance";
       PLATFORM_PROFILE_ON_BAT = "low-power";

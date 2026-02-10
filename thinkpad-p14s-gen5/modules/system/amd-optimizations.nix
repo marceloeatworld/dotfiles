@@ -57,6 +57,9 @@
     # OpenCL for compute workloads (ROCm)
     OCL_ICD_VENDORS = "${pkgs.rocmPackages.clr.icd}/etc/OpenCL/vendors";
 
+    # VA-API driver for hardware video acceleration (VDPAU removed from Mesa 25.3+)
+    LIBVA_DRIVER_NAME = "radeonsi";
+
     # Mesa tweaks for Radeon 780M
     MESA_LOADER_DRIVER_OVERRIDE = "radeonsi"; # Use RadeonSI for OpenGL
 
@@ -76,10 +79,7 @@
 
   # CPU frequency scaling for Zen 4
   # AMD P-State EPP provides better performance than acpi-cpufreq
-  boot.kernelParams = [
-    "initcall_blacklist=acpi_cpufreq_init" # Disable old driver
-  ];
-
+  # NOTE: initcall_blacklist=acpi_cpufreq_init removed - redundant with amd_pstate=active in boot.nix
   # NOTE: GPU parameters are in boot.nix to centralize boot configuration
   # See boot.nix for amdgpu.* kernel parameters including DMCUB fix
 

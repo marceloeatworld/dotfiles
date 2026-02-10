@@ -6,8 +6,8 @@
 
 let
   # AUTO-UPDATED BY update-vscode SCRIPT
-  version = "1.109.0";
-  sha256 = "sha256-N8dBXYpBbaymuGWFb8+77/4yJ6Meo5eqoYpnlsjGlN8=";
+  version = "1.109.1";
+  sha256 = "sha256-OgeoCdIOZad9o4X4YwTMoKNaBEoxxxL1Xk35kzm01Kk=";
 in
 vscode.overrideAttrs (oldAttrs: {
   inherit version;

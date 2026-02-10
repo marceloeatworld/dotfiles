@@ -46,7 +46,7 @@
     XDG_SESSION_DESKTOP = "Hyprland";
 
     # Qt
-    QT_QPA_PLATFORM = "wayland";
+    QT_QPA_PLATFORM = "wayland;xcb";
     QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
 
     # Clutter
