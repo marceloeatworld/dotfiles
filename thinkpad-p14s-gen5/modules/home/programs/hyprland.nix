@@ -289,6 +289,11 @@ EOF
 <tt>Print</tt>           Screenshot (region)
 <tt>Super+C</tt>         Color picker
 
+<b>═══ WIFI ═══</b>
+<tt>Super+F2</tt>         Reconnect WiFi
+<tt>Super+Shift+F2</tt>   Scan & connect
+<tt>Super+Ctrl+F2</tt>    Toggle WiFi on/off
+
 <b>═══ BATTERY & DISPLAY ═══</b>
 <tt>Super+M</tt>         Battery mode cycle → $BAT_ICON
 <tt>Super+Shift+M</tt>   Performance toggle → $PERF_ICON $PERF_STATE
@@ -407,6 +412,90 @@ EOF
 
     # Show notification with longer timeout
     notify-send -t 10000 "System Info" "$INFO" -i "utilities-system-monitor"
+  '';
+
+  # WiFi management script - toggle, reconnect, or connect to new network
+  wifi-manage = pkgs.writeShellScriptBin "wifi-manage" ''
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    ACTION="''${1:-toggle}"
+
+    case "$ACTION" in
+      toggle)
+        # Toggle WiFi on/off
+        STATUS=$(nmcli radio wifi)
+        if [ "$STATUS" = "enabled" ]; then
+          nmcli radio wifi off
+          notify-send -t 2000 "WiFi" "󰤭  WiFi disabled" -i "network-wireless-offline"
+        else
+          nmcli radio wifi on
+          notify-send -t 2000 "WiFi" "󰤨  WiFi enabled" -i "network-wireless"
+        fi
+        ;;
+      reconnect)
+        # Force reconnect: reload ath11k driver + restart NetworkManager
+        notify-send -t 2000 "WiFi" "󰤩  Reconnecting..." -i "network-wireless-acquiring"
+        # Restart the WiFi interface
+        nmcli radio wifi off
+        sleep 1
+        nmcli radio wifi on
+        sleep 3
+        # Check if connected
+        if nmcli -t -f STATE general | grep -q "connected"; then
+          SSID=$(nmcli -t -f ACTIVE,SSID dev wifi | grep "^yes" | cut -d: -f2)
+          notify-send -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless"
+        else
+          notify-send -t 3000 "WiFi" "󰤭  Not connected. Try SUPER+SHIFT+W to pick a network" -i "network-wireless-offline"
+        fi
+        ;;
+      scan)
+        # Scan and connect via wofi menu
+        notify-send -t 1500 "WiFi" "󰤩  Scanning..." -i "network-wireless-acquiring"
+        nmcli radio wifi on 2>/dev/null || true
+        sleep 1
+        # Get available networks (deduplicated, sorted by signal)
+        NETWORKS=$(nmcli -t -f SIGNAL,SECURITY,SSID dev wifi list --rescan yes 2>/dev/null | \
+          ${pkgs.gawk}/bin/awk -F: 'NF>=3 && $3!="" {
+            sig=$1; sec=$2; ssid=$3;
+            icon = (sig+0 >= 75) ? "󰤨" : (sig+0 >= 50) ? "󰤥" : (sig+0 >= 25) ? "󰤢" : "󰤟";
+            lock = (sec != "" && sec != "--") ? "󰌾" : "󰌿";
+            if (!seen[ssid]++) printf "%s %s %s (%s%%)\n", icon, lock, ssid, sig
+          }')
+
+        if [ -z "$NETWORKS" ]; then
+          notify-send -t 3000 "WiFi" "No networks found" -i "network-wireless-offline"
+          exit 1
+        fi
+
+        # Show in wofi
+        CHOSEN=$(echo "$NETWORKS" | ${pkgs.wofi}/bin/wofi --dmenu --prompt "WiFi Network" --width 400 --height 300) || exit 0
+
+        # Extract SSID (remove icon, lock, and signal from the line)
+        SSID=$(echo "$CHOSEN" | ${pkgs.gnused}/bin/sed 's/^[^ ]* [^ ]* //' | ${pkgs.gnused}/bin/sed 's/ ([0-9]*%)$//')
+
+        # Check if already a saved connection
+        if nmcli -t -f NAME connection show | grep -qx "$SSID"; then
+          nmcli connection up "$SSID" && \
+            notify-send -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless" || \
+            notify-send -t 3000 "WiFi" "󰤭  Failed to connect to $SSID" -i "network-wireless-offline"
+        else
+          # New network - check if it needs a password
+          SECURITY=$(nmcli -t -f SSID,SECURITY dev wifi list | grep "^$SSID:" | head -1 | cut -d: -f2)
+          if [ -n "$SECURITY" ] && [ "$SECURITY" != "--" ]; then
+            # Ask for password via wofi
+            PASSWORD=$(echo "" | ${pkgs.wofi}/bin/wofi --dmenu --prompt "Password for $SSID" --password --width 400 --height 100) || exit 0
+            nmcli device wifi connect "$SSID" password "$PASSWORD" && \
+              notify-send -t 3000 "WiFi" "󰤨  Connected to $SSID" -i "network-wireless" || \
+              notify-send -t 3000 "WiFi" "󰤭  Failed (wrong password?)" -i "network-wireless-offline"
+          else
+            nmcli device wifi connect "$SSID" && \
+              notify-send -t 3000 "WiFi" "󰤨  Connected to $SSID (open)" -i "network-wireless" || \
+              notify-send -t 3000 "WiFi" "󰤭  Failed to connect" -i "network-wireless-offline"
+          fi
+        fi
+        ;;
+    esac
   '';
 
   battery-mode = pkgs.writeShellScriptBin "battery-mode" ''
@@ -758,6 +847,11 @@ in
         "$mod, Print, exec, grim -g \"$(slurp)\" ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png && notify-send 'Screenshot' 'Saved to Pictures/Screenshots'"
         "SHIFT, Print, exec, grim - | wl-copy && notify-send 'Screenshot' 'Full screen copied'"
         "$mod SHIFT, Print, exec, grim ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png && notify-send 'Screenshot' 'Full screen saved'"
+        # WiFi management
+        "$mod, F2, exec, ${wifi-manage}/bin/wifi-manage reconnect"       # Reconnect WiFi
+        "$mod SHIFT, F2, exec, ${wifi-manage}/bin/wifi-manage scan"      # Scan & connect to network
+        "$mod CTRL, F2, exec, ${wifi-manage}/bin/wifi-manage toggle"     # Toggle WiFi on/off
+        # Waybar
         "$mod SHIFT, R, exec, killall waybar && waybar"
       ];
 
@@ -898,6 +992,7 @@ in
     perf-mode                 # Performance mode toggle (SUPER+SHIFT+M)
     perf-mode-auto            # Auto-enable on battery at startup
     perf-mode-daemon          # Monitor power state changes
+    wifi-manage               # WiFi management (SUPER+F2)
     quick-notes               # Quick note-taking (SUPER+O)
     sysinfo-panel             # System info panel (SUPER+I)
     hypr-keys                 # Keybindings cheatsheet (SUPER+/)

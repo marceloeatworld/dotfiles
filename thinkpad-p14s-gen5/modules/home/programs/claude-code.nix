@@ -371,7 +371,6 @@ let
       "pyright-lsp@claude-plugins-official" = true;
       "stripe@claude-plugins-official" = true;
       "code-review@claude-code-plugins" = true;
-      "claude-mem@thedotmack" = true;
       "pg@aiguide" = true;
       "clangd-lsp@claude-plugins-official" = true;
       "pr-review-toolkit@claude-code-plugins" = true;

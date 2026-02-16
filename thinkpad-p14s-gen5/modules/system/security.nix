@@ -178,18 +178,6 @@ in
         ];
       };
 
-      # MuseScore - sandboxed (music notation)
-      musescore = {
-        executable = "${pkgs.musescore}/bin/mscore";
-        profile = "${pkgs.firejail}/etc/firejail/musescore.profile";
-        extraArgs = [
-          "--whitelist=~/Documents"
-          "--whitelist=~/Downloads"
-          "--whitelist=~/Music"
-          "--whitelist=~/.local/share/MuseScore"
-          "--whitelist=~/.config/MuseScore"
-        ];
-      };
 
       # Audacity - sandboxed (audio editor)
       audacity = {

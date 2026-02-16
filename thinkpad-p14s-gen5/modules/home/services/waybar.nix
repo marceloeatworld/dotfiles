@@ -82,6 +82,11 @@ in
     executable = true;
   };
 
+  home.file.".config/waybar/scripts/mic-switch.sh" = {
+    source = ./waybar-scripts/mic-switch.sh;
+    executable = true;
+  };
+
   home.file.".config/waybar/.env.example" = {
     source = ./waybar-scripts/.env.example;
   };
@@ -139,6 +144,7 @@ in
           # Hardware (frequently checked)
           "custom/removable-disks"
           "pulseaudio"
+          "pulseaudio#source"
           "backlight"
           # System stats
           "cpu"
@@ -262,11 +268,24 @@ in
             car = "󰄋";
             default = [ "󰕿" "󰖀" "󰕾" ];
           };
-          tooltip-format = "Volume: {volume}%\nDevice: {desc}\n\nClick: Switch output | Right-click: Mute | Scroll: Adjust";
+          tooltip-format = "Volume: {volume}%\nDevice: {desc}\n\nLeft: Switch output | Right: Switch mic | Middle: Hyprpwcenter | Scroll: Volume";
           on-click = "$HOME/.config/waybar/scripts/audio-switch.sh";
-          on-click-right = "swayosd-client --output-volume mute-toggle";
+          on-click-right = "$HOME/.config/waybar/scripts/mic-switch.sh";
+          on-click-middle = "hyprpwcenter";
           on-scroll-up = "swayosd-client --output-volume raise";
           on-scroll-down = "swayosd-client --output-volume lower";
+        };
+
+        "pulseaudio#source" = {
+          format = "{format_source}";
+          format-source = "󰍬 {volume}%";
+          format-source-muted = "󰍭";
+          tooltip-format = "Mic: {source_volume}%\nDevice: {source_desc}\n\nLeft: Mute | Right: Switch mic | Middle: Hyprpwcenter";
+          on-click = "swayosd-client --input-volume mute-toggle";
+          on-click-right = "$HOME/.config/waybar/scripts/mic-switch.sh";
+          on-click-middle = "hyprpwcenter";
+          on-scroll-up = "swayosd-client --input-volume raise";
+          on-scroll-down = "swayosd-client --input-volume lower";
         };
 
         "disk" = {
@@ -472,7 +491,7 @@ in
       #custom-bitcoin, #custom-wallets, #custom-vpn, #custom-nix-updates,
       #custom-systemd-failed, #custom-mako, #custom-monitor-rotation,
       #custom-weather, #custom-polymarket, #custom-removable-disks,
-      #pulseaudio, #bluetooth, #network, #disk, #cpu, #memory,
+      #pulseaudio, #pulseaudio.source, #bluetooth, #network, #disk, #cpu, #memory,
       #temperature, #backlight, #battery, #tray {
         padding: 0 6px;
         background: transparent;
@@ -497,6 +516,7 @@ in
       #battery.warning:not(.charging) { color: @accent; }
       #battery.critical:not(.charging) { color: @fg; }
       #pulseaudio.muted { opacity: 0.3; }
+      #pulseaudio.source.muted { opacity: 0.3; }
       #bluetooth.connected { color: @fg; }
       #bluetooth.off, #bluetooth.disabled { opacity: 0.3; }
       #temperature.critical { color: @fg; }

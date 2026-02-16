@@ -1,9 +1,7 @@
 # Media applications configuration
-{ config, pkgs, pkgs-unstable, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 let
-  theme = config.theme;
-
   # PhotoGIMP - Makes GIMP look like Photoshop (GIMP 3.0)
   photogimp = pkgs.fetchzip {
     url = "https://github.com/Diolinux/PhotoGIMP/releases/download/3.0/PhotoGIMP-linux.zip";
@@ -11,45 +9,8 @@ let
     stripRoot = false;
   };
 
-  # OpenShot AppImage from GitHub releases
-  openshot-appimage = pkgs.appimageTools.wrapType2 {
-    pname = "openshot-qt";
-    version = "3.4.0";
-    src = pkgs.fetchurl {
-      url = "https://github.com/OpenShot/openshot-qt/releases/download/v3.4.0/OpenShot-v3.4.0-x86_64.AppImage";
-      sha256 = "sha256-Lvi8dzsq2KaBHP39bXGH3H6VooSp85Az6sZnXPeO7yw=";
-    };
-    extraPkgs = pkgs: with pkgs; [
-      python3
-      ffmpeg
-      libGL
-      libGLU
-      xorg.libX11
-      xorg.libXrender
-      xorg.libXext
-      qt5.qtbase
-      qt5.qtsvg
-      qt5.qtmultimedia
-    ];
-  };
 in
 {
-  # OpenShot desktop entry
-  xdg.desktopEntries.openshot-qt = {
-    name = "OpenShot Video Editor";
-    genericName = "Video Editor";
-    comment = "Create and edit videos and movies";
-    exec = "${openshot-appimage}/bin/openshot-qt %F";
-    icon = "openshot-qt";
-    terminal = false;
-    type = "Application";
-    categories = [ "AudioVideo" "Video" "AudioVideoEditing" ];
-    mimeType = [
-      "application/vnd.openshot-qt-project"
-      "video/mp4" "video/x-matroska" "video/webm" "video/avi"
-      "video/quicktime" "video/mpeg" "video/ogg"
-    ];
-  };
 
   # Configure swayimg (WebP-capable image viewer)
   xdg.configFile."swayimg/config".text = ''
@@ -103,9 +64,9 @@ in
   };
 
   # Additional media packages
-  home.packages = [
-    openshot-appimage # Video editor v3.4.0 (AppImage from GitHub)
-  ] ++ (with pkgs; [
+  home.packages = (with pkgs; [
+    kdePackages.kdenlive  # Video editor (stable, H.265/HEVC native support)
+    flowblade       # Multitrack non-linear video editor
     spotify
     vlc
     obs-studio      # Screen recording and streaming
@@ -117,7 +78,5 @@ in
     exiftool        # Read/write EXIF metadata in images
     mediainfo       # Detailed video/audio file information
     v4l-utils       # Video4Linux utilities (v4l2-ctl, v4l2-compliance, etc.)
-  ]) ++ (with pkgs-unstable; [
-    musescore       # Music notation editor (unstable - latest version)
   ]);
 }

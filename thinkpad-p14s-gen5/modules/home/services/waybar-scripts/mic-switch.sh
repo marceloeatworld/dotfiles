@@ -2,16 +2,19 @@
 # Microphone input switcher: cycle through available audio sources
 # Skips video sources (webcam etc.)
 
-# Get all audio source IDs (skip video sources and filters)
-SOURCES=$(wpctl status | sed -n '/^Audio/,/^Video/p' | sed -n '/Sources:/,/Filters:/p' | grep -oP '^\s+\*?\s+\K\d+')
+AUDIO_SECTION=$(wpctl status | sed -n '/^Audio/,/^Video/p')
+SOURCE_SECTION=$(echo "$AUDIO_SECTION" | sed -n '/Sources:/,/Filters:/p')
+
+# Get all audio source IDs (match "82." pattern, not "1.00" volume)
+SOURCES=$(echo "$SOURCE_SECTION" | grep -oP '\*?\s*\K\d+(?=\.\s)')
 
 if [ -z "$SOURCES" ]; then
   notify-send -u critical "Mic Switch" "No microphone sources found" -i dialog-error
   exit 1
 fi
 
-# Get current default source ID
-CURRENT=$(wpctl status | sed -n '/^Audio/,/^Video/p' | sed -n '/Sources:/,/Filters:/p' | grep '^\s\+\*' | grep -oP '^\s+\*\s+\K\d+')
+# Get current default source ID (line with *)
+CURRENT=$(echo "$SOURCE_SECTION" | grep '\*' | grep -oP '\*\s*\K\d+(?=\.)')
 
 # Build array of source IDs
 IDS=()
@@ -20,7 +23,7 @@ while read -r id; do
 done <<< "$SOURCES"
 
 COUNT=${#IDS[@]}
-if [ "$COUNT" -lt 1 ]; then
+if [ "$COUNT" -lt 2 ]; then
   notify-send "Mic Switch" "Only one microphone available" -i audio-input-microphone
   exit 0
 fi

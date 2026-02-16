@@ -135,18 +135,6 @@ in
 
     # === SECURITY TOOLS ===
 
-    # Zenmap - Nmap GUI
-    zenmap = {
-      name = "Zenmap";
-      genericName = "Network Scanner";
-      comment = "Graphical frontend for Nmap security scanner";
-      exec = "sudo ${pkgs.zenmap}/bin/zenmap";
-      icon = "zenmap";
-      terminal = false;
-      type = "Application";
-      categories = [ "Network" "Security" "System" ];
-    };
-
     # Kismet - Wireless Network Detector
     kismet = {
       name = "Kismet";
@@ -241,6 +229,29 @@ in
       terminal = false;
       type = "Application";
       categories = [ "System" "Security" ];
+    };
+
+    # === MEDIA TOOLS ===
+
+    # Flowblade - Video Editor
+    flowblade = {
+      name = "Flowblade";
+      genericName = "Video Editor";
+      comment = "Multitrack non-linear video editor";
+      exec = "${pkgs.flowblade}/bin/flowblade";
+      icon = "flowblade";
+      terminal = false;
+      type = "Application";
+      categories = [ "AudioVideo" "Video" "AudioVideoEditing" ];
+      mimeType = [
+        "video/mp4"
+        "video/x-matroska"
+        "video/webm"
+        "video/avi"
+        "video/x-msvideo"
+        "video/quicktime"
+        "video/mpeg"
+      ];
     };
 
     # === SYSTEM TOOLS ===

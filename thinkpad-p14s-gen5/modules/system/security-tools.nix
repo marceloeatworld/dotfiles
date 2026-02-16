@@ -19,7 +19,6 @@
     # NETWORK ANALYSIS
     # ============================================
     nmap           # Network scanner and security auditing
-    zenmap         # Zenmap GUI for nmap
     tcpdump        # Command-line packet analyzer
     ngrep          # Network grep - search network packets
 

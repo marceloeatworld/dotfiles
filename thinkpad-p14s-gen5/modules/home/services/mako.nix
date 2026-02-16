@@ -26,7 +26,7 @@ in
       padding = "12";
 
       default-timeout = 4000;
-      ignore-timeout = true;
+      ignore-timeout = false;
 
       font = "${theme.fonts.mono} 10";
 

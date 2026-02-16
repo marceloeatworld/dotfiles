@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Audio output switcher: toggle between internal speakers and headphones (jack)
-# Works even when headphones cable is NOT plugged in
+# Volume is shared - switching keeps the same volume level
 
 STATE_FILE="$HOME/.config/audio-output-state"
 
@@ -18,38 +18,34 @@ if [ -z "$CARD" ]; then
   exit 1
 fi
 
+# Get current volume for notification
+VOL=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -oP 'Volume: \K[\d.]+')
+VOL_PCT=$(awk "BEGIN{printf \"%.0f\", $VOL * 100}")
+
 # Read current state (0 = headphones/jack, 1 = internal speakers)
 CURRENT_STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
 
 if [ "$CURRENT_STATE" = "0" ]; then
-  # Switch to internal speakers (force unmute even with jack plugged)
   echo "1" > "$STATE_FILE"
 
-  # Disable Auto-Mute Mode FIRST (critical for forcing speakers when jack is plugged)
+  # Disable Auto-Mute Mode (critical for forcing speakers when jack is plugged)
   amixer -c "$CARD" sset "Auto-Mute Mode" "Disabled" 2>/dev/null
 
-  # Force unmute and set volume for speakers
+  # Unmute speakers (don't touch volume - let PipeWire control it)
   amixer -c "$CARD" sset "Speaker" unmute 2>/dev/null
-  amixer -c "$CARD" sset "Speaker" 100% 2>/dev/null
-
-  # Alternative control names (some systems use these)
   amixer -c "$CARD" sset "Internal Speaker" unmute 2>/dev/null
-  amixer -c "$CARD" sset "Internal Speaker" 100% 2>/dev/null
-
-  # Also unmute Master to ensure audio flows
   amixer -c "$CARD" sset "Master" unmute 2>/dev/null
 
-  notify-send "Audio Output" "Switched to Internal Speakers" -i audio-speakers
+  notify-send "Audio Output" "Speakers (${VOL_PCT}%)" -i audio-speakers
 else
-  # Switch back to headphones/jack (default behavior)
   echo "0" > "$STATE_FILE"
 
-  # Re-enable auto-mute (normal behavior - auto-switches based on jack detection)
+  # Re-enable auto-mute (normal behavior)
   amixer -c "$CARD" sset "Auto-Mute Mode" "Enabled" 2>/dev/null
 
-  # Mute speakers (let headphones take over when plugged in)
+  # Mute speakers
   amixer -c "$CARD" sset "Speaker" mute 2>/dev/null
   amixer -c "$CARD" sset "Internal Speaker" mute 2>/dev/null
 
-  notify-send "Audio Output" "Switched to Headphones/Auto (Jack)" -i audio-headphones
+  notify-send "Audio Output" "Headphones (${VOL_PCT}%)" -i audio-headphones
 fi

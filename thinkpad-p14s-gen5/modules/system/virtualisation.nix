@@ -14,7 +14,7 @@
   # Docker
   virtualisation.docker = {
     enable = true;
-    enableOnBoot = true;
+    enableOnBoot = false;
     autoPrune = {
       enable = true;
       dates = "weekly";
@@ -43,6 +43,8 @@
   # Note: OVMF submodule removed in NixOS 25.11 - all OVMF images now available by default
   virtualisation.libvirtd = {
     enable = true;
+    onBoot = "ignore";  # Don't auto-restore VMs on boot (default: "start" resumes saved VMs)
+    onShutdown = "shutdown";  # Cleanly shutdown VMs on host poweroff (instead of suspending)
     qemu = {
       package = pkgs.qemu_kvm;
       runAsRoot = false;
