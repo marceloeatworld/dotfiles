@@ -52,8 +52,8 @@
     # Clutter
     CLUTTER_BACKEND = "wayland";
 
-    # SDL
-    SDL_VIDEODRIVER = "wayland";
+    # SDL - removed forced wayland: breaks SDL apps without Wayland support
+    # SDL auto-detects Wayland when running under a Wayland compositor
 
     # Java
     _JAVA_AWT_WM_NONREPARENTING = "1";
@@ -92,11 +92,12 @@
 
   systemd.services.hyprland-resume = {
     description = "Unfreeze Hyprland after resume";
-    after = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
-    wantedBy = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    after = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.procps}/bin/pkill -CONT -x Hyprland";
+      # 2s delay gives GPU/DRM time to reinitialize after s2idle on AMD
+      ExecStart = "${pkgs.bash}/bin/bash -c 'sleep 2 && ${pkgs.procps}/bin/pkill -CONT -x Hyprland'";
     };
   };
 

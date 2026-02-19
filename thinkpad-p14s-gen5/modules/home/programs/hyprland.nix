@@ -118,7 +118,7 @@ let
       max|*)
         # Switch to BATTERY SAVER (no effects, minimal FPS)
         hyprctl keyword animations:enabled false
-        hyprctl keyword misc:render_unfocused_fps 5
+        hyprctl keyword misc:render_unfocused_fps 10
         hyprctl keyword decoration:blur:enabled false
         hyprctl keyword decoration:shadow:enabled false
         echo "battery" > "$STATE_FILE"
@@ -139,7 +139,7 @@ let
       if [ "$BAT_STATUS" = "Discharging" ]; then
         # On battery - enable battery saver mode
         hyprctl keyword animations:enabled false
-        hyprctl keyword misc:render_unfocused_fps 5
+        hyprctl keyword misc:render_unfocused_fps 10
         hyprctl keyword decoration:blur:enabled false
         hyprctl keyword decoration:shadow:enabled false
         echo "battery" > "$STATE_FILE"
@@ -149,7 +149,7 @@ let
         case "$SAVED_STATE" in
           battery)
             hyprctl keyword animations:enabled false
-            hyprctl keyword misc:render_unfocused_fps 5
+            hyprctl keyword misc:render_unfocused_fps 10
             hyprctl keyword decoration:blur:enabled false
             hyprctl keyword decoration:shadow:enabled false
             ;;
@@ -186,7 +186,7 @@ let
           if [ "$CURRENT_STATUS" = "Discharging" ]; then
             # Switched to battery - enable battery saver mode
             hyprctl keyword animations:enabled false
-            hyprctl keyword misc:render_unfocused_fps 5
+            hyprctl keyword misc:render_unfocused_fps 10
             hyprctl keyword decoration:blur:enabled false
             hyprctl keyword decoration:shadow:enabled false
             echo "battery" > "$STATE_FILE"
@@ -574,21 +574,14 @@ in
 
     # Hyprland plugins from official flake (version-matched)
     plugins = [
-      hyprlandPlugins.hyprexpo    # Workspace overview (SUPER+TAB)
+      # hyprlandPlugins.hyprexpo  # DISABLED: known SEGV on AMD iGPU (hyprwm/hyprland-plugins#475)
     ];
 
     settings = {
-      "debug:disable_logs" = true;
+      "debug:disable_logs" = false;  # Enabled for crash diagnostics (wiki.hypr.land/Crashes-and-Bugs)
 
       # === PLUGIN CONFIGURATIONS ===
-
-      # Hyprexpo - Workspace overview (like macOS Mission Control)
-      "plugin:hyprexpo" = {
-        columns = 3;
-        gap_size = 5;
-        bg_col = "rgb(${stripHash theme.colors.background})";
-        workspace_method = "first 1";  # Start from workspace 1
-      };
+      # hyprexpo disabled - see plugins list above
 
 
       monitor = [
@@ -737,7 +730,7 @@ in
         focus_on_activate = false;  # Prevent windows from stealing focus
         on_focus_under_fullscreen = 2;  # 0=ignore, 1=takeover, 2=unfullscreen (Hyprland 0.53+)
         close_special_on_empty = true;  # Close special workspace when empty
-        render_unfocused_fps = 5;  # Aggressive GPU savings on unfocused windows (default for battery)
+        render_unfocused_fps = 15;  # Default value - 5 was too aggressive, can trigger GPU ring timeouts on AMD
       };
 
       # Cursor settings (Hyprland 0.53+)
@@ -750,14 +743,14 @@ in
 
       # Render optimizations
       render = {
-        direct_scanout = true;  # Better fullscreen performance
+        direct_scanout = false;  # DISABLED: known crash source on AMD GPUs (hyprwm/Hyprland#9331)
       };
 
       "$mod" = "SUPER";
 
       bind = [
         "$mod, Return, exec, ghostty"
-        "$mod, Tab, hyprexpo:expo, toggle"  # Workspace overview (like macOS Mission Control)
+        # "$mod, Tab, hyprexpo:expo, toggle"  # DISABLED with hyprexpo plugin
         "$mod, B, exec, brave"
         "$mod, E, exec, nemo"
         "$mod, A, exec, hyprpwcenter"  # Audio control (Official Hyprland)

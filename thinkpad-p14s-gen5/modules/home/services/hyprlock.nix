@@ -28,7 +28,7 @@ in
       before_sleep_cmd = loginctl lock-session
       # After resume: only turn DPMS on (official wiki recommendation)
       # Small delay gives GPU/DRM time to reinitialize after s2idle
-      after_sleep_cmd = sleep 1 && hyprctl dispatch dpms on
+      after_sleep_cmd = sleep 2 && hyprctl dispatch dpms on
     }
 
     # Screen dim after 25 minutes

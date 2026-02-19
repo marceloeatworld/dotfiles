@@ -45,6 +45,7 @@
     # Additional stability parameters for AMD display
     "amdgpu.sg_display=0"              # Fixes screen flickering
     "amdgpu.noretry=0"                 # Retry on timeout (default)
+    "amdgpu.runpm=0"                   # Disable GPU runtime PM - prevents suspend/resume crashes on iGPU
 
     # NOTE: MES workarounds (vm_update_mode=3, cwsr_enable=0) removed
     # They prevented proper GPU suspend/resume in s2idle, causing the PC

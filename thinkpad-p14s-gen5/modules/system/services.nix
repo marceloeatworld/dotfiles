@@ -47,7 +47,7 @@
 
       # PCIe power saving
       PCIE_ASPM_ON_AC = "default";
-      PCIE_ASPM_ON_BAT = "powersupersave";
+      PCIE_ASPM_ON_BAT = "powersave";  # "powersupersave" can cause GPU hangs and link recovery failures on AMD
 
       # Runtime power management
       RUNTIME_PM_ON_AC = "on";
@@ -104,7 +104,7 @@
     percentageLow = 15;
     percentageCritical = 5;
     percentageAction = 3;
-    criticalPowerAction = "Hibernate";
+    criticalPowerAction = "PowerOff";  # Hibernate is not configured (kernel params commented out in btrfs.nix)
   };
 
   # NOTE: thermald is INTEL-ONLY, do NOT enable on AMD systems

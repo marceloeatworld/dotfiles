@@ -6,18 +6,18 @@
   # VPN dispatcher script will override this when VPN is active
   networking.nameservers = [ "127.0.0.1" "::1" ];
 
-  # Fix WiFi after suspend (ath11k 4WAY_HANDSHAKE_TIMEOUT bug)
-  # The Qualcomm QCNFA765 (ath11k) driver fails to reconnect after long suspend.
-  # This service reloads the driver module on resume to force a clean reconnect.
-  systemd.services.wifi-resume = {
-    description = "Restart WiFi after suspend (ath11k fix)";
-    after = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-    wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.kmod}/bin/rmmod ath11k_pci && sleep 1 && ${pkgs.kmod}/bin/modprobe ath11k_pci'";
-    };
-  };
+  # NOTE: ath11k wifi-resume service removed - no longer needed on kernel 6.16+
+  # The 4WAY_HANDSHAKE_TIMEOUT bug was fixed in kernel 6.16.
+  # Current kernel: 6.18 (Zen). Keeping as reference in case of regression:
+  # systemd.services.wifi-resume = {
+  #   description = "Restart WiFi after suspend (ath11k fix)";
+  #   after = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+  #   wantedBy = [ "suspend.target" "hibernate.target" "hybrid-sleep.target" ];
+  #   serviceConfig = {
+  #     Type = "oneshot";
+  #     ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.kmod}/bin/rmmod ath11k_pci && sleep 1 && ${pkgs.kmod}/bin/modprobe ath11k_pci'";
+  #   };
+  # };
 
   # Enable NetworkManager for easy network management
   networking.networkmanager = {
