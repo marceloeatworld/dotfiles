@@ -31,9 +31,11 @@
     "amd_pstate=active"
 
     # AMD GPU optimizations for Radeon 780M (RDNA 3)
-    "amdgpu.ppfeaturemask=0xffffffff"  # Enable all power features
+    # NOTE: ppfeaturemask=0xfffd7fff instead of 0xffffffff
+    # Bit 17 (0x20000) disabled = PP_GFXOFF_MASK - GFXOFF causes resume failures on RDNA 3 iGPU
+    # Symptom: black screen after suspend, GPU fails to reinitialize
+    "amdgpu.ppfeaturemask=0xfffd7fff"
     "amdgpu.gpu_recovery=1"            # Enable GPU recovery on hang
-    "amdgpu.tmz=0"                     # Disable TMZ (not needed for iGPU)
 
     # FIX: DMCUB errors and display freezes (common on kernel 6.12+)
     # Disables PSR (Panel Self Refresh), PSR-SU, and Panel Replay
@@ -44,10 +46,17 @@
     "amdgpu.sg_display=0"              # Fixes screen flickering
     "amdgpu.noretry=0"                 # Retry on timeout (default)
 
-    # MES (Micro Engine Scheduler) stability workarounds
-    # Fixes random freezes on RDNA3 GPUs (Radeon 780M)
-    "amdgpu.vm_update_mode=3"          # Force CPU for compute queue updates
-    "amdgpu.cwsr_enable=0"             # Reduce GPU context switching
+    # NOTE: MES workarounds (vm_update_mode=3, cwsr_enable=0) removed
+    # They prevented proper GPU suspend/resume in s2idle, causing the PC
+    # to not wake from sleep. If random GPU freezes return, re-enable selectively.
+
+    # FIX: s2idle resume on AMD Ryzen (ThinkPad P14s Gen 5)
+    # acpi.ec_no_wakeup=1 - Prevents ACPI EC from waking device during s2idle
+    #   Documented fix for P14s Gen 5 AMD (ArchWiki + Lenovo forums)
+    #   Without this, EC repeatedly wakes the device causing it to freeze
+    # rtc_cmos.use_acpi_alarm=1 - Ensures RTC wakeup works via ACPI on modern AMD
+    "acpi.ec_no_wakeup=1"
+    "rtc_cmos.use_acpi_alarm=1"
 
     # Enable AMD SEV (Secure Encrypted Virtualization) if needed
     # "mem_encrypt=on"  # Uncomment for extra VM security

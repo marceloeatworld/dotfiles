@@ -31,8 +31,8 @@ in
         executable = "${brave-wayland}/bin/brave";
         profile = "${pkgs.firejail}/etc/firejail/brave.profile";
         extraArgs = [
-          # Allow access to entire home directory for file uploads
-          # System directories outside $HOME remain restricted
+          # Allow access to home for file uploads/downloads
+          # System directories outside $HOME remain restricted by firejail profile
           "--whitelist=~/"
         ];
       };
@@ -287,13 +287,14 @@ in
     });
   '';
 
-  # Sudo rule for TLP battery threshold commands (passwordless)
+  # Sudo rule for TLP battery threshold commands only (passwordless)
+  # Restricted to setcharge subcommand - prevents escalation via other tlp commands
   security.sudo.extraRules = [
     {
       users = [ "marcelo" ];
       commands = [
         {
-          command = "/run/current-system/sw/bin/tlp";
+          command = "/run/current-system/sw/bin/tlp setcharge *";
           options = [ "NOPASSWD" ];
         }
       ];

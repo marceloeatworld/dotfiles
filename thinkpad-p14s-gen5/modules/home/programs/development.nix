@@ -18,10 +18,10 @@
     # To update: run update-apps or edit overlays/vscode-latest.nix
     vscode  # All settings and extensions are managed through GitHub account sync
     # Version control
-    git
+    # NOTE: git is provided by programs.git.enable (git.nix)
+    # NOTE: lazygit is provided by programs.lazygit.enable (git.nix)
     git-lfs
     gh
-    lazygit       # Git TUI (beautiful interactive Git)
 
     # Languages (base compilers)
     (python313.withPackages (ps: with ps; [
@@ -74,12 +74,8 @@
     # terraform       # Infrastructure as Code - REMOVED (not needed)
     ansible
 
-    # CLI utilities
-    gum           # Beautiful shell scripts
-
     # Modern CLI tools (Rust replacements)
-    yazi          # Terminal file manager (modern, replaces ranger/lf)
-    dust          # du modern (disk usage visualization)
+    # NOTE: yazi, dust, gum are in home.nix (general user tools)
     duf           # df modern (filesystem display)
     bottom        # btop alternative (faster, Rust)
     procs         # ps modern (colored process list)
@@ -212,8 +208,7 @@
     '')
 
     # AI Coding Agents
-    opencode          # OpenCode - AI coding agent for terminal (latest from overlay)
-    # To update: run update-apps or edit overlays/opencode-latest.nix
+    opencode          # OpenCode - AI coding agent for terminal
 
     # Cloud Development
     wrangler          # Cloudflare Workers CLI (from nixpkgs)

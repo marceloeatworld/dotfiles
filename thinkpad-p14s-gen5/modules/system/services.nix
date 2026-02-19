@@ -88,6 +88,16 @@
     powertop.enable = false;
   };
 
+  # Logind: lid switch and power button handling
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";              # Lid close → suspend
+    HandleLidSwitchExternalPower = "suspend"; # Same behavior on AC
+    HandlePowerKey = "suspend";
+    # s2idle (freeze) is the only mode available on this hardware (no S3 deep sleep)
+    # Tradeoff: faster wake but higher battery drain (~2-5%/hr vs <1%/hr with S3)
+    SuspendState = "freeze";
+  };
+
   # Enable upower for battery monitoring
   services.upower = {
     enable = true;

@@ -1,12 +1,26 @@
 # SwayOSD - On-screen display for volume/brightness
-{ config, ... }:
+{ config, pkgs, ... }:
 
 let
   theme = config.theme;
 in
 {
-  # SwayOSD is already in home.packages (from home.nix)
-  # This module just adds configuration
+  # SwayOSD systemd service - ensures it starts reliably and restarts on crash
+  systemd.user.services.swayosd = {
+    Unit = {
+      Description = "SwayOSD - On-screen display for volume/brightness";
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.swayosd}/bin/swayosd-server";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+  };
 
   # SwayOSD configuration
   xdg.configFile."swayosd/config.toml".text = ''

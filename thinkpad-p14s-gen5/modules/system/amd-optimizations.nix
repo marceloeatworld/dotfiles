@@ -9,8 +9,8 @@
   # AMD CPU microcode updates
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  # Enable AMD SEV (Secure Encrypted Virtualization) + sensors
-  boot.kernelModules = [ "kvm-amd" "ccp" "k10temp" ];
+  # AMD kernel modules: SEV, sensors, suspend (kvm-amd also in hardware-configuration.nix, harmless duplicate)
+  boot.kernelModules = [ "kvm-amd" "ccp" "k10temp" "amd_pmc" ];
 
   # AMD GPU firmware (enableAllFirmware includes enableRedistributableFirmware)
   hardware.enableAllFirmware = true;
@@ -87,11 +87,7 @@
   # TLP handles CPU_BOOST_ON_AC and CPU_BOOST_ON_BAT dynamically
   # Do not force boost settings here to avoid conflicts with TLP
 
-  # AMD PSP (Platform Security Processor) firmware
-  # Required for fTPM and SEV
-  hardware.firmware = with pkgs; [
-    linux-firmware
-  ];
+  # NOTE: linux-firmware already included by hardware.enableAllFirmware = true (line 16)
 
   # Performance tuning for NVMe SSD
   services.udev.extraRules = ''

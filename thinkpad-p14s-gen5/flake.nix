@@ -66,7 +66,7 @@
         # Update: overlays/claude-code-latest.nix (version + hash)
         (final: prev: {
           claude-code = import ./overlays/claude-code-latest.nix {
-            inherit (prev) lib fetchurl claude-code;
+            inherit (prev) lib fetchurl fetchNpmDeps claude-code;
           };
         })
         # llama.cpp Latest - Local LLM inference with ROCm + native optimizations

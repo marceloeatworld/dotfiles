@@ -13,13 +13,22 @@ in
   services.swayidle.enable = false;
 
   # Hypridle configuration (Official Hyprland idle daemon)
+  # References:
+  #   - https://wiki.hypr.land/Hypr-Ecosystem/hypridle/
+  #   - https://github.com/hyprwm/Hyprland/issues/7700 (hyprctl reload SEGV)
+  #   - https://github.com/hyprwm/hyprlock/issues/953 (DPMS off crash on AMD)
+  #   - https://github.com/hyprwm/Hyprland/issues/6082 (DPMS on crash)
   xdg.configFile."hypr/hypridle.conf".text = ''
     # Hypridle Configuration
+    # NOTE: DPMS off is NOT used — known crash vector on AMD RDNA 3 iGPU
+    # NOTE: hyprctl reload is NOT used — causes SEGV during resume (issue #7700)
 
     general {
       lock_cmd = pidof hyprlock || hyprlock
       before_sleep_cmd = loginctl lock-session
-      after_sleep_cmd = hyprctl dispatch dpms on
+      # After resume: only turn DPMS on (official wiki recommendation)
+      # Small delay gives GPU/DRM time to reinitialize after s2idle
+      after_sleep_cmd = sleep 1 && hyprctl dispatch dpms on
     }
 
     # Screen dim after 25 minutes
@@ -35,16 +44,9 @@ in
       on-timeout = loginctl lock-session
     }
 
-    # Turn off screen after 31 minutes
+    # Suspend after 35 minutes (no DPMS off step — avoids AMD GPU crash)
     listener {
-      timeout = 1860
-      on-timeout = hyprctl dispatch dpms off
-      on-resume = hyprctl dispatch dpms on
-    }
-
-    # Suspend after 45 minutes
-    listener {
-      timeout = 2700
+      timeout = 2100
       on-timeout = systemctl suspend
     }
   '';

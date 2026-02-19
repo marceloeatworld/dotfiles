@@ -27,7 +27,7 @@ in
     if [ -d "$SOURCE_DIR" ]; then
       $DRY_RUN_CMD mkdir -p "$ICON_DIR"
 
-      $DRY_RUN_CMD echo "📦 Installing web app icons from local repo..."
+      $DRY_RUN_CMD echo "Installing web app icons from local repo..."
 
       ${lib.concatStringsSep "\n" (lib.mapAttrsToList (source: target: ''
         if [ -f "$SOURCE_DIR/${source}" ]; then
@@ -38,9 +38,9 @@ in
       # Update icon cache
       $DRY_RUN_CMD ${pkgs.gtk3}/bin/gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
 
-      $DRY_RUN_CMD echo "✅ Web app icons installed from local repo"
+      $DRY_RUN_CMD echo "Web app icons installed from local repo"
     else
-      $DRY_RUN_CMD echo "⚠️  Icon source directory not found: $SOURCE_DIR"
+      $DRY_RUN_CMD echo "WARNING: Icon source directory not found: $SOURCE_DIR"
     fi
   '';
 }

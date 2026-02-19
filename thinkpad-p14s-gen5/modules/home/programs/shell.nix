@@ -374,11 +374,6 @@ in
         nh os switch
       }
 
-      # Update Cloudflare skill for Claude Code (and optionally OpenCode)
-      function update-cf-skill() {
-        "$HOME/dotfiles/scripts/install-cloudflare-skill.sh" "$@"
-      }
-
       # Launch Hyprland with UWSM on login to TTY1
       # See: https://wiki.hypr.land/Useful-Utilities/Systemd-start/
       # NixOS uses hyprland-uwsm.desktop (not hyprland.desktop) when withUWSM=true

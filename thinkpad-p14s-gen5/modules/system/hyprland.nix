@@ -77,6 +77,29 @@
     };
   };
 
+  # Freeze Hyprland before suspend to prevent GPU access during s2idle transition
+  # Prevents SEGV crashes caused by Hyprland touching stale DRM/GPU state
+  # Reference: https://github.com/0xFMD/hyprland-suspend-fix
+  systemd.services.hyprland-suspend = {
+    description = "Freeze Hyprland before suspend";
+    before = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    wantedBy = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.procps}/bin/pkill -STOP -x Hyprland";
+    };
+  };
+
+  systemd.services.hyprland-resume = {
+    description = "Unfreeze Hyprland after resume";
+    after = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    wantedBy = [ "systemd-suspend.service" "systemd-hibernate.service" "systemd-suspend-then-hibernate.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.procps}/bin/pkill -CONT -x Hyprland";
+    };
+  };
+
   # Additional Wayland-related packages
   environment.systemPackages = with pkgs; [
     # Wayland tools

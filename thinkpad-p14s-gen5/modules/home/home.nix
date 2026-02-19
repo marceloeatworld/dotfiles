@@ -196,9 +196,7 @@ in
 
     # File management (Nemo and related packages moved to programs/nemo.nix)
     xed-editor        # Simple text editor from Linux Mint (pairs well with Nemo)
-    yazi
-    nnn
-    ranger
+    yazi              # Terminal file manager (modern, replaces nnn/ranger)
     gvfs              # Virtual file systems (Android MTP, network shares)
 
     # Archives
@@ -251,7 +249,7 @@ in
     hyprpicker        # Color picker for Hyprland
     swayosd           # Beautiful OSD for volume/brightness
     satty             # Screenshot annotation
-    blueman           # Bluetooth manager GUI
+    # NOTE: blueman provided by services.blueman.enable (networking.nix)
 
     # NOTE: Fonts are installed system-wide in modules/system/fonts.nix
     # This is REQUIRED for Hyprland/Waybar and other Wayland apps

@@ -263,6 +263,8 @@ let
   # Claude Code settings.json with improved security
   settingsJson = builtins.toJSON {
     env = {
+      ANTHROPIC_DEFAULT_HAIKU_MODEL = "claude-sonnet-4-6[1m]";
+      ANTHROPIC_DEFAULT_SONNET_MODEL = "claude-sonnet-4-6[1m]";
       CLAUDE_CODE_MAX_OUTPUT_TOKENS = "64000";
       # Note: Auto-updater is automatically disabled on NixOS (read-only /nix/store)
       # Updates are handled via: nix flake update && rebuild

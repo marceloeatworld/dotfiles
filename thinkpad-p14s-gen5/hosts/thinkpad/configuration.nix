@@ -40,10 +40,7 @@
     automatic = false;  # Disabled - NH manages this
   };
 
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
-
-  # NOTE: qtwebengine-5.15.19 insecure permit removed (was needed by TeamSpeak 3, now removed)
+  # NOTE: allowUnfree is set in flake.nix (single source of truth)
 
   # System packages (minimal - user tools are in home-manager)
   environment.systemPackages = with pkgs; [

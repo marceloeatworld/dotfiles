@@ -601,7 +601,7 @@ in
       exec-once = [
         "waybar"
         "mako"
-        "swayosd-server"  # OSD daemon for volume/brightness notifications
+        # swayosd-server managed by systemd (services/swayosd.nix)
         "hyprpaper"
         "wl-paste --type text --watch cliphist store"
         "wl-paste --type image --watch cliphist store"
