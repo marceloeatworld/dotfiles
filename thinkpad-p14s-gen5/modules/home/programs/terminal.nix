@@ -28,12 +28,12 @@ in
       cursor-style = "block";
       cursor-style-blink = false;
 
-      # Theme colors from config/theme.nix
-      background = builtins.substring 1 6 theme.colors.background;
-      foreground = builtins.substring 1 6 theme.colors.foreground;
-      selection-background = builtins.substring 1 6 theme.colors.selection;
-      selection-foreground = builtins.substring 1 6 theme.colors.foreground;
-      cursor-color = builtins.substring 1 6 theme.colors.yellow;
+      # Theme colors from config/theme.nix (Ghostty needs colors without '#' prefix)
+      background = theme.stripHash theme.colors.background;
+      foreground = theme.stripHash theme.colors.foreground;
+      selection-background = theme.stripHash theme.colors.selection;
+      selection-foreground = theme.stripHash theme.colors.foreground;
+      cursor-color = theme.stripHash theme.colors.yellow;
 
       # Terminal palette from theme
       palette = [

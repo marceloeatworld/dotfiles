@@ -15,15 +15,17 @@ Personal NixOS configurations with flakes and home-manager.
 - **NixOS:** 25.11
 
 **Features:**
-- Hyprland tiling WM
+- Hyprland tiling WM with UWSM session management
 - 5 switchable themes (Ristretto, Neobrutalist, Nord, Tokyo Night, Catppuccin)
 - Bitcoin wallet monitoring (privacy-focused zpub derivation)
 - Automatic VPN DNS switching (dnscrypt-proxy ↔ Proton VPN)
-- Local LLM inference (llama.cpp + ROCm, Qwen3.5 models)
+- Local LLM inference (llama.cpp + ROCm, Qwen3.5 4B/9B + GLM-OCR vision)
+- AI coding agents (Claude Code, OpenCode)
 - Malware analysis VM (libvirt + network killswitch)
 - SDR radio tools (SDR++, GQRX, GNURadio)
-- Extensive security toolkit (aircrack-ng, hashcat, nmap, Wireshark, etc.)
-- Performance tuning (ananicy-cpp, earlyoom, GameMode)
+- Extensive security toolkit (aircrack-ng, hashcat, nmap, Wireshark, Ghidra, angr, etc.)
+- Performance tuning (ananicy-cpp, earlyoom, GameMode, zram)
+- 18 Firejail-sandboxed applications + AppArmor
 
 **Documentation:**
 - **[ThinkPad Configuration](thinkpad-p14s-gen5/)** - Full system details
@@ -53,7 +55,7 @@ nix flake update
 dotfiles/
 ├── thinkpad-p14s-gen5/           # ThinkPad P14s Gen 5 AMD configuration
 │   ├── flake.nix                 # Main flake (nixpkgs-unstable default)
-│   ├── overlays/                 # VS Code, Claude Code, llama.cpp overlays
+│   ├── overlays/                 # VS Code, Claude Code, llama.cpp, OpenCode overlays
 │   ├── hosts/thinkpad/           # Hardware configs, disko (LUKS + Btrfs)
 │   ├── modules/
 │   │   ├── system/               # 18 system modules (boot, networking, security, etc.)
@@ -62,6 +64,7 @@ dotfiles/
 │   │       ├── services/         # 4 service modules (waybar, mako, hyprlock, swayosd)
 │   │       └── config/           # 7 config modules (theme, gtk, qt, fonts, etc.)
 │   ├── assets/icons/             # Local webapp icons
+│   ├── skills/                   # Gemini API skill docs
 │   └── README.md                 # Complete user documentation
 ├── vpn/                          # WireGuard configs (gitignored)
 ├── INSTALLATION-GUIDE.md         # Fresh installation process
@@ -75,8 +78,10 @@ dotfiles/
 - **Home Manager** - Declarative user environment (35 modules)
 - **Disko** - Declarative disk partitioning (LUKS + Btrfs)
 - **Hyprland** - Modern Wayland compositor (from official flake)
+- **UWSM** - Universal Wayland Session Manager
 - **NH (Nix Helper)** - Modern rebuild tool with visual diffs
-- **Ghostty** - GPU-accelerated terminal (nightly from flake)
+- **Ghostty** - GPU-accelerated terminal
+- **Hyprlauncher** - Official Hyprland app launcher
 
 ## Common Commands
 
@@ -97,7 +102,7 @@ nh clean all --keep 5             # Clean old generations
 |-------|---------|-------------|
 | `rebuild` | `nh os switch` | Rebuild system |
 | `update` | `nix flake update && update-overlays && nh os switch` | Full update |
-| `update-apps` | `update-overlays && nh os switch` | Update VS Code + Claude Code |
+| `update-apps` | `update-overlays && nh os switch` | Update VS Code + Claude Code + OpenCode |
 | `clean` | `nh clean all --keep 5` | Clean old generations |
 
 **Auto-update functions:**
@@ -105,8 +110,9 @@ nh clean all --keep 5             # Clean old generations
 |----------|-------------|
 | `update-vscode` | Check/update VS Code from Microsoft API |
 | `update-claude-code` | Check/update Claude Code from npm registry |
-| `update-llama` | Check/update llama.cpp from GitHub releases |
-| `update-overlays` | Update VS Code + Claude Code overlays (`update-llama` is separate) |
+| `update-opencode` | Check/update OpenCode from GitHub releases |
+| `update-llama` | Check/update llama.cpp from GitHub releases (separate, long build) |
+| `update-overlays` | Update VS Code + Claude Code + OpenCode (`update-llama` is separate) |
 
 ## Adding New Machines
 

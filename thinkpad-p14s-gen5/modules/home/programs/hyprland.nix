@@ -2,13 +2,6 @@
 { config, pkgs, inputs, ... }:
 
 let
-  theme = config.theme;
-
-  # Helper to strip # from hex colors for Hyprland rgb() format
-  stripHash = color: builtins.substring 1 6 color;
-in
-
-let
   # Blue light filter toggle - cycles through temperature levels
   bluelight-toggle = pkgs.writeShellScriptBin "bluelight-toggle" ''
     set -euo pipefail

@@ -310,6 +310,13 @@ in
     ROC_ENABLE_PRE_VEGA = "1";            # Compatibility
   };
 
+  # Allow llama-cpp service to read model files from ~/models via symlinks
+  # The service uses DynamicUser=true which sets ProtectHome=true, blocking /home/ access.
+  # BindReadOnlyPaths makes ~/models visible inside the service's mount namespace.
+  systemd.services.llama-cpp.serviceConfig.BindReadOnlyPaths = [
+    "/home/marcelo/models"
+  ];
+
   # BitBox Bridge - Hardware wallet communication bridge
   # Provides udev rules and WebSocket bridge for BitBox02 hardware wallets
   services.bitbox-bridge = {

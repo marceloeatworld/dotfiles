@@ -107,6 +107,7 @@ in
 
         # Captive portal detection: temporarily use network DNS to check connectivity
         # Returns 0 (true) if a captive portal IS detected
+        # Uses atomic writes to prevent truncated resolv.conf if process is killed
         check_captive_portal() {
           local WIFI_IF="$1"
           local NETWORK_DNS=$(nmcli -t -f IP4.DNS dev show "$WIFI_IF" 2>/dev/null | cut -d: -f2 | head -1)
@@ -115,21 +116,25 @@ in
           local CHECK_DNS="''${NETWORK_DNS:-$GATEWAY}"
           [ -z "$CHECK_DNS" ] && return 1
 
-          # Temporarily write network DNS to resolv.conf for the check
-          # (curl --dns-servers requires c-ares which may not be available)
+          # Save current resolv.conf and set trap to restore it atomically
           local ORIG_RESOLV
           ORIG_RESOLV=$(cat /etc/resolv.conf)
-          printf '%s\n' "# Temporary captive portal check" "nameserver $CHECK_DNS" > /etc/resolv.conf
+          trap 'printf "%s\n" "$ORIG_RESOLV" | write_resolv' EXIT INT TERM HUP
 
+          # Temporarily write network DNS to resolv.conf for the check (atomic)
+          printf '%s\n' "# Temporary captive portal check" "nameserver $CHECK_DNS" | write_resolv
+
+          # Use GNOME NetworkManager's connectivity check (privacy-neutral, no Google)
           local HTTP_CODE
-          HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://connectivitycheck.gstatic.com/generate_204" 2>/dev/null)
+          HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://nmcheck.gnome.org/check_network_status.txt" 2>/dev/null)
 
-          # Restore original resolv.conf
-          printf '%s' "$ORIG_RESOLV" > /etc/resolv.conf
+          # Restore original resolv.conf atomically (also handled by trap)
+          printf '%s\n' "$ORIG_RESOLV" | write_resolv
+          trap - EXIT INT TERM HUP
 
-          # 204 = no portal, anything else (302, 200 with HTML) = captive portal
+          # 200 = no portal (direct access), 302/3xx = captive portal redirect
           # 000 = no response at all (network not ready yet)
-          [ "$HTTP_CODE" != "204" ] && [ "$HTTP_CODE" != "000" ]
+          [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "000" ]
         }
 
         INTERFACE="$1"

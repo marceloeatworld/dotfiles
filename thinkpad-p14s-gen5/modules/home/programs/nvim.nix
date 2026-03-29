@@ -193,9 +193,7 @@
       # ══════════════════════════════════════════════════════════════════
       # TOOLS
       # ══════════════════════════════════════════════════════════════════
-      ripgrep                      # Fast grep (required by Telescope)
-      fd                           # Fast find (required by Telescope)
-      lazygit                      # Git TUI
+      # ripgrep, fd, lazygit already in home.packages / programs.lazygit
       gcc                          # Required by Treesitter
       nodejs                       # Required by Copilot
       tree-sitter                  # Treesitter CLI

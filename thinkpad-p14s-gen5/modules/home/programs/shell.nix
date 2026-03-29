@@ -27,7 +27,7 @@ Super+W         Center floating window
 Super+T         Toggle split (H/V)
 Super+H/J/K/L       Move focus
 Super+Shift+HJKL    Move window
-Super+Ctrl+HJKL     Resize window
+Super+Ctrl+HJKL     Resize window (40px)
 Super+Mouse L       Move window (drag)
 Super+Mouse R       Resize window (drag)
 
@@ -44,22 +44,23 @@ Super+S         Special workspace
 Super+Shift+S   Move to special WS
 Super+minus     Minimize to special
 Super+Shift+minus  Show minimized
+3-finger swipe  Switch workspace
 
 ━━━━━━━━━━━━━━━ UTILS ━━━━━━━━━━━━━━━
 Super+V         Clipboard history
 Super+Shift+V   Clear clipboard
 Super+C         Color picker
-Super+N         Blue light filter (cycle)
+Super+N         Blue light filter (cycle 8 levels)
 Super+Shift+N   Blue light off
-Super+M         Battery mode (cycle)
-Super+Shift+M   Performance mode (cycle)
+Super+M         Battery mode (55-60/75-80/95-100%)
+Super+Shift+M   Performance mode (battery/balanced/max)
 Super+Shift+R   Restart Waybar
 
 ━━━━━━━━━━━━ SCREENSHOTS ━━━━━━━━━━━━
-Print              Region → clipboard
-Super+Print        Region → file
-Shift+Print        Full screen → clipboard
-Super+Shift+Print  Full screen → file
+Print              Region -> clipboard
+Super+Print        Region -> file
+Shift+Print        Full screen -> clipboard
+Super+Shift+Print  Full screen -> file
 
 ━━━━━━━━━━━━━ SYSTEM ━━━━━━━━━━━━━
 Super+Esc            Lock screen
@@ -70,37 +71,93 @@ Super+Ctrl+Shift+Esc  Monitors off
 
 ━━━━━━━━━━━━━━ WIFI ━━━━━━━━━━━━━━
 Super+F2         Reconnect WiFi
-Super+Shift+F2   Scan & connect
+Super+Shift+F2   Scan & connect (wofi menu)
 Super+Ctrl+F2    Toggle WiFi on/off
 captive-on       Bypass DNS (portals)
 captive-off      Restore secure DNS
 
 ━━━━━━━━━━━━━ MEDIA ━━━━━━━━━━━━━
-Volume keys      Volume up/down/mute
-Brightness keys  Brightness up/down
+Volume keys      Volume up/down/mute (SwayOSD)
+Brightness keys  Brightness up/down (SwayOSD)
 Play/Pause       Media play/pause
 Next/Prev        Media next/prev
+Mic Mute         Microphone toggle
+
+━━━━━━━━━━━━ GHOSTTY ━━━━━━━━━━━━
+Ctrl+Shift+T           New tab
+Ctrl+Shift+W           Close tab
+Ctrl+Shift+Right/Left  Next/prev tab
+Ctrl+Shift+1-5         Go to tab 1-5
+Ctrl+Shift+Enter       Split down
+Ctrl+Shift+\           Split right
+Ctrl+Alt+Enter         Split up
+Ctrl+Alt+\             Split left
+Ctrl+Shift+H/J/K/L    Navigate splits
+Ctrl+Alt+H/J/K/L      Resize splits
+Ctrl+Shift+E           Equalize splits
+Ctrl+Shift+C/V         Copy/Paste
+Ctrl+Shift+=/-/0       Font size +/-/reset
+Mouse select           Auto-copy to clipboard
 
 ━━━━━━━━━━━━━━━ NEOVIM ━━━━━━━━━━━━━━━
 Space           Leader key
-Space ?         Show all keybinds
-Space e         File explorer
-Space ff        Find file
-Space fg        Grep search
+Space ?         Show all keybinds (WhichKey)
+Space e         File explorer (Neo-tree)
 Space w         Save | Space q  Quit
-jk              Exit insert mode
+jk / kj         Exit insert mode
+Ctrl+S          Save (all modes)
+Ctrl+Z / Ctrl+Y  Undo / Redo
+Ctrl+A          Select all
+Ctrl+C / Ctrl+X Copy / Cut (visual)
+Ctrl+V          Paste from clipboard
+Ctrl+D          Duplicate line
+Ctrl+Shift+K    Delete line
+Ctrl+F          Search in file
+Ctrl+N          New file
+-               Parent directory (Oil.nvim)
+s               Flash jump
 
-━━━━━━━━━━ NEOVIM NAVIGATION ━━━━━━━━━━
-gd  Definition    gr  References
-K   Hover docs    Space ca  Code action
-Space cr  Rename  Space cf  Format
+━━━━━━━━━━ NEOVIM FIND ━━━━━━━━━━
+Space ff  Find file     Space fg  Grep search
+Space fb  Buffers       Space fr  Recent files
+Space fc  Commands      Space fh  Help tags
+Space fk  Keymaps       Space fw  Word under cursor
+
+━━━━━━━━━━ NEOVIM CODE ━━━━━━━━━━
+gd  Go to definition  gr  References
+K   Hover docs        Space ca  Code action
+Space cr  Rename       Space cf  Format
+Space cd  Line diagnostics
+Space cs  Document symbols
 [d / ]d   Prev/next diagnostic
-s         Flash jump
 
-━━━━━━━━━━━━ NEOVIM GIT ━━━━━━━━━━━━
-Space gg  LazyGit    Space gd  Diff view
-Space gb  Line blame Space gs  Stage hunk
-[c / ]c   Prev/next git hunk
+━━━━━━━━━━ NEOVIM GIT ━━━━━━━━━━
+Space gg  LazyGit      Space gn  Neogit
+Space gd  Diff view    Space gD  Close diff
+Space gh  File history Space gH  Branch history
+Space gb  Line blame   Space gp  Preview hunk
+Space gs  Stage hunk   Space gS  Stage buffer
+Space gr  Reset hunk   Space gR  Reset buffer
+
+━━━━━━━━━━ NEOVIM BUFFER ━━━━━━━━━━
+Space bd  Delete       Space bo  Close others
+Space bn  Next         Space bp  Previous
+Space bb  Switch other Alt+1-9   Go to buffer
+
+━━━━━━━━━━ NEOVIM SEARCH ━━━━━━━━━━
+Space sr  Search & Replace (Spectre)
+Space sw  Search word  Space sm  Marks
+Space sc  Command history
+
+━━━━━━━━━━ NEOVIM DIAGNOSTICS ━━━━━━━━━━
+Space xx  All diagnostics    Space xX  Buffer only
+Space xl  Location list      Space xq  Quickfix
+Space xt  TODOs
+
+━━━━━━━━━━ NEOVIM WINDOWS ━━━━━━━━━━
+Ctrl+H/J/K/L         Navigate windows
+Ctrl+Arrows           Resize windows
+Alt+J/K               Move line up/down
 
 ━━━━━━━━━━━━ THEMES ━━━━━━━━━━━━
 theme-selector <name>  Set theme + rebuild
@@ -109,28 +166,27 @@ theme-selector --current  Show active theme
   Themes: ristretto neobrutalist nord
           tokyonight catppuccin
 
-━━━━━━━━━━━━ TERMINAL ━━━━━━━━━━━━
-rebuild   Rebuild NixOS
-update    Update system
-clean     Clean generations
-ll / la   List files
-z <dir>   Smart cd (zoxide)
-Ctrl+R    History search
+━━━━━━━━━━━ SHELL ALIASES ━━━━━━━━━━━
+rebuild       Rebuild NixOS (nh os switch)
+update        Full update (flake + overlays)
+update-apps   Update VS Code + Claude Code + OpenCode
+clean         Clean old generations
+nb / ntest    Boot / test build
+ndiff         Build and show diff
+ll / la       List files (eza)
+cat           bat (syntax highlight)
+v / vim       Neovim
+z <dir>       Smart cd (zoxide)
+Ctrl+R        History search (fzf)
 
-━━━━━━━━━━━━━ VMs ━━━━━━━━━━━━━
-virt-manager           GUI VM manager
-virt-viewer <vm>       View VM display
-virsh list --all       List all VMs
-virsh start <vm>       Start VM
-virsh shutdown <vm>    Shutdown VM
-virsh suspend <vm>     Pause VM
-virsh resume <vm>      Resume VM
-virsh snapshot-create-as <vm> <name>
-virsh snapshot-revert <vm> <name>
-virsh snapshot-list <vm>
-virsh snapshot-delete <vm> <name>
-
-VM Name: Windows-Malware
+━━━━━━━━━━━━━ VPN ━━━━━━━━━━━━━
+vpn              Toggle VPN (default: Portugal)
+vpn <code>       Connect (pt, fr, us, lt)
+vpn off          Disconnect
+vpn status       Show current status
+vpn list         List available servers
+vpn import       Import configs from ~/dotfiles/vpn/
+vpn reset        Remove all and reimport
 
 ━━━━━━━━━━ MALWARE VM ━━━━━━━━━━
 sudo malware-vm setup       Create networks
@@ -163,6 +219,7 @@ sqlmap                 SQL injection
 hydra                  Brute force login
 ghidra                 Reverse engineering
 angr                   Binary analysis (Python)
+cyberchef              Data analysis (GUI)
 
 ━━━━━━━━━━━━━ GIT ━━━━━━━━━━━━━
 gs         git status
@@ -172,13 +229,13 @@ gp         git push
 gl         git pull
 gd         git diff
 lazygit    Git TUI
-gitui      Git TUI (fast)
 
 ━━━━━━━━━━━━ AI/LLM ━━━━━━━━━━━━
-llm                    Chat with active model
-llm ocr <img>          OCR image → .txt (GLM-OCR)
-llm ocr img "Table Recognition:"   OCR table
-llm ocr img "Formula Recognition:" OCR formula
+llm "prompt"           Chat with active model
+llm ocr <img>          OCR image -> .txt
+llm ocr <img> "Table Recognition:"   OCR table
+llm ocr <img> "Formula Recognition:" OCR formula
+llm list               List available models
 llm-switch             Show active model + available
 llm-switch 4b          Qwen3.5-4B (2.7GB, fast)
 llm-switch 9b          Qwen3.5-9B Uncensored (5.6GB)
@@ -216,7 +273,7 @@ rg                     Better grep (ripgrep)
 dust                   Better du (disk usage)
 duf                    Better df (filesystems)
 procs                  Better ps
-bottom                 Better top/htop
+btop                   System monitor
 zoxide / z             Smart cd
 
 ━━━━━━━━━━━ DEBUGGING ━━━━━━━━━━━

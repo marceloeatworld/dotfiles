@@ -4,15 +4,20 @@
 let
   # Script to restart PipeWire + WirePlumber and reset audio to working state
   audio-restart = pkgs.writeShellScriptBin "audio-restart" ''
+    set -u
+
     echo "Restarting PipeWire and WirePlumber..."
     ${pkgs.systemd}/bin/systemctl --user restart pipewire wireplumber pipewire-pulse
     sleep 2
 
     # Set Ryzen HD Audio as default (not HDMI)
-    SINK=$(${pkgs.wireplumber}/bin/wpctl status | ${pkgs.gnugrep}/bin/grep -oP '\d+(?=\.\s+Ryzen HD Audio Controller Speaker)')
-    if [ -n "$SINK" ]; then
+    # Match sink ID by looking for "Ryzen" in the sink name (resilient to WirePlumber output format changes)
+    SINK=$(${pkgs.wireplumber}/bin/wpctl status 2>/dev/null | ${pkgs.gnugrep}/bin/grep -i "ryzen.*speaker" | ${pkgs.gnugrep}/bin/grep -oP '^\s*\K\d+' | head -1)
+    if [ -n "''${SINK:-}" ]; then
       ${pkgs.wireplumber}/bin/wpctl set-default "$SINK"
       echo "Default sink set to Ryzen HD Audio (ID: $SINK)"
+    else
+      echo "Warning: Could not find Ryzen HD Audio sink, default unchanged"
     fi
 
     # Reset ALSA mixer to sane defaults: Auto-Mute enabled, speakers unmuted

@@ -11,9 +11,9 @@ Personal NixOS configuration with Hyprland and themeable UI.
 - **RAM:** 32GB + zram (zstd, 50%)
 - **Storage:** 1TB NVMe (LUKS + Btrfs, 7 subvolumes)
 - **Kernel:** Zen kernel (linuxPackages_zen)
-- **WM:** Hyprland (Wayland)
-- **Terminal:** Ghostty (nightly) + Alacritty (backup)
-- **Launcher:** Hyprlauncher
+- **WM:** Hyprland (Wayland) via UWSM
+- **Terminal:** Ghostty + Alacritty (backup)
+- **Launcher:** Hyprlauncher (daemon mode)
 - **Theme:** 5 themes (Ristretto default, Neobrutalist, Nord, Tokyo Night, Catppuccin)
 
 ## Quick Start
@@ -40,8 +40,10 @@ nix flake update
 ├── overlays/                 # Custom package overlays
 │   ├── vscode-latest.nix     # VS Code from Microsoft CDN
 │   ├── claude-code-latest.nix # Claude Code from npm
-│   └── llama-cpp-latest.nix  # llama.cpp with ROCm + native CPU opts
+│   ├── llama-cpp-latest.nix  # llama.cpp with ROCm + native CPU opts
+│   └── opencode-latest.nix   # OpenCode from GitHub releases (Bun SEA)
 ├── assets/icons/             # Local webapp icons
+├── skills/                   # Gemini API skill docs
 ├── hosts/thinkpad/
 │   ├── configuration.nix     # System config (hostname, packages, nix settings)
 │   ├── hardware-configuration.nix
@@ -57,14 +59,14 @@ nix flake update
     │   ├── security.nix      # Firejail (18 apps), AppArmor, GnuPG, sudo rules
     │   ├── security-tools.nix # nmap, aircrack-ng, hashcat, wireshark, etc.
     │   ├── services.nix      # TLP, llama-cpp, CUPS, BitBox Bridge, llm-switch
-    │   ├── virtualisation.nix # Docker, libvirtd/QEMU, AppImage, KVM nested
+    │   ├── virtualisation.nix # Podman (Docker compat), libvirtd/QEMU, AppImage, KVM nested
     │   ├── btrfs.nix         # btrbk snapshots (15min), monthly scrub
-    │   ├── amd-optimizations.nix # AMD P-State, RADV, ROCm, NVMe scheduler
+    │   ├── amd-optimizations.nix # AMD P-State, RADV, ROCm, NVMe scheduler, GPU overdrive
     │   ├── steam.nix         # Steam + Proton GE + GameMode
     │   ├── fonts.nix         # System fonts (Inter, Liberation, Nerd Fonts)
-    │   ├── vpn-dns-switch.nix # Auto DNS switching (dnscrypt ↔ VPN DNS)
+    │   ├── vpn-dns-switch.nix # Auto DNS switching (dnscrypt ↔ VPN DNS) + captive portal
     │   ├── ddcutil.nix       # DDC/CI for external monitor brightness
-    │   ├── performance.nix   # zram, ananicy-cpp, earlyoom, GameMode
+    │   ├── performance.nix   # zram, ananicy-cpp, earlyoom, GameMode, sysctl tuning
     │   └── nh.nix            # NH (Nix Helper) config
     └── home/                 # Home Manager modules
         ├── home.nix          # Root config, imports 35 modules
@@ -76,6 +78,8 @@ nix flake update
         │   ├── nvim.nix      # Neovim (50+ plugins, LSP, Copilot)
         │   ├── development.nix # VS Code, C++, Node, Python, Go, Rust, .NET
         │   ├── claude-code.nix # Claude Code AI assistant config
+        │   ├── claude-ecc-skills.nix # Claude Code slash commands & skills
+        │   ├── opencode.nix  # OpenCode AI coding agent config
         │   ├── vpn.nix       # VPN manager (country-code WireGuard switching)
         │   ├── webapps.nix   # PWAs (WhatsApp, YouTube, ChatGPT, etc.)
         │   ├── desktop-apps.nix # Desktop entries
@@ -110,22 +114,24 @@ nix flake update
 
 ## Features
 
-- **Hyprland** - Tiling Wayland compositor
+- **Hyprland** - Tiling Wayland compositor via UWSM
 - **5 Themes** - Switch with `theme-selector` (Ristretto, Neobrutalist, Nord, Tokyo Night, Catppuccin)
-- **Firejail** - 18 sandboxed apps (Brave, Wireshark, KeePassXC, LibreOffice, etc.)
-- **Hyprlauncher** - Official Hyprland app launcher
-- **Ghostty** - GPU-accelerated terminal (nightly from flake)
+- **Firejail** - 18 sandboxed apps (Brave, Wireshark, KeePassXC, LibreOffice, Ghidra, etc.)
+- **AppArmor** - Mandatory access control enabled
+- **Hyprlauncher** - Official Hyprland app launcher (daemon mode)
+- **Ghostty** - GPU-accelerated terminal with splits and tabs
 - **Bitcoin Wallet Monitor** - Privacy-focused zpub derivation, Waybar integration
-- **DNS Privacy** - AdGuard + Mullvad + Quad9 via dnscrypt-proxy2
-- **VPN Integration** - Auto DNS switching (dnscrypt ↔ Proton VPN WireGuard)
-- **Local LLM** - llama.cpp with ROCm (Qwen3.5 4B/9B models)
+- **DNS Privacy** - AdGuard + Mullvad + Quad9 via dnscrypt-proxy2 (DNSSEC)
+- **VPN Integration** - Auto DNS switching (dnscrypt ↔ Proton VPN WireGuard) + captive portal detection
+- **Local LLM** - llama.cpp with ROCm (Qwen3.5 4B/9B + GLM-OCR vision)
+- **AI Coding** - Claude Code + OpenCode (Cloudflare + Supabase skills)
 - **Malware Analysis VM** - libvirt Windows VM with network killswitch
 - **SDR Radio** - SDR++, GQRX, GNURadio, RTL-SDR
-- **Security Toolkit** - nmap, aircrack-ng, hashcat, Wireshark, sqlmap, etc.
-- **Performance** - zram, ananicy-cpp, earlyoom, GameMode, Zen kernel
+- **Security Toolkit** - nmap, aircrack-ng, hashcat, Wireshark, sqlmap, Ghidra, angr, etc.
+- **Performance** - zram, ananicy-cpp (CachyOS rules), earlyoom, GameMode, Zen kernel
 - **Btrfs Snapshots** - Every 15 minutes (btrbk), 7-day retention
-- **TLP Power** - Battery conservation mode (55-60% default)
-- **Steam** - Proton GE, GameMode, MangoHud overlay
+- **TLP Power** - Battery conservation mode (55-60% default), CPU boost off on battery
+- **Steam** - Proton GE, GameMode, MangoHud, Gamescope
 
 ## Keybindings
 
@@ -230,11 +236,14 @@ nix flake update
 | `Ctrl+Shift+Right/Left` | Next/prev tab |
 | `Ctrl+Shift+Enter` | Split down |
 | `Ctrl+Shift+\` | Split right |
+| `Ctrl+Alt+Enter` | Split up |
+| `Ctrl+Alt+\` | Split left |
 | `Ctrl+Shift+H/J/K/L` | Navigate splits |
 | `Ctrl+Alt+H/J/K/L` | Resize splits |
 | `Ctrl+Shift+E` | Equalize splits |
 | `Ctrl+Shift+C/V` | Copy/Paste |
 | `Ctrl+Shift+=/-/0` | Font size +/-/reset |
+| `Ctrl+Shift+1-5` | Go to tab 1-5 |
 | Mouse select | Auto-copy to clipboard |
 
 ---
@@ -274,7 +283,14 @@ nix flake update
 | `..` / `...` | `cd ..` / `cd ../..` |
 | `captive-on/off` | Captive portal DNS bypass |
 
-**Auto-update functions:** `update-vscode`, `update-claude-code`, `update-llama` (separate), `update-overlays` (VS Code + Claude Code only)
+**Auto-update functions:**
+| Function | Description |
+|----------|-------------|
+| `update-vscode` | Check/update VS Code from Microsoft API |
+| `update-claude-code` | Check/update Claude Code from npm registry |
+| `update-opencode` | Check/update OpenCode from GitHub releases |
+| `update-llama` | Check/update llama.cpp from GitHub releases (separate, long build) |
+| `update-overlays` | Update VS Code + Claude Code + OpenCode |
 
 ---
 
@@ -297,9 +313,14 @@ nix flake update
 | Command | Action |
 |---------|--------|
 | `llm "prompt"` | Chat with local LLM |
+| `llm ocr <image>` | OCR an image with GLM-OCR |
+| `llm ocr <image> "Table Recognition:"` | OCR a table |
+| `llm ocr <image> "Formula Recognition:"` | OCR a formula |
+| `llm list` | List available models |
 | `llm-switch` | Show active model |
 | `llm-switch 4b` | Switch to Qwen3.5-4B (2.7GB, fast) |
 | `llm-switch 9b` | Switch to Qwen3.5-9B Uncensored (5.6GB) |
+| `llm-switch ocr` | Switch to GLM-OCR 0.9B (vision, 1.4GB) |
 | `llm-switch stop` | Stop LLM service |
 
 ---
@@ -410,6 +431,8 @@ All encrypted via DNSCrypt + DoH with DNSSEC enabled.
 | VPN OFF | AdGuard/Mullvad/Quad9 | Active |
 | VPN ON | Proton VPN DNS | Stopped |
 
+Captive portal detection (hotel/airport WiFi) is automatic. Manual bypass: `captive-on` / `captive-off`.
+
 ---
 
 ## Waybar Modules
@@ -421,10 +444,12 @@ Status bar with 20+ modules including:
 - **Weather** - Weather widget
 - **VPN status** - Current VPN connection
 - **Audio switch** - Output device switching
+- **Mic switch** - Microphone toggle
 - **SystemD failed** - Failed services count
 - **Nix updates** - Available update indicator
 - **Monitor settings** - Monitor settings (nwg-displays)
 - **Removable disks** - USB drive monitoring
+- **Brightness sync** - DDC brightness sync for external monitors
 - CPU, memory, temperature (CPU + GPU), disk, battery, network, bluetooth, clock, tray
 
 ---
@@ -460,11 +485,13 @@ Windows VM with network isolation for malware analysis.
 
 | Command | Action |
 |---------|--------|
-| `malware-vm start` | Start VM |
+| `sudo malware-vm setup` | Create isolated networks |
+| `malware-vm start` | Start VM (isolated) |
 | `malware-vm killswitch` | Isolate network (no internet) |
 | `malware-vm network-on` | Enable NAT networking |
 | `malware-vm snapshot` | Create snapshot |
 | `malware-vm restore` | Restore to last snapshot |
+| `malware-vm verify` | Check isolation |
 | `malware-vm status` | Show status |
 
 ---
@@ -474,12 +501,13 @@ Windows VM with network isolation for malware analysis.
 Installed tools (many Firejailed):
 
 **Network:** nmap, tcpdump, ngrep, Wireshark, bettercap
-**Wireless:** aircrack-ng, wifite2, reaver, pixiewps, kismet, mdk4, hcxtools
-**Password:** hashcat, john, hydra
+**Wireless:** aircrack-ng, wifite2, reaver, pixiewps, kismet, mdk4, cowpatty, hcxtools, hcxdumptool
+**Password:** hashcat (GPU via ROCm), john, hydra
 **Web:** sqlmap, nikto, dirb
 **Crypto:** CyberChef
-**RE/Binary:** Ghidra, angr
+**RE/Binary:** Ghidra, angr (Python)
 **Recon:** whois, dnsutils, testssl, sslscan
+**Wordlists:** seclists, crunch
 
 Aliases: `nmap-quick`, `nmap-full`, `nmap-vuln`, `wifite-auto`, `hashcat-gpu`, etc.
 
@@ -492,13 +520,25 @@ Aliases: `nmap-quick`, `nmap-full`, `nmap-vuln`, `wifite-auto`, `hashcat-gpu`, e
 | **llama-cpp** | Local LLM (port 8080, OpenAI API compatible) |
 | **dnscrypt-proxy** | Encrypted DNS (AdGuard, Mullvad, Quad9) |
 | **TLP** | Power management (conservation: 55-60%) |
-| **btrbk** | Btrfs snapshots every 15min |
-| **ananicy-cpp** | Process priority optimization |
+| **btrbk** | Btrfs snapshots every 15min, 7-day retention |
+| **ananicy-cpp** | Process priority optimization (CachyOS rules) |
 | **earlyoom** | OOM prevention (5% RAM threshold) |
-| **Docker** | Container runtime (not on boot) |
-| **libvirtd** | KVM/QEMU virtualization |
+| **Podman** | Container runtime (Docker compatible) |
+| **libvirtd** | KVM/QEMU virtualization (swtpm for TPM2) |
 | **BitBox Bridge** | Hardware wallet bridge |
-| **Steam** | Gaming with Proton GE |
+| **Steam** | Gaming with Proton GE + Gamescope |
+| **Flatpak** | App sandboxing runtime |
+
+---
+
+## Overlays (Pinned Versions)
+
+| Overlay | Package | Current Version |
+|---------|---------|-----------------|
+| vscode-latest.nix | VS Code | 1.113.0 |
+| claude-code-latest.nix | Claude Code | 2.1.87 |
+| llama-cpp-latest.nix | llama.cpp (ROCm + NATIVE) | b8373 |
+| opencode-latest.nix | OpenCode (Bun SEA) | 1.3.5 |
 
 ---
 
@@ -510,9 +550,11 @@ Aliases: `nmap-quick`, `nmap-full`, `nmap-vuln`, `wifite-auto`, `hashcat-gpu`, e
 - DNS and network settings
 
 ### Hardware-specific (needs changes)
-- `hosts/thinkpad/hardware-configuration.nix` - Regenerate with `nixos-generate-config`
+- `hosts/thinkpad/hardware-configuration.nix` - Regenerate with `nixos-generate-config --no-filesystems`
 - `hosts/thinkpad/disko-config.nix` - Check disk name (`lsblk`)
-- `modules/system/amd-optimizations.nix` - AMD only, remove for Intel
+- `modules/system/amd-optimizations.nix` - AMD only, remove for Intel/NVIDIA
+- `modules/system/boot.nix` - AMD GPU kernel params, remove `amdgpu.*` for other GPUs
+- `modules/system/sound.nix` - WirePlumber rules use hardcoded PCI addresses
 - `flake.nix` - nixos-hardware module is ThinkPad P14s Gen 5 specific
 - `modules/home/programs/hyprland.nix` - Monitor layout
 

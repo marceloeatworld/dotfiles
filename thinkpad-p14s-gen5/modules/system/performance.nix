@@ -38,7 +38,7 @@
     enableNotifications = true;  # Desktop notifications when killing
     extraArgs = [
       "--avoid" "^(Hyprland|waybar|pipewire|wireplumber)$"  # Never kill these
-      "--prefer" "^(brave|chromium|firefox|electron)$"      # Kill browsers first
+      "--prefer" "^(brave|chromium|firefox|chrome)$"          # Kill browsers first (not generic 'electron' to protect vesktop/joplin)
     ];
   };
 

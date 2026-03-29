@@ -270,10 +270,10 @@ in
   '';
 
   # ZapZap (WhatsApp) - custom CSS theme matching system theme
-  xdg.dataFile."ZapZap/customizations/global/css/ristretto.css".text = let
+  xdg.dataFile."ZapZap/customizations/global/css/theme.css".text = let
     theme = config.theme;
   in ''
-    /* Ristretto theme for WhatsApp Web - matches system theme */
+    /* System theme for WhatsApp Web - auto-generated from config.theme */
 
     /* Main background */
     ._aigs, /* chat list panel */

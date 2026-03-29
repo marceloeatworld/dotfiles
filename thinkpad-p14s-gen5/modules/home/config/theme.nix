@@ -370,6 +370,13 @@ in
         description = "Default sans-serif font size";
       };
     };
+
+    # ── Helpers ──
+    stripHash = lib.mkOption {
+      type = lib.types.anything;
+      default = color: builtins.substring 1 6 color;
+      description = "Strip '#' prefix from hex color (e.g. '#ff0000' → 'ff0000')";
+    };
   };
 
   # No config needed - theme is read from ./current-theme file in dotfiles repo

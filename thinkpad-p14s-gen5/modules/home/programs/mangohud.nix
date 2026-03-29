@@ -5,8 +5,7 @@
 
 let
   theme = config.theme;
-  # Strip "#" prefix for MangoHud (expects bare hex)
-  stripHash = s: builtins.substring 1 6 s;
+  stripHash = theme.stripHash;
 in
 
 {

@@ -1,6 +1,10 @@
 # User-level fontconfig overrides
 # NOTE: Fonts are installed system-wide in modules/system/fonts.nix
-{ ... }:
+{ config, ... }:
+
+let
+  theme = config.theme;
+in
 
 {
   # User-specific fontconfig settings
@@ -32,7 +36,7 @@
           <string>monospace</string>
         </test>
         <edit name="family" mode="assign" binding="strong">
-          <string>JetBrainsMono Nerd Font</string>
+          <string>${theme.fonts.mono}</string>
         </edit>
       </match>
 
