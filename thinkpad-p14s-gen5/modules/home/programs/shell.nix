@@ -306,12 +306,37 @@ audacity               Audio analysis
   keys-script = pkgs.writeShellScriptBin "keys" "${pkgs.coreutils}/bin/cat ${keysFile}";
 in
 {
-  home.packages = [ keys-script ];
+  home.packages = with pkgs; [
+    keys-script
+    nix-zsh-completions      # Completions for nix, nix-env, nix-shell, etc.
+    zsh-completions          # Extra completions (nmap, docker, systemctl, etc.)
+  ];
   programs.zsh = {
     enable = true;
     enableCompletion = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
+    # Extra completion packages (nmap, git, docker, systemctl, etc.)
+    completionInit = ''
+      # Interactive menu completion with descriptions
+      zstyle ':completion:*' menu select                              # Arrow-key menu on Tab
+      zstyle ':completion:*' list-colors "''${(s.:.)LS_COLORS}"      # Colorize file completions
+      zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|=*' 'l:|=* r:|=*'  # Case-insensitive + fuzzy
+      zstyle ':completion:*' format '%F{yellow}-- %d --%f'           # Category headers
+      zstyle ':completion:*' group-name '''                           # Group by category
+      zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+      zstyle ':completion:*:messages' format '%F{cyan}-- %d --%f'
+      zstyle ':completion:*:warnings' format '%F{red}-- no matches --%f'
+      zstyle ':completion:*' verbose yes                              # Show descriptions
+      zstyle ':completion:*' squeeze-slashes true                     # /usr//bin -> /usr/bin
+      zstyle ':completion:*' use-cache on                             # Cache completions
+      zstyle ':completion:*' cache-path "$HOME/.cache/zsh/compcache"
+      zstyle ':completion:*:*:kill:*' menu yes select                 # kill <Tab> shows PIDs
+      zstyle ':completion:*:kill:*' force-list always
+      zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+
+      autoload -Uz compinit && compinit -C
+    '';
     shellAliases = {
       # NixOS - Using NH (modern nix helper)
       rebuild = "nh os switch";
