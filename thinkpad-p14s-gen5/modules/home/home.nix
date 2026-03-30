@@ -153,6 +153,7 @@ in
     # ── Utilities ──
     ./programs/malware-vm.nix     # Malware Analysis VM (libvirt + killswitch)
     ./programs/security-packages.nix # Security tools aliases & docs
+    ./programs/kali-redteam.nix   # Kali Linux headless container (red team + local LLM)
     ./programs/radio-sdr.nix      # SDR tools (SDR++, GQRX, rtl-sdr)
 
     # ── Services ──

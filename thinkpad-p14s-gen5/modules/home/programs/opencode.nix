@@ -37,6 +37,26 @@
       ];
     };
 
+    # Local LLM provider (llama-cpp on port 8080)
+    provider = {
+      local-llm = {
+        name = "local-llm";
+        type = "openai";
+        api_url = "http://127.0.0.1:8080/v1";
+        api_key = "not-needed";
+        models = {
+          "local-model" = {
+            name = "local-model";
+            attachment = false;
+            can_reason = false;
+            context_length = 8192;
+            default_temperature = 0.7;
+            max_tokens = 4096;
+          };
+        };
+      };
+    };
+
     # LSP servers (nixd for Nix, others auto-detect)
     lsp = {
       nixd = {

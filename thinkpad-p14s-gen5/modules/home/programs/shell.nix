@@ -411,7 +411,7 @@ in
 
         echo ""
         echo "Downloading VS Code $LATEST..."
-        local HASH=$(nix-prefetch-url "https://update.code.visualstudio.com/$LATEST/linux-x64/stable" 2>/dev/null)
+        local HASH=$(nix-prefetch-url "https://update.code.visualstudio.com/$LATEST/linux-x64/stable")
         if [[ -z "$HASH" ]]; then
           echo "⚠ Failed to download VS Code $LATEST"
           return 1
@@ -452,7 +452,7 @@ in
 
         echo ""
         echo "Downloading Claude Code $LATEST..."
-        local HASH=$(nix-prefetch-url "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-$LATEST.tgz" 2>/dev/null)
+        local HASH=$(nix-prefetch-url "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-$LATEST.tgz")
         if [[ -z "$HASH" ]]; then
           echo "⚠ Failed to download Claude Code $LATEST"
           return 1
@@ -493,7 +493,7 @@ in
 
         echo ""
         echo "Downloading OpenCode $LATEST..."
-        local HASH=$(nix-prefetch-url "https://github.com/anomalyco/opencode/releases/download/v$LATEST/opencode-linux-x64.tar.gz" 2>/dev/null)
+        local HASH=$(nix-prefetch-url "https://github.com/anomalyco/opencode/releases/download/v$LATEST/opencode-linux-x64.tar.gz")
         if [[ -z "$HASH" ]]; then
           echo "⚠ Failed to download OpenCode $LATEST"
           return 1
@@ -545,7 +545,7 @@ in
 
         echo ""
         echo "Downloading llama.cpp $LATEST_TAG..."
-        local HASH=$(nix-prefetch-url --unpack "https://github.com/ggml-org/llama.cpp/archive/refs/tags/$LATEST_TAG.tar.gz" 2>/dev/null)
+        local HASH=$(nix-prefetch-url --unpack "https://github.com/ggml-org/llama.cpp/archive/refs/tags/$LATEST_TAG.tar.gz")
         if [[ -z "$HASH" ]]; then
           echo "Failed to download llama.cpp $LATEST_TAG"
           return 1

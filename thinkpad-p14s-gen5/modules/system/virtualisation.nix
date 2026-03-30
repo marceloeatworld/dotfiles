@@ -39,6 +39,7 @@
   environment.systemPackages = with pkgs; [
     spice-gtk        # SPICE client (better clipboard, USB redirection)
     virtio-win       # VirtIO drivers ISO for Windows (better performance)
+    slirp4netns      # User-mode networking for rootless Podman containers
   ];
 
   # AppImage support (NixOS 24.11+)

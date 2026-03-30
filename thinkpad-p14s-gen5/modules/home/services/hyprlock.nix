@@ -70,11 +70,14 @@ in
       on-timeout = loginctl lock-session
     }
 
-    # Suspend after 35 minutes (no DPMS off step — avoids AMD GPU crash)
-    listener {
-      timeout = 2100
-      on-timeout = systemctl suspend
-    }
+    # Suspend disabled — causes hard freeze on resume (AMD RDNA 3 iGPU, kernel <6.18.17)
+    # MES ring buffer saturation during s2idle wakeup, no kernel fix available yet
+    # Manual suspend still available via Super+Alt+Escape
+    # TODO: Re-enable when kernel >= 6.18.17 lands in nixpkgs (full CWSR fix)
+    # listener {
+    #   timeout = 2100
+    #   on-timeout = systemctl suspend
+    # }
   '';
 
   # Hyprlock configuration - Informative lock screen with cool info

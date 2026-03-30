@@ -1,7 +1,29 @@
 # System services configuration
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
+  # Qwen3.5 chat template that bypasses thinking (injects empty <think> block)
+  # This is baked into the nix store so the service can read it without ProtectHome issues
+  qwen-no-think-template = pkgs.writeText "qwen3.5-no-think.jinja" ''
+{%- if not messages %}
+    {{- raise_exception('No messages provided.') }}
+{%- endif %}
+{%- if messages[0].role == 'system' %}
+    {{- '<|im_start|>system\n' + messages[0].content|trim + '<|im_end|>\n' }}
+{%- endif %}
+{%- for message in messages %}
+    {%- if message.role == "system" %}
+    {%- elif message.role == "user" %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content|trim + '<|im_end|>' + '\n' }}
+    {%- elif message.role == "assistant" %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content|trim + '<|im_end|>\n' }}
+    {%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n<think>\n\n</think>\n\n' }}
+{%- endif %}
+'';
+
   # Script to switch between LLM models for llama-cpp
   # Models are stored in ~/models but symlinked to /var/lib/llama-cpp/ for service access
   # Vision models (OCR) use a systemd drop-in override to add --mmproj and remove text-only flags
@@ -25,8 +47,9 @@ let
     LLAMA_SERVER="${pkgs.llama-cpp}/bin/llama-server"
 
     current=""
-    if [ -L "$SYMLINK" ]; then
-      current=$($BASENAME "$($READLINK "$SYMLINK")")
+    if [ -f "$SYMLINK" ] || [ -L "$SYMLINK" ]; then
+      # Check by file size since we copy (not symlink) now
+      current_size=$(${pkgs.coreutils}/bin/stat -c%s "$SYMLINK" 2>/dev/null || echo 0)
     fi
 
     # Remove vision drop-in override (used when switching away from OCR)
@@ -60,10 +83,16 @@ ExecStart=$LLAMA_SERVER --log-disable --host 127.0.0.1 --port 8080 -m $SERVICE_D
         label="GLM-OCR 0.9B (vision/OCR, 1.4GB)"
         ;;
       status|"")
-        if [ -z "$current" ]; then
+        if [ "$current_size" = "0" ]; then
           echo "No active model. Run: llm-switch 4b  or  llm-switch 9b"
         else
-          echo "Active model: $current"
+          # Identify model by file size
+          active_name="unknown"
+          for m in "$MODEL_4B" "$MODEL_9B" "$MODEL_OCR"; do
+            ms=$(${pkgs.coreutils}/bin/stat -c%s "$MODELS_DIR/$m" 2>/dev/null || echo -1)
+            [ "$ms" = "$current_size" ] && active_name="$m"
+          done
+          echo "Active model: $active_name"
           [ -f "$DROPIN_FILE" ] && echo "Mode: vision (mmproj active)" || echo "Mode: text"
         fi
         echo ""
@@ -97,28 +126,40 @@ ExecStart=$LLAMA_SERVER --log-disable --host 127.0.0.1 --port 8080 -m $SERVICE_D
       exit 1
     fi
 
-    if [ "$current" = "$target" ]; then
+    target_size=$(${pkgs.coreutils}/bin/stat -c%s "$MODELS_DIR/$target" 2>/dev/null || echo -1)
+    if [ "$current_size" = "$target_size" ] && [ "$current_size" != "0" ]; then
       echo "Already using $label"
       exit 0
     fi
 
     echo "Switching to $label..."
-    sudo $LN -sf "$MODELS_DIR/$target" "$SYMLINK"
+    # Copy model to service directory (not symlink) — required because
+    # systemd DynamicUser=true + ProtectHome=true cannot follow symlinks into /home/
+    REAL_MODEL=$($READLINK -f "$MODELS_DIR/$target")
+    echo "Copying model ($(du -h "$REAL_MODEL" | cut -f1))..."
+    sudo ${pkgs.coreutils}/bin/rm -f "$SYMLINK"
+    sudo ${pkgs.coreutils}/bin/cp "$REAL_MODEL" "$SYMLINK"
+    sudo ${pkgs.coreutils}/bin/chmod 644 "$SYMLINK"
 
     if [ "$target" = "$MODEL_OCR" ]; then
-      # Vision model: symlink mmproj + create systemd drop-in
+      # Vision model: copy mmproj + create systemd drop-in
       if [ ! -f "$MODELS_DIR/$MMPROJ_OCR" ]; then
         echo "Error: $MODELS_DIR/$MMPROJ_OCR not found."
         echo "Download it: wget -P ~/models https://huggingface.co/ggml-org/GLM-OCR-GGUF/resolve/main/$MMPROJ_OCR"
         exit 1
       fi
-      sudo $LN -sf "$MODELS_DIR/$MMPROJ_OCR" "$MMPROJ_SYMLINK"
+      REAL_MMPROJ=$($READLINK -f "$MODELS_DIR/$MMPROJ_OCR")
+      sudo ${pkgs.coreutils}/bin/rm -f "$MMPROJ_SYMLINK"
+      sudo ${pkgs.coreutils}/bin/cp "$REAL_MMPROJ" "$MMPROJ_SYMLINK"
+      sudo ${pkgs.coreutils}/bin/chmod 644 "$MMPROJ_SYMLINK"
       create_dropin
     else
-      # Text model: remove vision drop-in, symlink chat template
+      # Text model: remove vision drop-in, copy chat template
+      # NOTE: copy (not symlink) because the service uses ProtectHome=true
+      # and cannot resolve symlinks pointing into /home/
       remove_dropin
       if [ -f "$MODELS_DIR/qwen3.5-no-think.jinja" ]; then
-        sudo $LN -sf "$MODELS_DIR/qwen3.5-no-think.jinja" "$SERVICE_DIR/qwen3.5-no-think.jinja"
+        sudo ${pkgs.coreutils}/bin/cp -f "$MODELS_DIR/qwen3.5-no-think.jinja" "$SERVICE_DIR/qwen3.5-no-think.jinja"
       fi
     fi
 
@@ -282,6 +323,7 @@ in
   # Switch models with: llm-switch (toggles between 4B and 9B)
   services.llama-cpp = {
     enable = true;
+    package = pkgs.llama-cpp;  # Uses overlay version (not nixpkgs default)
     host = "127.0.0.1";
     port = 8080;
     model = "/var/lib/llama-cpp/active-model.gguf";  # Symlink managed by llm-switch
@@ -290,7 +332,7 @@ in
       "--no-mmap"       # Better for iGPU with shared memory
       "-c" "8192"       # Limit context to 8K (default=max model ctx, wastes VRAM on iGPU)
       "--jinja"
-      "--chat-template-file" "/var/lib/llama-cpp/qwen3.5-no-think.jinja"  # Reliably disables thinking
+      "--chat-template-file" "${qwen-no-think-template}"
     ];
   };
 
@@ -308,14 +350,17 @@ in
     HSA_OVERRIDE_GFX_VERSION = "11.0.0";  # Fix for RDNA 3 iGPU
     ROCR_VISIBLE_DEVICES = "0";           # Use first GPU
     ROC_ENABLE_PRE_VEGA = "1";            # Compatibility
+    # Use hipMallocManaged — spills into GTT (system RAM) when VRAM is full
+    # Prevents display freeze: without this, -ngl 99 on 9B fills all 4GB VRAM
+    # leaving nothing for Hyprland compositor (same iGPU)
+    GGML_CUDA_ENABLE_UNIFIED_MEMORY = "1";
   };
 
-  # Allow llama-cpp service to read model files from ~/models via symlinks
-  # The service uses DynamicUser=true which sets ProtectHome=true, blocking /home/ access.
-  # BindReadOnlyPaths makes ~/models visible inside the service's mount namespace.
-  systemd.services.llama-cpp.serviceConfig.BindReadOnlyPaths = [
-    "/home/marcelo/models"
-  ];
+  # NOTE: BindReadOnlyPaths removed — llm-switch now copies models to
+  # /var/lib/llama-cpp/ instead of symlinking, so no /home/ access needed.
+
+  # Reduce restart delay from 300s to 10s (5 min is too long for model switching)
+  systemd.services.llama-cpp.serviceConfig.RestartSec = lib.mkForce 10;
 
   # BitBox Bridge - Hardware wallet communication bridge
   # Provides udev rules and WebSocket bridge for BitBox02 hardware wallets

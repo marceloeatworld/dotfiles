@@ -110,6 +110,10 @@
     # Uses the active model set by llm-switch (symlink ~/models/active-model.gguf)
     # Both models: thinking disabled (--reasoning-budget 0 + --chat-template-kwargs)
     (pkgs.writeShellScriptBin "llm" ''
+      # Use unified memory — spills into GTT when VRAM is full
+      # Prevents display freeze on 9B model (5.6GB > 4GB VRAM shared with Hyprland)
+      export GGML_CUDA_ENABLE_UNIFIED_MEMORY="1"
+
       MODELS_DIR="$HOME/models"
       ACTIVE="$MODELS_DIR/active-model.gguf"
 

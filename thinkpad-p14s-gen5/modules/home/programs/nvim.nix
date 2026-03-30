@@ -108,6 +108,12 @@
       # ══════════════════════════════════════════════════════════════════
       copilot-lua                  # GitHub Copilot
       copilot-cmp                  # Copilot in completion menu
+      codecompanion-nvim           # AI chat & inline (local LLM via llama-cpp)
+
+      # ══════════════════════════════════════════════════════════════════
+      # GITHUB INTEGRATION
+      # ══════════════════════════════════════════════════════════════════
+      octo-nvim                    # GitHub PRs, issues, reviews in Neovim
 
       # ══════════════════════════════════════════════════════════════════
       # DEBUGGING
@@ -197,6 +203,8 @@
       gcc                          # Required by Treesitter
       nodejs                       # Required by Copilot
       tree-sitter                  # Treesitter CLI
+      curl                         # Required by codecompanion
+      gh                           # Required by octo.nvim
     ];
 
     extraLuaConfig = ''
@@ -532,12 +540,13 @@
             mode = 'symbol_text',
             maxwidth = 50,
             ellipsis_char = '...',
-            symbol_map = { Copilot = "" },
+            symbol_map = { Copilot = "", CodeCompanion = "󱚣" },
             before = function(entry, vim_item)
               vim_item.menu = ({
                 nvim_lsp = "[LSP]",
                 luasnip = "[Snippet]",
                 copilot = "[AI]",
+              codecompanion = "[LLM]",
                 buffer = "[Buffer]",
                 path = "[Path]",
               })[entry.source.name]
@@ -588,6 +597,7 @@
         sources = cmp.config.sources({
           { name = 'nvim_lsp', priority = 1000 },
           { name = 'copilot', priority = 900 },
+          { name = 'codecompanion', priority = 850 },
           { name = 'luasnip', priority = 750 },
           { name = 'nvim_lsp_signature_help', priority = 700 },
           { name = 'buffer', priority = 500, keyword_length = 3 },
@@ -803,6 +813,41 @@
       require("copilot").setup({
         suggestion = { enabled = true, auto_trigger = true },
         panel = { enabled = true },
+      })
+
+      -- CodeCompanion (local LLM via llama-cpp + Copilot)
+      require("codecompanion").setup({
+        adapters = {
+          llama_cpp = function()
+            return require("codecompanion.adapters").extend("openai_compatible", {
+              name = "llama-cpp",
+              env = {
+                url = "http://127.0.0.1:8080",
+              },
+              schema = {
+                model = {
+                  default = "local-model",
+                },
+              },
+            })
+          end,
+        },
+        strategies = {
+          chat = {
+            adapter = "llama_cpp",
+          },
+          inline = {
+            adapter = "llama_cpp",
+          },
+          cmd = {
+            adapter = "llama_cpp",
+          },
+        },
+      })
+
+      -- Octo.nvim (GitHub PRs, issues, reviews)
+      require("octo").setup({
+        suppress_missing_scope = { projects_v2 = true },
       })
 
       -- Mini.nvim modules
@@ -1072,6 +1117,26 @@
 ║   Space gg → LazyGit                  Space ca → Code actions        ║
 ║   gd       → Go to definition         K        → Show documentation  ║
 ╠══════════════════════════════════════════════════════════════════════╣
+║ AI - LOCAL LLM (llama-cpp :8080)                                     ║
+║                                                                      ║
+║ Neovim (CodeCompanion):                                              ║
+║   Space ac → Toggle AI chat          Space aa → Actions menu         ║
+║   Space ai → Inline prompt           Space ap → Add selection (vis)  ║
+║                                                                      ║
+║ VS Code:  Install "Continue" extension → endpoint localhost:8080     ║
+║ OpenCode: Provider "local-llm" configured (opencode.json)            ║
+║ Terminal: llm "prompt" → Chat   llm-switch 4b/9b → Switch model     ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ GITHUB (Octo.nvim)                                                   ║
+║   Space opl → List PRs               Space opc → Create PR          ║
+║   Space oil → List issues            Space oic → Create issue       ║
+║   Space or  → Start review                                          ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ RED TEAM (kali start → Kali container + LLM)                         ║
+║   llm "prompt"              → Ask LLM for red team advice            ║
+║   recon-ai <target>         → AI-assisted nmap + analysis            ║
+║   ai-agent "objective"      → Autonomous AI agent [R/S/E/Q]         ║
+╠══════════════════════════════════════════════════════════════════════╣
 ║ VS-CODE STYLE (your custom shortcuts)                                ║
 ║   Ctrl+s → Save    Ctrl+z → Undo    Ctrl+y → Redo    Ctrl+a → Select ║
 ║   Ctrl+c → Copy    Ctrl+x → Cut     Ctrl+v → Paste   Ctrl+d → Dupe   ║
@@ -1100,6 +1165,25 @@
         { "<leader>vt", "<cmd>Tutor<CR>", desc = "Start Vim Tutor" },
         { "<leader>vh", "<cmd>help<CR>", desc = "Open Vim Help" },
         { "<leader>vk", "<cmd>Telescope keymaps<CR>", desc = "Search Keymaps" },
+
+        -- ═══════════════════════════════════════════════════════════
+        -- [a]i (CodeCompanion)
+        -- ═══════════════════════════════════════════════════════════
+        { "<leader>a", group = "AI" },
+        { "<leader>ac", "<cmd>CodeCompanionChat Toggle<CR>", desc = "Toggle chat" },
+        { "<leader>aa", "<cmd>CodeCompanionActions<CR>", desc = "Actions menu" },
+        { "<leader>ai", "<cmd>CodeCompanion<CR>", desc = "Inline prompt" },
+        { "<leader>ap", "<cmd>CodeCompanionChat Add<CR>", mode = "v", desc = "Add selection to chat" },
+
+        -- ═══════════════════════════════════════════════════════════
+        -- [o]cto (GitHub)
+        -- ═══════════════════════════════════════════════════════════
+        { "<leader>o", group = "GitHub (Octo)" },
+        { "<leader>opl", "<cmd>Octo pr list<CR>", desc = "List PRs" },
+        { "<leader>opc", "<cmd>Octo pr create<CR>", desc = "Create PR" },
+        { "<leader>oil", "<cmd>Octo issue list<CR>", desc = "List issues" },
+        { "<leader>oic", "<cmd>Octo issue create<CR>", desc = "Create issue" },
+        { "<leader>or", "<cmd>Octo review start<CR>", desc = "Start review" },
 
         -- ═══════════════════════════════════════════════════════════
         -- [t]erminal
