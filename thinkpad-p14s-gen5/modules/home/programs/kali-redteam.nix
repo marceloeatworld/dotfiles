@@ -48,7 +48,7 @@ let
     LLM_URL="http://10.0.2.2:8080/v1/chat/completions"
     LOG_FILE="/workspace/ai-agent.log"
     MSGS_FILE=$(mktemp /tmp/ai-agent-msgs.XXXXXX.json)
-    trap 'rm -f "$MSGS_FILE"' EXIT
+    trap 'rm -f "$MSGS_FILE" /tmp/ai-agent-out.*' EXIT
 
     RED='\033[0;31m'
     GREEN='\033[0;32m'
@@ -145,12 +145,20 @@ let
       echo -ne "  ''${GREEN}[R]un''${NC} / ''${YELLOW}[S]kip''${NC} / ''${RED}[Q]uit''${NC} / [E]dit? "
       read -r CHOICE
 
+      OUT_FILE=$(mktemp /tmp/ai-agent-out.XXXXXX)
+
+      # Run command — output streams live, Ctrl+C kills only the command
+      run_cmd() {
+        eval "$1" 2>&1 | head -200 | tee "$OUT_FILE"
+      }
+
       case "$CHOICE" in
         r|R|"")
-          echo -e "  ''${GREEN}Executing...''${NC}"
+          echo -e "  ''${GREEN}Executing...''${NC} (Ctrl+C to cancel command)"
+          echo ""
           echo "$(date): RUN: $COMMAND" >> "$LOG_FILE"
-          OUTPUT=$(eval "$COMMAND" 2>&1 | head -200)
-          echo "$OUTPUT"
+          run_cmd "$COMMAND"
+          OUTPUT=$(cat "$OUT_FILE")
           echo ""
           ;;
         s|S)
@@ -160,10 +168,11 @@ let
         e|E)
           echo -n "  Enter modified command: "
           read -r COMMAND
-          echo -e "  ''${GREEN}Executing: $COMMAND''${NC}"
+          echo -e "  ''${GREEN}Executing: $COMMAND''${NC} (Ctrl+C to cancel)"
+          echo ""
           echo "$(date): EDIT+RUN: $COMMAND" >> "$LOG_FILE"
-          OUTPUT=$(eval "$COMMAND" 2>&1 | head -200)
-          echo "$OUTPUT"
+          run_cmd "$COMMAND"
+          OUTPUT=$(cat "$OUT_FILE")
           echo ""
           ;;
         q|Q)
