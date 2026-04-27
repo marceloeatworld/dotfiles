@@ -1,0 +1,20 @@
+.claude/
+.mcp.json
+CLAUDE.md
+*/CLAUDE.md
+current-themes
+# Bitcoin wallet configuration (contains private zpub keys)
+.env
+*/.env
+**/.env
+
+# VPN WireGuard configs (contain private keys)
+vpn/
+.codex
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Nix build symlink
+result
+result-*

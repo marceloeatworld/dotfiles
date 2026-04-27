@@ -1,0 +1,29 @@
+#ENC[AES256_GCM,data:Mv9Rp0OcJuqHzjV4LZR8nLsRm1vp8381Y4b9U2yrcjiwFk0=,iv:FZOHFFHstppuVM+phYa8DVnIB7+8cw7ISaP/XTb1Gjk=,tag:N/JEUIeITAkHMcYMG9/otA==,type:comment]
+#ENC[AES256_GCM,data:aTZovQTF/D0uCnpxgVk5ITE+Fm6ah+BZDMfqURZ6GsNL8sVl5ovTdEFcwS9ZEMEGbIhjitIFI0JkNvjSu1r4PlM=,iv:LyVeZdsogm1OW+I8L0T/Jl15vpSX/c5mtxcnyiFPyJ8=,tag:roQfZkdF8RxZNm7YgPmCCA==,type:comment]
+#ENC[AES256_GCM,data:HYEilxNL87mJzvzGvhP2FM5eu56aNFk3ahn+LjdI,iv:0nnh08OR5EqMRN5uxIrsQvTymHh6iFNIczoNLQEM7TE=,tag:SfkaPrWTKJck4SltNPXpcg==,type:comment]
+#ENC[AES256_GCM,data:BgrcmWop40GhbMhvJg==,iv:jkB2UZD5E2ud4ARV7lwMYpjOotTQEX+EaU1Ltc60F14=,tag:d3N1L1kr6X8OVGnPcG5KTA==,type:comment]
+gemini_api_key: ""
+glm_api_key: ""
+minimax_api_key: ""
+openai_api_key: ""
+openrouter_api_key: ""
+github_personal_access_token: ""
+tfe_token: ""
+#ENC[AES256_GCM,data:50nxV8u9O6amt10=,iv:IbYzkrbOUBAM8ogWN7DSeJdYnRr4uwxkNe3w3nC0V9s=,tag:RH4cspXmHEcdRCuAnvfplQ==,type:comment]
+fal_key: ""
+hf_token: ""
+sops:
+    age:
+        - recipient: age1kzrccuz8l293g7tuhxhkrlkecsphnqvdmp8uan2e8c38j3h0e47ssl2add
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBickVMaTBSRUdnYVJ1bU5U
+            TjVsZ1ZpdE9lVHNUQjdJTFRDVGlWV0ZIRFFRCjM1WGIxeTJkbWVTUmFIblZqZUlo
+            TmNHVkNPWmNxUjBJeUtvSUF5ZERxT0kKLS0tIFdyVmdMOHpobFhEQlNoWkkrc3Jv
+            V0xUZVRrT1dHL2lvM1N1R1Iva1lORkUK4PDDr5Ln68QSNSgsUXHTZoa59wkjiD8F
+            MO7eUp49WSkMEwGPuRCy1UKXDRgjF9sIyVr1pvwVFF21NoDn1w6zZA==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-04-17T13:03:16Z"
+    mac: ENC[AES256_GCM,data:mwpvvUAF7aG3HC0nRE33CVYqdOhJp7PuQHvJtDjzx3d8ZUws6Wqi/I9+rbpQYMCa5YnaDh16jjrlxOrlAqYZoAlWEfe1Gpu+fDUGvZxZaSOGoenLHToQAKOtvz2JuyC3WDB/VS3IaeAjPNolpbHzwPy6ozZJ2gUyX1MUl7Lwm+0=,iv:SCW8dxbcNZIRuMtxE/VW9xwR7Z3R2pGXsO2COtebp4A=,tag:5ED6KV5kprgVAwmI/QVNhw==,type:str]
+    unencrypted_suffix: _unencrypted
+    version: 3.12.1
