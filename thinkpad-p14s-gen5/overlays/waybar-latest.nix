@@ -50,5 +50,24 @@ in
   postPatch = (old.postPatch or "") + ''
     substituteInPlace meson.build \
       --replace-fail "version: '0.15.0'," "version: '${version}',"
+
+    # GeoClue support was added shortly before this pin. Upstream subscribes
+    # every privacy module instance to GeoClue even when the configured items
+    # only cover screen sharing and microphone use. The resulting callback is
+    # the exact locationTimeout() path seen in the local SIGSEGV. Do not create
+    # that unused subscription; keep the configured PipeWire indicators.
+    substituteInPlace src/modules/privacy/privacy.cpp \
+      --replace-fail \
+'  geoclue_backend = util::GeoClueBackend::GeoClueBackend::getInstance();
+  geoclue_backend->in_use_changed_signal_event.connect(
+      sigc::mem_fun(*this, &Privacy::onGeoCluePrivacyNodesChanged));' \
+'  for (const PrivacyItem* module : modules_) {
+    if (module->privacy_type != PRIVACY_NODE_TYPE_LOCATION) continue;
+
+    geoclue_backend = util::GeoClueBackend::GeoClueBackend::getInstance();
+    geoclue_backend->in_use_changed_signal_event.connect(
+        sigc::mem_fun(*this, &Privacy::onGeoCluePrivacyNodesChanged));
+    break;
+  }'
   '';
 })

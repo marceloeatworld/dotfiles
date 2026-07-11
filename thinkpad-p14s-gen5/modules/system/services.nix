@@ -60,6 +60,12 @@
       # Disk devices (NVMe - APM not applicable, NVMe uses APST natively)
       DISK_DEVICES = "nvme0n1";
 
+      # Linux 7.1 deprecated vm.laptop_mode. It is not useful for NVMe, so
+      # leave TLP's legacy disk-idle knobs unconfigured instead of writing the
+      # deprecated sysctl at every profile change.
+      DISK_IDLE_SECS_ON_AC = "";
+      DISK_IDLE_SECS_ON_BAT = "";
+
       # USB autosuspend (saves ~0.5W per idle device)
       USB_AUTOSUSPEND = 1;
       # Exclude Bluetooth USB controllers from autosuspend.

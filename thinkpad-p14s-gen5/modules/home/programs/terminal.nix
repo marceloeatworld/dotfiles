@@ -16,7 +16,7 @@ in
     settings = {
       # ── Font ──
       font-family = theme.fonts.mono;
-      font-size = 15;
+      font-size = 20;
       minimum-contrast = 1.35;  # Keep light-theme prompt and ANSI text readable.
 
       # ── Window ──
@@ -164,7 +164,7 @@ in
       # Font
       font = {
         normal = { family = theme.fonts.mono; style = "Regular"; };
-        size = 15;  # Match Ghostty font-size; theme.fonts.monoSize (12) stays for non-terminal apps
+        size = 20;  # Match Ghostty font-size; theme.fonts.monoSize (12) stays for non-terminal apps
         offset = { x = 0; y = 1; };
       };
 

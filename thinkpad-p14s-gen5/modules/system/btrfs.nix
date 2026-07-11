@@ -33,6 +33,11 @@
           snapshot_preserve_min = "1d";
           target_preserve_min = "no";
 
+          # Midnight retention can delete a full day of hourly snapshots at
+          # once. Commit each deletion before queuing the next one so Btrfs
+          # does not leave a large asynchronous metadata-cleanup backlog.
+          btrfs_commit_delete = "yes";
+
           # Volume configurations
           # Note: @root and @home are already mounted at / and /home
           volume."/" = {
@@ -61,6 +66,8 @@
   systemd.services.btrbk-btrbk.serviceConfig = {
     Nice = 10;
     IOSchedulingClass = lib.mkForce "idle";
+    IOWeight = 10;
+    TimeoutStartSec = "30min";
   };
 
   # Ensure snapshot directory exists
