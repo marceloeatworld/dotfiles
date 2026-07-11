@@ -4,8 +4,11 @@
 {
   xdg.configFile."hypr/monitors.lua".text = ''
     -- Monitors: explicit configs for known outputs, fallback for any other.
-    -- 165 Hz blanks out the HDMI link (bandwidth/cable limit); 120 is the stable pick.
-    hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@120", position = "0x0",    scale = 1 })
+    -- 165 Hz blanks out the HDMI link (bandwidth/cable limit).
+    -- 120 Hz caused reboot/poweroff hangs since 2026-07-01: amdgpu wedges the
+    -- final hardware reset with a high-refresh HDMI stream active (upstream
+    -- drm/amd #4922, #4838). 60 Hz avoids the trigger; retry 120 on a fixed kernel.
+    hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@60", position = "0x0",    scale = 1 })
     hl.monitor({ output = "DP-1",     mode = "1920x1080@60", position = "0x0",    scale = 1 })
     hl.monitor({ output = "eDP-1",    mode = "1920x1200@60", position = "0x1080", scale = 1 })
     hl.monitor({ output = "",         mode = "preferred",    position = "auto",   scale = 1 })

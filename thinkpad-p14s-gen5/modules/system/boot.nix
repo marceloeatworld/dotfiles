@@ -20,6 +20,10 @@
   # Latest supported kernel for current AMDGPU/Zen 4 laptop fixes.
   # linuxPackages_zen was on the 6.19 branch, which is EOL upstream; latest
   # keeps the Radeon 780M and s2idle stack on the newest maintained code.
+  # KNOWN ISSUE on 7.1.3: reboot/poweroff hangs at the final hardware reset
+  # when the external HDMI monitor is connected (amdgpu DCN teardown wedge,
+  # open upstream: drm/amd #4922, #4838). Unplug HDMI before shutdown, or
+  # use: sync && systemctl reboot -ff
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # Kernel parameters optimized for Ryzen 7 PRO 8840HS
