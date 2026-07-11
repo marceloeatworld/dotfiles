@@ -1,5 +1,5 @@
 # Keyboard, touchpad and gesture configuration.
-{ ... }:
+_:
 
 {
   xdg.configFile."hypr/input.lua".text = ''
@@ -8,7 +8,7 @@
         kb_layout = "fr,us", -- French (default) + US English (switch with SUPER+F3 or Waybar)
         kb_variant = ",",
         numlock_by_default = true,
-        repeat_rate = 40, -- Slightly slower for comfort
+        repeat_rate = 40, -- Faster than the default 25 for responsive navigation
         repeat_delay = 600, -- Longer delay before repeat
         follow_mouse = 1,
         mouse_refocus = true, -- Refocus window under cursor after layout/workspace changes

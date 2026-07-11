@@ -24,9 +24,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Hyprland official flake.
-    hyprland.url = "github:hyprwm/Hyprland";
-
     # No plugin flake input: hyprfocus (removed 2026-07-08, repeated SEGV in
     # libhyprfocus.so) and hyprexpo (SEGV on AMD iGPU) both crashed sessions.
     # Plugins stay out until upstream stabilizes.
@@ -55,7 +52,7 @@
 
   };
 
-  outputs = { self, nixpkgs, nixpkgs-llama, home-manager, nixos-hardware, disko, hyprland, hyprshutdown, sops-nix, ... } @ inputs:
+  outputs = { self, nixpkgs, nixpkgs-llama, home-manager, nixos-hardware, disko, hyprshutdown, sops-nix, ... } @ inputs:
     let
       system = "x86_64-linux";
 
@@ -187,26 +184,8 @@
         })
       ];
 
-      # Common special args passed to all modules
-      hyprlandPackages =
-        let
-          # Unmodified packages from the Hyprland flake. Any override here
-          # changes the derivation hash and defeats hyprland.cachix.org,
-          # forcing Hyprland + portal + guiutils to recompile from source on
-          # every flake update. Keep these stock so binaries substitute.
-          hyprland = inputs.hyprland.packages.${system}.hyprland;
-
-          xdg-desktop-portal-hyprland = inputs.hyprland.packages.${system}.xdg-desktop-portal-hyprland;
-        in
-        {
-          inherit
-            hyprland
-            xdg-desktop-portal-hyprland
-            ;
-        };
-
       specialArgs = {
-        inherit inputs hyprlandPackages;
+        inherit inputs;
       };
     in
     {

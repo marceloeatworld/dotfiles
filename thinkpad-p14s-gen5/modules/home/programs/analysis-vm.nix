@@ -35,16 +35,12 @@ let
     VIRSH="${pkgs.libvirt}/bin/virsh --connect qemu:///system"
     VIRT_VIEWER="${pkgs.virt-viewer}/bin/virt-viewer --connect qemu:///system"
     NOTIFY="${pkgs.libnotify}/bin/notify-send"
-    QEMU_IMG="${pkgs.qemu}/bin/qemu-img"
-    CURL="${pkgs.curl}/bin/curl"
-    IP="${pkgs.iproute2}/bin/ip"
     IPTABLES="${pkgs.iptables}/bin/iptables"
     GREP="${pkgs.gnugrep}/bin/grep"
     AWK="${pkgs.gawk}/bin/awk"
-    TAR="${pkgs.gnutar}/bin/tar"
+    MKTEMP="${pkgs.coreutils}/bin/mktemp"
+    RM="${pkgs.coreutils}/bin/rm"
 
-    LAB_DIR="${labDir}"
-    SAMPLES_DIR="${samplesDir}"
     ISOS_DIR="${isosDir}"
 
     ISOLATED_NET="lab-isolated"
@@ -83,10 +79,12 @@ let
     }
 
     get_vm_network() {
+      # shellcheck disable=SC2016 # The expression is intentionally evaluated by awk.
       $VIRSH domiflist "$1" 2>/dev/null | $GREP -E "network|bridge" | $AWK '{print $3}' | head -1
     }
 
     get_vm_mac() {
+      # shellcheck disable=SC2016 # The expression is intentionally evaluated by awk.
       $VIRSH domiflist "$1" 2>/dev/null | $GREP -E "network|bridge" | $AWK '{print $5}' | head -1
     }
 
@@ -95,9 +93,8 @@ let
     # ═══════════════════════════════════════════════════════════
 
     create_nwfilter() {
-      if ! $VIRSH nwfilter-list | $GREP -q "lab-block-all"; then
-        echo "Creating nwfilter 'lab-block-all'..."
-        cat <<'FILTERXML' | $VIRSH nwfilter-define /dev/stdin
+      echo "Ensuring nwfilter 'lab-block-all'..."
+      cat <<'FILTERXML' | $VIRSH nwfilter-define /dev/stdin
 <filter name='lab-block-all' chain='root'>
   <uuid>d217f2e8-e8f5-4858-9c6a-9e5c6c6c6c6d</uuid>
   <rule action='drop' direction='out' priority='100'>
@@ -117,14 +114,15 @@ let
   <rule action='accept' direction='inout' priority='50'>
     <mac protocolid='arp'/>
   </rule>
-  <!-- Allow inter-VM traffic on isolated subnet 192.168.100.0/24 -->
+  <!-- Allow only FLARE-VM (192.168.100.10) <-> REMnux (192.168.100.2). -->
   <rule action='accept' direction='inout' priority='40'>
-    <ip srcipaddr='192.168.100.0' srcipmask='255.255.255.0'
-        dstipaddr='192.168.100.0' dstipmask='255.255.255.0'/>
+    <ip srcipaddr='192.168.100.10' dstipaddr='192.168.100.2'/>
+  </rule>
+  <rule action='accept' direction='inout' priority='40'>
+    <ip srcipaddr='192.168.100.2' dstipaddr='192.168.100.10'/>
   </rule>
 </filter>
 FILTERXML
-      fi
     }
 
     create_networks() {
@@ -188,23 +186,48 @@ NETXML
 
     switch_network() {
       local VM="$1" TARGET_NET="$2"
-      local MAC STATE
+      local MAC STATE INTERFACE_XML
       MAC=$(get_vm_mac "$VM")
       if [ -z "$MAC" ]; then
         echo -e "''${RED}Error: could not get MAC for $VM''${NC}"
         return 1
       fi
+
+      INTERFACE_XML=$($MKTEMP)
+      if [ "$TARGET_NET" = "$ISOLATED_NET" ]; then
+        cat > "$INTERFACE_XML" <<EOF
+<interface type='network'>
+  <mac address='$MAC'/>
+  <source network='$TARGET_NET'/>
+  <model type='virtio'/>
+  <filterref filter='lab-block-all'/>
+</interface>
+EOF
+      else
+        cat > "$INTERFACE_XML" <<EOF
+<interface type='network'>
+  <mac address='$MAC'/>
+  <source network='$TARGET_NET'/>
+  <model type='virtio'/>
+</interface>
+EOF
+      fi
+
       STATE=$($VIRSH domstate "$VM" 2>/dev/null || echo "unknown")
       if [ "$STATE" = "running" ]; then
-        $VIRSH detach-interface "$VM" network --mac "$MAC" --live --config 2>/dev/null \
-          || $VIRSH detach-interface "$VM" network --mac "$MAC" --live 2>/dev/null \
-          || true
-        $VIRSH attach-interface "$VM" network "$TARGET_NET" --mac "$MAC" --model virtio --live --config \
-          || $VIRSH attach-interface "$VM" network "$TARGET_NET" --mac "$MAC" --model virtio --live
+        $VIRSH detach-interface "$VM" network --mac "$MAC" --persistent 2>/dev/null || true
+        if ! $VIRSH attach-device "$VM" "$INTERFACE_XML" --persistent; then
+          $RM -f "$INTERFACE_XML"
+          return 1
+        fi
       else
         $VIRSH detach-interface "$VM" network --mac "$MAC" --config 2>/dev/null || true
-        $VIRSH attach-interface "$VM" network "$TARGET_NET" --mac "$MAC" --model virtio --config
+        if ! $VIRSH attach-device "$VM" "$INTERFACE_XML" --config; then
+          $RM -f "$INTERFACE_XML"
+          return 1
+        fi
       fi
+      $RM -f "$INTERFACE_XML"
     }
 
     killswitch() {
@@ -218,7 +241,10 @@ NETXML
         return 0
       fi
       create_nwfilter
-      switch_network "$VM" "$ISOLATED_NET"
+      if ! switch_network "$VM" "$ISOLATED_NET"; then
+        echo -e "''${RED}Failed to attach the isolated interface and nwfilter.''${NC}"
+        return 1
+      fi
       echo -e "''${GREEN}🔒 $VM isolated (lab-isolated)''${NC}"
       $NOTIFY "Analysis VM" "🔒 $VM killswitch active"
     }
@@ -234,9 +260,12 @@ NETXML
         return 0
       fi
       echo -e "''${YELLOW}⚠️  WARNING: enabling internet for $VM''${NC}"
-      read -p "Confirm (yes/no): " CONFIRM
+      read -r -p "Confirm (yes/no): " CONFIRM
       [ "$CONFIRM" = "yes" ] || { echo "Cancelled"; return 0; }
-      switch_network "$VM" "$NAT_NET"
+      if ! switch_network "$VM" "$NAT_NET"; then
+        echo -e "''${RED}Failed to attach the NAT interface.''${NC}"
+        return 1
+      fi
       echo -e "''${GREEN}✅ $VM on NAT''${NC}"
       echo -e "''${YELLOW}⚠️  Run 'analysis-vm $PROFILE killswitch' BEFORE analysis!''${NC}"
       $NOTIFY -u critical "Analysis VM" "⚠️ $VM NAT enabled"
@@ -281,7 +310,7 @@ NETXML
       if [ -z "$NAME" ]; then
         echo "Available snapshots:"
         $VIRSH snapshot-list "$VM" --name
-        read -p "Snapshot name: " NAME
+        read -r -p "Snapshot name: " NAME
       fi
       [ -z "$NAME" ] && { echo "No name"; return 1; }
       $VIRSH snapshot-revert "$VM" --snapshotname "$NAME"
@@ -319,7 +348,7 @@ NETXML
         *)               echo "  Network: $NET" ;;
       esac
       echo "  Snapshots:"
-      $VIRSH snapshot-list "$VM" --name 2>/dev/null | while read s; do
+      $VIRSH snapshot-list "$VM" --name 2>/dev/null | while read -r s; do
         [ -n "$s" ] && echo "    - $s"
       done
     }
@@ -344,6 +373,11 @@ NETXML
       else
         echo -e "  ✓ No forward: ''${GREEN}OK''${NC}"
       fi
+      if $VIRSH dumpxml "$VM" 2>/dev/null | $GREP -q "<filterref filter='lab-block-all'"; then
+        echo -e "  ✓ nwfilter attached: ''${GREEN}OK''${NC}"
+      else
+        echo -e "  ✗ nwfilter missing: ''${RED}NOT ISOLATED''${NC}"
+      fi
       echo "  iptables FORWARD rules for virbr-lab-iso:"
       $IPTABLES -L FORWARD -n 2>/dev/null | $GREP -E "virbr-lab-iso" | head -5 || echo "    (none found - expected on isolated net)"
     }
@@ -354,7 +388,7 @@ NETXML
 
     install_remnux() {
       mkdir -p "$ISOS_DIR"
-      cd "$ISOS_DIR"
+      cd "$ISOS_DIR" || return 1
 
       echo -e "''${BOLD}REMnux install''${NC}"
       echo ""
@@ -362,7 +396,7 @@ NETXML
       echo "  1. OVA (pre-built, ~3GB download)"
       echo "  2. On-top-of-Ubuntu (install fresh Ubuntu 22.04 first, then run remnux-cli)"
       echo ""
-      read -p "Choose [1/2]: " CHOICE
+      read -r -p "Choose [1/2]: " CHOICE
 
       case "$CHOICE" in
         1)

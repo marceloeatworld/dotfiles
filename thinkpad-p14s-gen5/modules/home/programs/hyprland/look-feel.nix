@@ -2,7 +2,7 @@
 { config, ... }:
 
 let
-  theme = config.theme;
+  inherit (config) theme;
 in
 {
   xdg.configFile."hypr/look-feel.lua".text = ''
@@ -66,13 +66,13 @@ in
           ignore_opacity = true,
           new_optimizations = true,
           xray = true, -- Floating windows ignore tiled in blur (perf)
-          special = true, -- Blur behind scratchpad
-          popups = true, -- Blur behind right-click menus
+          special = false, -- Expensive; max mode enables it temporarily
+          popups = false, -- Keep menus crisp and avoid continuous popup blur
         },
 
         shadow = {
           enabled = true,
-          range = 20,
+          range = 12, -- Balanced visual depth without the max-mode GPU cost
           render_power = 3,
           color = "rgba(0000004D)", -- black 30% opacity
           color_inactive = "rgba(00000026)", -- black 15% opacity
@@ -82,7 +82,7 @@ in
         -- Subtle glow on focused window (0.54+)
         glow = {
           enabled = true,
-          range = 8,
+          range = 6,
           render_power = 3,
           color = "rgba(" .. theme_colors.accent .. "26)", -- accent 15% opacity
           color_inactive = "rgba(00000000)", -- No glow on inactive

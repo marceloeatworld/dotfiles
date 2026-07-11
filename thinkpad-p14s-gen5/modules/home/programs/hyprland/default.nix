@@ -1,4 +1,4 @@
-# Hyprland - pinned official flake, no plugins (stability).
+# Hyprland - locked nixpkgs package, no plugins (stability).
 #
 # Config follows the official Lua recommendation:
 #   https://wiki.hypr.land/Configuring/Start/
@@ -7,10 +7,10 @@
 # Each sibling lives in ~/.config/hypr/ (written by the matching Nix module
 # via xdg.configFile) and runs in its own Lua scope, so a syntax error in one
 # file does not abort loading of the others.
-{ config, pkgs, inputs, hyprlandPackages, ... }:
+{ pkgs, inputs, ... }:
 
 let
-  hyprlandPkg = hyprlandPackages.hyprland;
+  hyprlandPkg = pkgs.hyprland;
 
   hyprScripts = import ./scripts.nix {
     inherit pkgs hyprlandPkg;

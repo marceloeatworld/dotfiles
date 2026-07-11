@@ -349,36 +349,14 @@
           # authenticate to GitHub and dodge the 60 req/h anonymous rate limit.
           __load_github_personal_access_token
           __set_nix_github_access_token
-          # Selective update: the Hyprland stack (hyprland, hyprshutdown)
-          # tracks git HEAD, so a global "nix flake update" pulled a new
-          # Hyprland every day. Use update-hyprland for those.
+          # Hyprland, its portal, and Mesa all come from nixpkgs, so updating
+          # nixpkgs advances the complete graphics stack together.
           # nixpkgs-llama stays pinned (update-llama owns it).
           nix flake update disko home-manager jail-nix \
             nix-index-database nixos-hardware nixpkgs sops-nix &&
             { update-overlays || true; } &&
-            nh os switch .
-        )
-        update_status=$?
-
-        clean-dotfiles-result-links
-        return $update_status
-      }
-
-      # Update the Hyprland stack and rebuild. Kept out of the daily "update"
-      # so Hyprland is not re-downloaded/rebuilt every day; run deliberately
-      # (e.g. weekly). Binaries come from hyprland.cachix.org as long as the
-      # flake keeps the packages unmodified.
-      function update-hyprland() {
-        local flake update_status
-        flake=$(dotfiles-flake-dir) || return 1
-
-        clean-dotfiles-result-links
-
-        (
-          cd "$flake" || exit 1
-          __load_github_personal_access_token
-          __set_nix_github_access_token
-          nix flake update hyprland hyprshutdown &&
+            nix flake check --no-build &&
+            nix build --no-link --impure .#nixosConfigurations.pop.config.system.build.toplevel &&
             nh os switch .
         )
         update_status=$?

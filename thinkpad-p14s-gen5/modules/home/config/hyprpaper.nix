@@ -1,8 +1,8 @@
 # Hyprpaper wallpaper configuration
-{ hyprlandPackages, ... }:
+{ pkgs, ... }:
 
 let
-  hyprlandPkg = hyprlandPackages.hyprland;
+  hyprlandPkg = pkgs.hyprland;
   wallDir = "${hyprlandPkg}/share/hypr";
 
   # Original Hyprland wallpaper (the cyan droplet logo). Static on purpose:

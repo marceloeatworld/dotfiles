@@ -287,7 +287,7 @@ nix flake update
 | Alias | Command |
 |-------|---------|
 | `rebuild` | `cd "$(dotfiles-flake-dir)" && nh os switch .` |
-| `update` | selective `nix flake update` (skips Hyprland stack + nixpkgs-llama) + `update-overlays` + `nh os switch .` |
+| `update` | update flake inputs (including the matched Hyprland/Mesa/portal stack), overlays and skills; validate, build, then switch |
 | `update-apps` | `update-overlays`, then `nh os switch .` when something changed |
 | `clean` | `nh clean all --keep 5` |
 | `secrets` | `sops "$(dotfiles-flake-dir)/sops/api-keys.yaml"` |

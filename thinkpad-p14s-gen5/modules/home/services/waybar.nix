@@ -302,7 +302,7 @@ in
       mainBar = {
         layer = "top";
         position = "top";
-        height = 32;
+        height = 33;
         spacing = 2;
         reload_style_on_change = true;  # Auto-reload CSS on theme change (no waybar restart)
 
@@ -540,7 +540,7 @@ in
           tooltip-format-disconnected = "No network connection";
           on-click = "nm-connection-editor";
           on-click-right = "${pkgs.ghostty}/bin/ghostty -e ${pkgs.networkmanager}/bin/nmtui";  # Quick TUI network manager
-          interval = 10;
+          interval = 60;
         };
 
         "custom/audio" = {
@@ -569,7 +569,7 @@ in
 
         "disk" = {
           format = "󰋊 {percentage_used}%";
-          path = "/";
+          paths = [ "/" ];
           tooltip-format = "Disk: {used} / {total}\nFree: {free} ({percentage_free}%)";
           on-click = "nemo /";
           on-click-right = "ghostty -e dust /";  # Visual disk usage

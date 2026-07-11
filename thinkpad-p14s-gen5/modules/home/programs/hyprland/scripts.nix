@@ -2,6 +2,10 @@
 { pkgs, hyprlandPkg }:
 
 let
+  balancedHyprConfig = "hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = true, special = false, popups = false }, shadow = { enabled = true, range = 12 }, glow = { enabled = false, range = 6 } } })";
+  maxHyprConfig = "hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 60 }, decoration = { blur = { enabled = true, special = true, popups = true }, shadow = { enabled = true, range = 20 }, glow = { enabled = true, range = 8 } } })";
+  batteryHyprConfig = "hl.config({ animations = { enabled = false }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = false, special = false, popups = false }, shadow = { enabled = false, range = 12 }, glow = { enabled = false, range = 6 } } })";
+
   # ── Picture-in-Picture (PiP) generators ──
   # YouTube and Twitch PiP scripts share identical control flow; only the window
   # class, launch URL, special-workspace name, detached geometry and detached
@@ -32,6 +36,7 @@ let
         mon_top=$(echo "$mon_info" | $JQ -r '.reserved[1] // 32')
         mon_bottom=$(echo "$mon_info" | $JQ -r '.reserved[3] // 0')
         usable_h=$((mon_lh - mon_top - mon_bottom))
+        : "$mon_lw" "$usable_h" # Some generated PiP geometries use only fixed dimensions.
         w=${detachW}
         h=${detachH}
         x=${detachX}
@@ -489,21 +494,21 @@ let
     case "$CURRENT" in
       battery)
         # Switch to BALANCED (some animations, moderate FPS, auto profile)
-        ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = true }, shadow = { enabled = true }, glow = { enabled = false } } })'
+        ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg balancedHyprConfig}
         /run/wrappers/bin/sudo -n /run/current-system/sw/bin/game-platform-profile auto 2>/dev/null || true
         echo "balanced" > "$STATE_FILE"
         ${pkgs.libnotify}/bin/notify-send -t 2000 "⚖️ Balanced Mode" "Animations ON, platform profile auto" -i "battery-good"
         ;;
       balanced)
         # Switch to MAX PERFORMANCE (all effects, high FPS, performance profile)
-        ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 60 }, decoration = { blur = { enabled = true }, shadow = { enabled = true }, glow = { enabled = true } } })'
+        ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg maxHyprConfig}
         /run/wrappers/bin/sudo -n /run/current-system/sw/bin/game-platform-profile performance 2>/dev/null || true
         echo "max" > "$STATE_FILE"
         ${pkgs.libnotify}/bin/notify-send -t 2000 "🚀 Max Performance" "All effects + performance profile" -i "video-display"
         ;;
       max|*)
         # Switch to BATTERY SAVER (no effects, minimal FPS, low-power profile)
-        ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = false }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = false }, shadow = { enabled = false }, glow = { enabled = false } } })'
+        ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg batteryHyprConfig}
         /run/wrappers/bin/sudo -n /run/current-system/sw/bin/game-platform-profile low-power 2>/dev/null || true
         echo "battery" > "$STATE_FILE"
         ${pkgs.libnotify}/bin/notify-send -t 2000 "🔋 Battery Saver" "Effects OFF + low-power profile" -i "battery-caution"
@@ -524,7 +529,7 @@ let
         # Right after session start Hyprland can silently drop the eval
         # during init; verify via getoption and retry, bounded.
         for _ in 1 2 3 4 5; do
-          ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = false }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = false }, shadow = { enabled = false }, glow = { enabled = false } } })'
+          ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg batteryHyprConfig}
           ${hyprlandPkg}/bin/hyprctl getoption animations:enabled | ${pkgs.gnugrep}/bin/grep -q 'bool: false' && break
           sleep 1
         done
@@ -535,17 +540,17 @@ let
         case "$SAVED_STATE" in
           battery)
             for _ in 1 2 3 4 5; do
-              ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = false }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = false }, shadow = { enabled = false }, glow = { enabled = false } } })'
+              ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg batteryHyprConfig}
               ${hyprlandPkg}/bin/hyprctl getoption animations:enabled | ${pkgs.gnugrep}/bin/grep -q 'bool: false' && break
               sleep 1
             done
             ;;
           max)
-            ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 60 }, decoration = { blur = { enabled = true }, shadow = { enabled = true }, glow = { enabled = true } } })'
+            ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg maxHyprConfig}
             /run/wrappers/bin/sudo -n /run/current-system/sw/bin/game-platform-profile performance 2>/dev/null || true
             ;;
           *)
-            ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = true }, shadow = { enabled = true }, glow = { enabled = false } } })'
+            ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg balancedHyprConfig}
             ;;
         esac
       fi
@@ -569,7 +574,7 @@ let
         # The initial apply at session start races Hyprland's init and can
         # be silently dropped; verify via getoption and retry, bounded.
         for _ in 1 2 3 4 5; do
-          ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = false }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = false }, shadow = { enabled = false }, glow = { enabled = false } } })'
+          ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg batteryHyprConfig}
           ${hyprlandPkg}/bin/hyprctl getoption animations:enabled | ${pkgs.gnugrep}/bin/grep -q 'bool: false' && break
           sleep 1
         done
@@ -579,12 +584,12 @@ let
       elif [ "$status" != "Discharging" ] && [ "$LAST_STATUS" = "Discharging" ]; then
         RESTORE=$(cat "$PREV_FILE" 2>/dev/null || echo "balanced")
         if [ "$RESTORE" = "max" ]; then
-          ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 60 }, decoration = { blur = { enabled = true }, shadow = { enabled = true }, glow = { enabled = true } } })'
+          ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg maxHyprConfig}
           /run/wrappers/bin/sudo -n /run/current-system/sw/bin/game-platform-profile performance 2>/dev/null || true
           echo "max" > "$STATE_FILE"
           ${pkgs.libnotify}/bin/notify-send -t 2000 "AC Power" "󰂄 Max performance restored" -i "battery-full-charging"
         else
-          ${hyprlandPkg}/bin/hyprctl eval 'hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = true }, shadow = { enabled = true }, glow = { enabled = false } } })'
+          ${hyprlandPkg}/bin/hyprctl eval ${pkgs.lib.escapeShellArg balancedHyprConfig}
           echo "balanced" > "$STATE_FILE"
           ${pkgs.libnotify}/bin/notify-send -t 2000 "AC Power" "󰂄 Balanced mode restored" -i "battery-full-charging"
         fi

@@ -1,4 +1,4 @@
-# Waybar - plain upstream master, no local patches.
+# Waybar - pinned upstream master with narrow local runtime fixes.
 # Source: https://github.com/Alexays/Waybar
 #
 # Why the master pin: Hyprland 0.55 made `configType = "lua"` the default IPC
@@ -69,5 +69,13 @@ in
         sigc::mem_fun(*this, &Privacy::onGeoCluePrivacyNodesChanged));
     break;
   }'
+
+    # ath11k can transiently return EBUSY/EIO for GET_STATION. Waybar polls
+    # this optional bitrate data for every bar instance, so warning-level logs
+    # otherwise flood the user journal while connectivity remains healthy.
+    substituteInPlace src/modules/network.cpp \
+      --replace-fail \
+'        spdlog::warn("nl80211: nl_send_sync get_station error {}", err);' \
+'        spdlog::debug("nl80211: nl_send_sync get_station error {}", err);'
   '';
 })

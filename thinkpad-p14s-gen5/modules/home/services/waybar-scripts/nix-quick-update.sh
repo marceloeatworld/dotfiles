@@ -20,9 +20,9 @@ cd "$FLAKE_DIR" || exit 1
 # Update flake + overlays (captures output)
 {
   echo "=== $(date) ==="
-  # Selective update matching the update() shell function (overlay-updates.nix):
-  # Hyprland stack tracks git HEAD (owned by update-hyprland), nixpkgs-llama
-  # stays pinned (owned by update-llama).
+  # Selective update matching the update() shell function (overlay-updates.nix).
+  # Hyprland, its portal, and Mesa advance together through nixpkgs;
+  # nixpkgs-llama stays pinned and is owned by update-llama.
   nix flake update disko home-manager jail-nix nix-index-database nixos-hardware nixpkgs sops-nix 2>&1
   echo ""
   echo "=== Overlay updates ==="

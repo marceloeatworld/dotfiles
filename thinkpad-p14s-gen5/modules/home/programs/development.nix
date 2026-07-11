@@ -126,6 +126,9 @@ in
     nixpkgs-fmt # Nix formatter
     nil # Nix LSP (for editing NixOS configs)
     nix-tree # Visualize dependencies
+    statix # Nix static analysis
+    deadnix # Detect unused Nix code
+    shellcheck # Shell script static analysis
     # NOTE: nix-index is managed by programs.nix-index in shell.nix
 
     # Language Servers (for Claude Code LSP integration)

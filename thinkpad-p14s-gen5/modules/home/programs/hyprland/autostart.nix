@@ -2,7 +2,7 @@
 { config, pkgs, hyprScripts, ... }:
 
 let
-  theme = config.theme;
+  inherit (config) theme;
 in
 {
   xdg.configFile."hypr/autostart.lua".text = ''

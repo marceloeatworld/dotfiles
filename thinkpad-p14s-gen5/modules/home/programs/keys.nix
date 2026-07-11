@@ -305,7 +305,6 @@ let
     ━━━━━━━━━━━ SHELL COMMANDS ━━━━━━━━━━━
     rebuild       Rebuild NixOS live (nh os switch .)
     update        Flake update + overlays/skills + switch
-    update-hyprland Update Hyprland stack + switch
     update-overlays Update quick overlays + skills
     update-apps   Overlays/skills; rebuild only if changed
     update-skills Update all agent skill repos

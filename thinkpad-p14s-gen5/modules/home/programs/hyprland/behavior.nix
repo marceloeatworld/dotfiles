@@ -2,7 +2,7 @@
 { config, ... }:
 
 let
-  theme = config.theme;
+  inherit (config) theme;
 in
 {
   xdg.configFile."hypr/behavior.lua".text = ''

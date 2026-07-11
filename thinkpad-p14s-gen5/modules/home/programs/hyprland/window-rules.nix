@@ -1,5 +1,5 @@
 # Window rules (Hyprland 0.55+ Lua format).
-{ ... }:
+_:
 
 {
   xdg.configFile."hypr/window-rules.lua".text = ''

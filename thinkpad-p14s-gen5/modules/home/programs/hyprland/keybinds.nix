@@ -4,6 +4,7 @@
 {
   xdg.configFile."hypr/keybinds.lua".text = ''
     local mod = "SUPER"
+    local external_monitor = "desc:Dell Inc. DELL G2723HN H42C3H3"
 
     -----------------------------------------------------------------------
     -- Apps & window management
@@ -170,7 +171,7 @@
     -----------------------------------------------------------------------
     -- Swap workspaces between monitors
     -----------------------------------------------------------------------
-    hl.bind(mod .. " + SHIFT + Tab", hl.dsp.workspace.swap_monitors({ monitor1 = "eDP-1", monitor2 = "HDMI-A-1" }))
+    hl.bind(mod .. " + SHIFT + Tab", hl.dsp.workspace.swap_monitors({ monitor1 = "eDP-1", monitor2 = external_monitor }))
 
     -----------------------------------------------------------------------
     -- Mouse wheel cycles through existing workspaces (e = existing)
@@ -185,13 +186,13 @@
     -- Wofi drun: full app list with icons on open. Replaces hyprlauncher
     -- (v0.1.6 fuzzy-only, cannot list/browse apps); switch back when upstream
     -- gains a browse view.
-    hl.bind(mod .. " + D",            hl.dsp.exec_cmd("wofi --show drun --allow-images"),                                       { bypass = true })
-    hl.bind(mod .. " + Escape",       hl.dsp.exec_cmd("hyprlock"),                                                              { bypass = true })
+    hl.bind(mod .. " + D",            hl.dsp.exec_cmd("wofi --show drun --allow-images"),                                       { dont_inhibit = true })
+    hl.bind(mod .. " + Escape",       hl.dsp.exec_cmd("hyprlock"),                                                              { dont_inhibit = true })
     -- Graceful shutdown via hyprshutdown: asks apps to close gracefully, quits Hyprland, runs post-cmd
-    hl.bind(mod .. " + SHIFT + Escape", hl.dsp.exec_cmd("hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff'"), { bypass = true })
-    hl.bind(mod .. " + CTRL + Escape",  hl.dsp.exec_cmd("hyprshutdown -t 'Restarting...' --post-cmd 'systemctl reboot'"),      { bypass = true })
-    hl.bind(mod .. " + ALT + Escape",   hl.dsp.exec_cmd("systemctl suspend"),                                                   { bypass = true })
-    hl.bind(mod .. " + F1",             hl.dsp.exec_cmd("${hyprScripts.hypr-keys}/bin/hypr-keys"),                              { bypass = true }) -- Keybindings cheatsheet
+    hl.bind(mod .. " + SHIFT + Escape", hl.dsp.exec_cmd("hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff'"), { dont_inhibit = true })
+    hl.bind(mod .. " + CTRL + Escape",  hl.dsp.exec_cmd("hyprshutdown -t 'Restarting...' --post-cmd 'systemctl reboot'"),      { dont_inhibit = true })
+    hl.bind(mod .. " + ALT + Escape",   hl.dsp.exec_cmd("systemctl suspend"),                                                   { dont_inhibit = true })
+    hl.bind(mod .. " + F1",             hl.dsp.exec_cmd("${hyprScripts.hypr-keys}/bin/hypr-keys"),                              { dont_inhibit = true }) -- Keybindings cheatsheet
 
     -----------------------------------------------------------------------
     -- Mouse binds (was bindm)
