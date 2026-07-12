@@ -107,6 +107,29 @@
             cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DUPDATE_DEPS=OFF" ];
           });
         })
+        # Temporary: AppArmor 5.0.0 patches rc.apparmor.functions and makes
+        # apparmor-utils reference it, but the parser install omits the file.
+        # This breaks apparmor.service reload during every NixOS activation.
+        # Restore the prepared helper and rebuild its two consumers against it.
+        (final: prev: {
+          apparmor-parser = prev.apparmor-parser.overrideAttrs (old: {
+            # The cached upstream parser has already passed its exhaustive
+            # suite; this override changes installation only.
+            doCheck = false;
+            postInstall = (old.postInstall or "") + ''
+              if [[ ! -e "$out/lib/apparmor/rc.apparmor.functions" ]]; then
+                install -Dm0444 ../init/rc.apparmor.functions \
+                  "$out/lib/apparmor/rc.apparmor.functions"
+              fi
+            '';
+          });
+          apparmor-teardown = prev.apparmor-teardown.override {
+            inherit (final) apparmor-parser;
+          };
+          apparmor-utils = prev.apparmor-utils.override {
+            inherit (final) apparmor-parser apparmor-teardown;
+          };
+        })
         # VS Code Latest - Always use the latest version from Microsoft
         # Update: overlays/vscode-latest.nix (version + sha256)
         (final: prev:
