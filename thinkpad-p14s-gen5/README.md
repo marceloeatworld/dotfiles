@@ -289,7 +289,7 @@ nix flake update
 | `rebuild` | `cd "$(dotfiles-flake-dir)" && nh os switch .` |
 | `update` | update flake inputs (including the matched Hyprland/Mesa/portal stack), overlays and skills; validate, build, then switch |
 | `update-apps` | `update-overlays`, then `nh os switch .` when something changed |
-| `clean` | `nh clean all --keep 5` |
+| `clean` | `nh clean all --keep 3` |
 | `secrets` | `sops "$(dotfiles-flake-dir)/sops/api-keys.yaml"` |
 | `nb` | `cd "$(dotfiles-flake-dir)" && nh os boot .` |
 | `ntest` | `cd "$(dotfiles-flake-dir)" && nh os test .` |

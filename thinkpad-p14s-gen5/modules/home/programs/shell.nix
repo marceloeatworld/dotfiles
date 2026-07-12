@@ -71,7 +71,7 @@ in
       source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
     '';
     shellAliases = {
-      clean = "nh clean all --keep 5"; # Smarter garbage collection
+      clean = "nh clean all --keep 3"; # Match automatic retention policy
       secrets = "sops \"$(dotfiles-flake-dir)/sops/api-keys.yaml\"";
 
       # Modern replacements

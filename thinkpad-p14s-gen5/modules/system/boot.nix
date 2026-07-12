@@ -6,7 +6,7 @@
   boot.loader = {
     systemd-boot = {
       enable = true;
-      configurationLimit = 5; # 5 generations fit in 512MB ESP
+      configurationLimit = 3; # Current system plus two rollback entries
       editor = false; # Disable editing boot parameters for security
       consoleMode = "1"; # 80x50 firmware text mode - smaller boot menu text than mode 0
     };

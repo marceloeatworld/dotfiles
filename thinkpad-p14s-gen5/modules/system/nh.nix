@@ -5,8 +5,10 @@
   programs.nh = {
     enable = true;
     clean.enable = true;
-    clean.dates = "Sun 04:30";
-    clean.extraArgs = "--keep-since 7d --keep 5"; # Keep 7 days and 5 generations
+    # A time-based retention window kept hundreds of rapid rebuild generations.
+    # Clean every night and retain exactly three rollback-capable generations.
+    clean.dates = "daily";
+    clean.extraArgs = "--keep 3";
   };
   systemd.services.nh-clean.serviceConfig = {
     Nice = 10;
