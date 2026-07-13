@@ -17,10 +17,24 @@
     model = "zai/glm-5.2";
     small_model = "zai/glm-5.2";
 
-    # Plugins
-    plugin = [
-      "@opencode-ai/plugin"
-    ];
+    # Never upload sessions to opencode.ai
+    share = "disabled";
+
+    # Enable built-in formatters (omitted = all disabled)
+    formatter = true;
+
+    # Reuse existing rules files (AGENTS.md is auto-loaded already)
+    instructions = [ "CLAUDE.md" ];
+
+    # Permission layer (defaults are allow-everything)
+    permission = {
+      edit = "ask";
+      bash = {
+        "*" = "allow";
+        "git push *" = "ask";
+        "rm -rf *" = "deny";
+      };
+    };
 
     # Context compaction
     compaction = {
@@ -42,22 +56,39 @@
     };
 
     # Local LLM provider (llama-cpp on port 8080)
+    # Current schema shape; the old type/api_url/api_key keys were legacy
+    # pre-1.0 syntax silently stripped at load (provider was dead).
     provider = {
       local-llm = {
+        npm = "@ai-sdk/openai-compatible";
         name = "local-llm";
-        type = "openai";
-        api_url = "http://127.0.0.1:8080/v1";
-        api_key = "not-needed";
+        options = {
+          baseURL = "http://127.0.0.1:8080/v1";
+          apiKey = "not-needed";
+        };
         models = {
           "local-model" = {
             name = "local-model";
             attachment = false;
-            can_reason = false;
-            context_length = 8192;
-            default_temperature = 0.7;
-            max_tokens = 4096;
+            reasoning = false;
+            tool_call = true;
+            limit = {
+              context = 8192;
+              output = 4096;
+            };
           };
         };
+      };
+    };
+
+    # Agent preset for the local model (numeric temperature lives on agents,
+    # not on model definitions, in the current schema)
+    agent = {
+      local = {
+        mode = "primary";
+        description = "Offline agent on local llama.cpp";
+        model = "local-llm/local-model";
+        temperature = 0.7;
       };
     };
 
@@ -91,6 +122,8 @@
     scroll_speed = 3;
     scroll_acceleration = { enabled = true; };
     diff_style = "auto";
+    # Desktop notifications on done/permission/error
+    attention = { enabled = true; };
   };
 
   # Skills are now centralized in ai-skills.nix
