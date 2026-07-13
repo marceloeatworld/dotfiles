@@ -20,6 +20,23 @@
     openFirewall = true;
   };
 
+  # Network printer (mDNS hostname stays stable across DHCP renewals)
+  hardware.printers = {
+    ensurePrinters = [
+      {
+        name = "Brother_HL-L2350DW";
+        description = "Brother HL-L2350DW";
+        deviceUri = "ipp://BRW30C9AB64003F.local:631/ipp/print";
+        model = "drv:///brlaser.drv/brl2350d.ppd";
+        ppdOptions = {
+          PageSize = "A4";
+          Duplex = "DuplexNoTumble";
+        };
+      }
+    ];
+    ensureDefaultPrinter = "Brother_HL-L2350DW";
+  };
+
   # Power management with TLP (optimized for AMD)
   services.tlp = {
     enable = true;

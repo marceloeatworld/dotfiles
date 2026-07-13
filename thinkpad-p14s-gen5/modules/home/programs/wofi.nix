@@ -10,7 +10,9 @@ in
 
   xdg.configFile."wofi/config".text = ''
     insensitive=true
-    matching=fuzzy
+    # fuzzy matching is broken in wofi 1.5.3: it returns unrelated entries
+    # and hides exact matches (e.g. Ferdium), so use contains
+    matching=contains
     no_actions=true
     term=ghostty
     width=640

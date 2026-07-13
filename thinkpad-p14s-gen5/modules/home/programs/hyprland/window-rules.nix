@@ -59,6 +59,14 @@ _:
     hl.window_rule({ match = { class = "^(gamescope)$" }, no_shortcuts_inhibit = true })
 
     --------------------------------------------------------------------------
+    -- GeForce NOW (dedicated Chromium app window, geforce-now.nix)
+    -- Fullscreen stream grabs system keys via keyboard-lock; keep Super binds
+    -- (workspace switching) working without leaving the game.
+    --------------------------------------------------------------------------
+    hl.window_rule({ match = { class = "^chrome-play\\.geforcenow\\.com" }, content = "game" })
+    hl.window_rule({ match = { class = "^chrome-play\\.geforcenow\\.com" }, no_shortcuts_inhibit = true })
+
+    --------------------------------------------------------------------------
     -- Picture-in-Picture
     --------------------------------------------------------------------------
     hl.window_rule({ match = { title = "^(Picture-in-Picture)$" }, float = true })

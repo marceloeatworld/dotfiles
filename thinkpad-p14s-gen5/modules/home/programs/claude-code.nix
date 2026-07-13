@@ -96,7 +96,9 @@ let
     """
     Claude Code PreToolUse Security Hook — Defense in Depth
 
-    Complements permissions.deny (literal paths) with pattern-based matching.
+    Complements permissions.deny (gitignore-style path rules, which also cover
+    recognized Bash file commands) with name/extension heuristics for paths
+    the deny rules don't enumerate.
     Uses the recommended JSON output format (exit 0 + permissionDecision: deny)
     instead of exit code 2, giving Claude a structured reason for the block.
 
@@ -122,10 +124,11 @@ let
         'nix', 'dart', 'sql', 'graphql', 'proto',
     })
 
-    # Crypto/key extensions
+    # Crypto/key extensions (private material only; crt/cer/der/asc are
+    # public certificates/signatures and produced false positives)
     SENSITIVE_EXTENSIONS = frozenset({
-        'pem', 'key', 'p12', 'pfx', 'crt', 'cer', 'der',
-        'keystore', 'jks', 'gpg', 'asc', 'pgp',
+        'pem', 'key', 'p12', 'pfx',
+        'keystore', 'jks', 'gpg', 'pgp',
     })
 
     # Exact file names (case-insensitive)
@@ -138,7 +141,7 @@ let
         'credentials.json', 'service-account.json', 'secrets.json',
         'credentials', '.credentials', 'client_secret.json',
         '.netrc', '.npmrc', '.pypirc', '.gemrc', '.yarnrc',
-        'htpasswd', 'shadow', 'passwd', 'sudoers',
+        'htpasswd', 'shadow', 'sudoers',
         '.bash_history', '.zsh_history', '.python_history',
         '.node_repl_history', '.psql_history', '.mysql_history',
     })
@@ -156,14 +159,15 @@ let
         'env.example', 'env.sample', 'env.template',
     })
 
-    # Directory names (single path component match)
+    # Directory names (single path component match).
+    # 'sops' removed: the repo's sops/ dir only holds age-encrypted YAML that is
+    # safe to read; the real key lives under ~/.config/sops (SENSITIVE_PATHS).
     SENSITIVE_DIRS = frozenset({
         '.ssh', '.gnupg', '.pgp',
         '.aws', '.azure', '.gcloud',
         '.kube', '.docker', '.helm',
         '.password-store',
         'secrets', 'credentials',
-        'sops',
     })
 
     # Multi-component directory paths (matched as substrings of full path)
@@ -175,15 +179,18 @@ let
         '/.config/waybar/.env',
     )
 
-    # Dangerous bash patterns
+    # Dangerous bash patterns. Kept minimal on purpose (patterns must be
+    # lowercase, they are matched against a lowercased command):
+    # - rm -rf / and ~ are circuit-broken by Claude Code itself in every mode
+    # - cat/head/tail/sed on protected paths are blocked natively by the
+    #   permissions.deny Read rules (they extend to Bash file commands)
+    # The old substring list blocked legitimate commands such as
+    # "rm -rf /tmp/build" ('rm -rf /' substring) and any cat of a path
+    # containing "secrets".
     DANGEROUS_COMMANDS = (
-        'rm -rf /', 'rm -rf ~', 'rm -rf $HOME', 'rm -rf /*',
-        'mkfs.', 'dd if=', ':(){:|:&};:',
-        'chmod 777', 'chmod -R 777',
-        'cat ~/.ssh', 'cat ~/.aws', 'cat ~/.gnupg',
-        'cat /etc/shadow', 'cat /etc/passwd',
-        'cat ~/.bash_history', 'cat ~/.zsh_history',
-        'cat ~/.netrc', 'cat ~/.npmrc',
+        'mkfs.', ':(){:|:&};:',
+        'chmod 777', 'chmod -r 777',
+        'dd of=/dev/',
     )
 
     def deny(reason):
@@ -246,12 +253,6 @@ let
         for pattern in DANGEROUS_COMMANDS:
             if pattern in cmd:
                 deny(f"dangerous command '{pattern}'")
-
-        # Detect reading sensitive dirs via cat/less/head/tail
-        read_cmds = ('cat ', 'less ', 'head ', 'tail ')
-        for d in SENSITIVE_DIRS:
-            if d in cmd and any(r in cmd for r in read_cmds):
-                deny(f"reading from sensitive directory '{d}'")
 
     def main():
         try:
@@ -373,11 +374,16 @@ let
 
   # Claude Code settings.json with improved security
   settingsJson = builtins.toJSON {
-    model = "sonnet[1m]"; # Sonnet 5 with 1M context. Effort stays session-controlled via /effort.
+    # No model key on purpose: the model picked with /model is session-owned
+    # and must survive rebuilds (the merge below preserves runtime keys that
+    # are absent from these defaults). Effort stays session-controlled too.
+    # Alt-screen renderer with virtualized scrollback. The default main-screen
+    # renderer leaks stale frames into terminal scrollback on every window
+    # resize (duplicated/overlapping text after resizing Ghostty).
+    tui = "fullscreen";
     # Voice mode (push-to-talk dictation). This is reasserted by the activation
     # merge below, while session-owned keys such as /effort stay writable.
-    # mode = "hold" | "tap".
-    voiceEnabled = true;
+    # mode = "hold" | "tap". (voiceEnabled is a deprecated alias of voice.enabled.)
     voice = {
       enabled = true;
       # "tap" (tap to start, tap to stop+submit) instead of "hold": hold-to-talk
@@ -390,14 +396,12 @@ let
       type = "command";
       command = "$HOME/.claude/statusline.sh";
     };
-    # Pause instead of silently switching models when a message is flagged.
-    switchModelsOnFlag = false;
     env = {
       # Nix owns the binary; block the auto-updater so it can't shadow it with a
       # mutable ~/.local install.
       DISABLE_UPDATES = "1";
-      # Raise the Bash cap to 10min so long Nix builds aren't killed (default 2min).
-      BASH_MAX_TIMEOUT_MS = "600000";
+      # BASH_MAX_TIMEOUT_MS removed: the documented default is now 600000 (10min),
+      # the exact value we used to set.
       # NOTE: DISABLE_TELEMETRY intentionally NOT set — it shares the GrowthBook
       # feature-flag code path and silently hides gated features (Opus 1M ctx, etc.).
       # Everything else is left at Claude Code defaults: the previous performance
@@ -501,6 +505,11 @@ let
         "Bash(gh api:*)"
         "Bash(mpv:*)"
       ];
+      # Path rule syntax (per docs/en/permissions): gitignore spec. Directory
+      # contents need a trailing /**; a single leading / anchors at the
+      # SETTINGS FILE (~/.claude/), NOT the filesystem root, so absolute paths
+      # must start with //. These rules also cover Bash file commands
+      # (cat/head/tail/sed) that Claude Code recognizes.
       deny = [
         # ── Environment files (secrets) ──
         "Read(~/.env)"
@@ -511,58 +520,58 @@ let
         "Read(~/.env.test)"
         "Read(~/.envrc)"
         # ── Credential directories ──
-        "Read(~/.ssh)"
-        "Read(~/.aws)"
-        "Read(~/.gnupg)"
-        "Read(~/.password-store)"
-        "Read(~/.kube)"
-        "Read(~/.docker)"
-        "Read(~/.config/containers)"
-        "Read(~/.config/gcloud)"
-        "Read(~/.azure)"
-        "Read(~/.helm)"
-        "Read(~/.local/share/keyrings)"
+        "Read(~/.ssh/**)"
+        "Read(~/.aws/**)"
+        "Read(~/.gnupg/**)"
+        "Read(~/.password-store/**)"
+        "Read(~/.kube/**)"
+        "Read(~/.docker/**)"
+        "Read(~/.config/containers/**)"
+        "Read(~/.config/gcloud/**)"
+        "Read(~/.azure/**)"
+        "Read(~/.helm/**)"
+        "Read(~/.local/share/keyrings/**)"
         # ── Sensitive config files ──
         "Read(~/.netrc)"
         "Read(~/.npmrc)"
         "Read(~/.pypirc)"
         "Read(~/.gitconfig-secrets)"
         "Read(~/.config/waybar/.env)" # Wallet zpub keys
-        "Read(~/.config/sops)" # age private key (sops-nix)
+        "Read(~/.config/sops/**)" # age private key (sops-nix)
         # ── History files (may contain secrets) ──
         "Read(~/.bash_history)"
         "Read(~/.zsh_history)"
         "Read(~/.python_history)"
-        # ── System sensitive files ──
-        "Read(/etc/passwd)"
-        "Read(/etc/shadow)"
-        "Read(/etc/sudoers)"
-        "Read(/etc/ssh)"
+        # ── System sensitive files (/etc/passwd dropped: world-readable,
+        # no hashes, needed for routine debugging) ──
+        "Read(//etc/shadow)"
+        "Read(//etc/sudoers)"
+        "Read(//etc/ssh/**)"
         # ── Edit/Write restrictions ──
         "Edit(~/.env)"
         "Edit(~/.env.local)"
-        "Edit(~/.ssh)"
-        "Edit(~/.aws)"
-        "Edit(~/.gnupg)"
-        "Edit(~/.password-store)"
-        "Edit(~/.kube)"
-        "Edit(~/.docker)"
-        "Edit(~/.config/containers)"
-        "Edit(~/.config/sops)"
+        "Edit(~/.ssh/**)"
+        "Edit(~/.aws/**)"
+        "Edit(~/.gnupg/**)"
+        "Edit(~/.password-store/**)"
+        "Edit(~/.kube/**)"
+        "Edit(~/.docker/**)"
+        "Edit(~/.config/containers/**)"
+        "Edit(~/.config/sops/**)"
         "Edit(~/.netrc)"
         "Edit(~/.npmrc)"
-        "Edit(/etc)"
+        "Edit(//etc/**)"
         "Write(~/.env)"
         "Write(~/.env.local)"
-        "Write(~/.ssh)"
-        "Write(~/.aws)"
-        "Write(~/.gnupg)"
-        "Write(~/.password-store)"
-        "Write(~/.kube)"
-        "Write(~/.docker)"
-        "Write(~/.config/containers)"
-        "Write(~/.config/sops)"
-        "Write(/etc)"
+        "Write(~/.ssh/**)"
+        "Write(~/.aws/**)"
+        "Write(~/.gnupg/**)"
+        "Write(~/.password-store/**)"
+        "Write(~/.kube/**)"
+        "Write(~/.docker/**)"
+        "Write(~/.config/containers/**)"
+        "Write(~/.config/sops/**)"
+        "Write(//etc/**)"
       ];
       defaultMode = "default";
       # Keep Claude on the normal permission model. The bwrap sandbox is not
@@ -601,61 +610,27 @@ let
       "postgres-best-practices@supabase-agent-skills" = false;
       "cloudflare@cloudflare" = false;
     };
-    installedMarketplaces = {
-      "supabase-agent-skills" = {
-        url = "https://github.com/supabase/agent-skills";
+    # Marketplaces: the valid key is extraKnownMarketplaces (installedMarketplaces
+    # does not exist in the settings schema and was silently ignored).
+    extraKnownMarketplaces = {
+      "supabase-agent-skills".source = {
+        source = "github";
+        repo = "supabase/agent-skills";
       };
-      "cloudflare" = {
-        url = "https://github.com/cloudflare/skills";
+      "cloudflare".source = {
+        source = "github";
+        repo = "cloudflare/skills";
       };
-      "aiguide" = {
-        url = "https://github.com/timescale/pg-aiguide";
+      "aiguide".source = {
+        source = "github";
+        repo = "timescale/pg-aiguide";
       };
     };
-    # MCP servers
+    # MCP servers: NOT configured here. settings.json has no mcpServers key
+    # (schema-confirmed); user-scope servers live in ~/.claude.json, merged by
+    # the writeClaudeUserMcpServers activation below.
     enableAllProjectMcpServers = false;
     enabledMcpjsonServers = [ "blender" ];
-    mcpServers = {
-      # Real-time NixOS knowledge: 130K+ packages, 23K+ options, home-manager,
-      # nix-darwin, flakes, NixHub history, wiki.nixos.org. ~1K tokens overhead.
-      "nixos" = {
-        command = "uvx";
-        args = [ "mcp-nixos" ];
-        alwaysLoad = true;
-      };
-      "cloudflare-ai-gateway" = {
-        command = "pnpm";
-        args = [ "dlx" "mcp-remote" "https://ai-gateway.mcp.cloudflare.com/mcp" ];
-      };
-      "playwright" = {
-        command = "pnpm";
-        args = [ "dlx" "@playwright/mcp" ];
-        alwaysLoad = true;
-      };
-      "chrome-devtools" = {
-        command = "pnpm";
-        args = [ "dlx" "chrome-devtools-mcp" ];
-      };
-      "terraform" = {
-        command = "docker";
-        args = [
-          "run"
-          "-i"
-          "--rm"
-          "-e"
-          "TFE_TOKEN=\${TFE_TOKEN}"
-          "hashicorp/terraform-mcp-server:latest"
-        ];
-      };
-      "github" = {
-        type = "http";
-        url = "https://api.githubcopilot.com/mcp/";
-        headers = {
-          Authorization = "Bearer \${GITHUB_PERSONAL_ACCESS_TOKEN}";
-        };
-        alwaysLoad = true;
-      };
-    };
     # Git attribution (replaces deprecated includeCoAuthoredBy)
     attribution = {
       commit = "";
@@ -682,12 +657,13 @@ let
           hooks = [
             {
               type = "command";
+              # exit 2 is the only PostToolUse exit code whose stderr is fed back
+              # to Claude (exit 1 is verbose-only). continueOnBlock is not a real
+              # hook field and was removed.
               command = ''
-                jq -r '.tool_input.file_path // empty' | { read -r f; [ -z "$f" ] || [[ "$f" != *.nix ]] || [ ! -f "$f" ] || nix-instantiate --parse "$f" >/dev/null; }
+                jq -r '.tool_input.file_path // empty' | { read -r f; [ -z "$f" ] || [[ "$f" != *.nix ]] || [ ! -f "$f" ] || nix-instantiate --parse "$f" >/dev/null || exit 2; }
               '';
               timeout = 30;
-              # On parse failure, feed the error back to Claude instead of halting the turn.
-              continueOnBlock = true;
             }
           ];
         }
@@ -753,6 +729,51 @@ let
     };
   };
   settingsDefaultsFile = pkgs.writeText "claude-settings-defaults.json" settingsJson;
+
+  # User-scope MCP servers. Claude Code reads these from ~/.claude.json
+  # (settings.json ignores an mcpServers key). Merged by an activation script
+  # so servers added at runtime with `claude mcp add` are preserved.
+  mcpServersDefaultsFile = pkgs.writeText "claude-mcp-servers-defaults.json" (builtins.toJSON {
+    # Real-time NixOS knowledge: 130K+ packages, 23K+ options, home-manager,
+    # nix-darwin, flakes, NixHub history, wiki.nixos.org. ~1K tokens overhead.
+    "nixos" = {
+      command = "uvx";
+      args = [ "mcp-nixos" ];
+      alwaysLoad = true;
+    };
+    "cloudflare-ai-gateway" = {
+      command = "pnpm";
+      args = [ "dlx" "mcp-remote" "https://ai-gateway.mcp.cloudflare.com/mcp" ];
+    };
+    "playwright" = {
+      command = "pnpm";
+      args = [ "dlx" "@playwright/mcp" ];
+      alwaysLoad = true;
+    };
+    "chrome-devtools" = {
+      command = "pnpm";
+      args = [ "dlx" "chrome-devtools-mcp" ];
+    };
+    "terraform" = {
+      command = "docker";
+      args = [
+        "run"
+        "-i"
+        "--rm"
+        "-e"
+        "TFE_TOKEN=\${TFE_TOKEN}"
+        "hashicorp/terraform-mcp-server:latest"
+      ];
+    };
+    "github" = {
+      type = "http";
+      url = "https://api.githubcopilot.com/mcp/";
+      headers = {
+        Authorization = "Bearer \${GITHUB_PERSONAL_ACCESS_TOKEN}";
+      };
+      alwaysLoad = true;
+    };
+  });
 
   # Agent: Code Reviewer (general purpose)
   codeReviewerAgent = ''
@@ -1201,14 +1222,33 @@ in
     $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$HOME/.claude"
     TMP=$(${pkgs.coreutils}/bin/mktemp "$HOME/.claude/settings.json.tmp.XXXXXX")
 
+    # del(): keys we used to set that are not in the settings schema (or are
+    # deprecated aliases); drop them from the live file so they don't linger.
     if [ -f "$SETTINGS" ] && ${pkgs.jq}/bin/jq -e . "$SETTINGS" >/dev/null 2>&1; then
-      ${pkgs.jq}/bin/jq -s '.[1] * .[0]' "$DEFAULTS" "$SETTINGS" > "$TMP"
+      ${pkgs.jq}/bin/jq -s '.[1] * .[0] | del(.mcpServers, .installedMarketplaces, .switchModelsOnFlag, .voiceEnabled)' "$DEFAULTS" "$SETTINGS" > "$TMP"
     else
       ${pkgs.coreutils}/bin/cp "$DEFAULTS" "$TMP"
     fi
 
     $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$TMP" "$SETTINGS"
     $DRY_RUN_CMD ${pkgs.coreutils}/bin/chmod 600 "$SETTINGS"
+  '';
+
+  # Merge declarative user-scope MCP servers into ~/.claude.json, where Claude
+  # Code actually reads them. Nix-owned server names win; servers added at
+  # runtime with `claude mcp add` (e.g. headroom) are preserved.
+  home.activation.writeClaudeUserMcpServers = config.lib.dag.entryAfter [ "writeBoundary" ] ''
+    ROOT_STATE="$HOME/.claude.json"
+    MCP_DEFAULTS="${mcpServersDefaultsFile}"
+
+    TMP=$(${pkgs.coreutils}/bin/mktemp "$HOME/.claude.json.tmp.XXXXXX")
+    if [ -f "$ROOT_STATE" ] && ${pkgs.jq}/bin/jq -e . "$ROOT_STATE" >/dev/null 2>&1; then
+      ${pkgs.jq}/bin/jq --slurpfile defs "$MCP_DEFAULTS" \
+        '.mcpServers = ((.mcpServers // {}) * $defs[0])' "$ROOT_STATE" > "$TMP"
+    else
+      ${pkgs.jq}/bin/jq -n --slurpfile defs "$MCP_DEFAULTS" '{ mcpServers: $defs[0] }' > "$TMP"
+    fi
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$TMP" "$ROOT_STATE"
   '';
 
   # Deploy custom agents

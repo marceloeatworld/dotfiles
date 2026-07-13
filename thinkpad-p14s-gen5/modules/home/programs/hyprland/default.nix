@@ -30,6 +30,12 @@ in
 
   _module.args.hyprScripts = hyprScripts;
 
+  # The Hyprland HM module enables xdg.portal, which points
+  # NIX_XDG_DESKTOP_PORTAL_DIR at the user profile and shadows the system
+  # portal dir. Without gtk here, FileChooser/OpenURI/Settings backends
+  # vanish (Electron apps log "No such interface FileChooser").
+  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
