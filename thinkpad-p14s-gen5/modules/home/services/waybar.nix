@@ -88,6 +88,19 @@ let
     ${pkgs.procps}/bin/pkill -RTMIN+9 waybar 2>/dev/null || true
   '';
 
+  # Voice dictation indicator - reads the state file written by voice-terminal
+  voiceStatus = pkgs.writeShellScript "waybar-voice-status" ''
+    state=""
+    f="''${XDG_RUNTIME_DIR:-/tmp}/voice-terminal/state"
+    [ -f "$f" ] && state="$(cat "$f")"
+    case "$state" in
+      recording)    printf '{"text":"󰍬 REC","tooltip":"Voice: recording - press the Copilot key to stop","class":"recording"}\n' ;;
+      transcribing) printf '{"text":"󰍬 ...","tooltip":"Voice: transcribing...","class":"transcribing"}\n' ;;
+      downloading)  printf '{"text":"󰍬 DL","tooltip":"Voice: downloading Whisper model (874 MB, one time)","class":"downloading"}\n' ;;
+      *)            printf '{"text":""}\n' ;;
+    esac
+  '';
+
   themeNight = pkgs.writeShellScript "waybar-theme-night" ''
     ${pkgs.systemd}/bin/systemctl --user start runtime-theme-night.service
     ${pkgs.procps}/bin/pkill -RTMIN+9 waybar 2>/dev/null || true
@@ -310,6 +323,7 @@ in
         modules-center = [ "mpris" ];  # Just the media title — double-click MPRIS to dock YouTube
         modules-right = [
           # ── Alerts ──
+          "custom/voice"              # Voice dictation state (recording/transcribing)
           "privacy"                   # Mic/screenshare indicator
           "systemd-failed-units"      # Built-in, event-driven
           "custom/sep"
@@ -689,6 +703,16 @@ in
           signal = 5;
           on-scroll-up = "pkill -RTMIN+5 waybar";    # Force cache check
           on-scroll-down = "pkill -RTMIN+5 waybar";  # Force cache check
+        };
+
+        "custom/voice" = {
+          exec = "${voiceStatus}";
+          return-type = "json";
+          interval = "once";  # Event-driven: voice-terminal sends RTMIN+6 on state change
+          format = "{}";
+          tooltip = true;
+          signal = 6;
+          on-click = "voice-terminal";  # Toggle recording from the bar
         };
 
         "custom/theme" = {
@@ -1120,6 +1144,17 @@ in
         background: alpha(@red, 0.08);
         border-bottom-color: @red;
       }
+
+      /* ── Voice dictation ── */
+      #custom-voice.recording {
+        color: @red;
+        font-weight: bold;
+        background: alpha(@red, 0.10);
+        border-bottom-color: @red;
+        animation: blink 1s steps(6) infinite alternate;
+      }
+      #custom-voice.transcribing { color: @cyan; }
+      #custom-voice.downloading { color: @blue; }
 
       /* ── VPN ── */
       #custom-vpn.connected {

@@ -129,6 +129,10 @@
     hl.bind(mod .. " + Y",         hl.dsp.exec_cmd("${hyprScripts.youtube-toggle}/bin/youtube-toggle")) -- YouTube PiP
     hl.bind(mod .. " + U",         hl.dsp.exec_cmd("${hyprScripts.twitch-toggle}/bin/twitch-toggle")) -- Twitch PiP
     hl.bind(mod .. " + O",         hl.dsp.exec_cmd("${hyprScripts.quick-notes}/bin/quick-notes"))
+    -- Copilot key (between AltGr and right Ctrl): firmware sends the chord Super+Shift+F23.
+    -- Bind by keycode: Hyprland matches unmodified keysyms only, so the level-2
+    -- XF86Assistant keysym never fires; keycode 201 (KEY_F23) does (verified 2026-07-14).
+    hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("${hyprScripts.voice-terminal}/bin/voice-terminal")) -- Voice dictation (toggle record)
     hl.bind(mod .. " + X",         hl.dsp.exec_cmd("lab-menu")) -- Malware analysis lab (FLARE-VM + REMnux)
     hl.bind(mod .. " + I",         hl.dsp.exec_cmd("hyprsysteminfo"))
     hl.bind(mod .. " + SHIFT + I", hl.dsp.exec_cmd("${hyprScripts.sysinfo-panel}/bin/sysinfo-panel"))

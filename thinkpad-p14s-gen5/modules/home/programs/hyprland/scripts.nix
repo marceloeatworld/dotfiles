@@ -680,6 +680,7 @@ let
     <tt>Super+U</tt>         Twitch PiP (show/hide)
     <tt>Super+V</tt>         Clipboard history
     <tt>Super+O</tt>         Quick notes
+    <tt>Copilot key</tt>     Voice dictation (toggle)
     <tt>Super+I</tt>         System info (hyprland)
     <tt>Super+Shift+I</tt>   System info (detailed)
     <tt>Super+Z</tt>         Freeze/unfreeze window
@@ -1154,6 +1155,144 @@ let
   rustdesk-current-workspace = pkgs.writeShellScriptBin "rustdesk-current-workspace" ''
     exec ${hypr-current-workspace-launch}/bin/hypr-current-workspace-launch '^(rustdesk|RustDesk)$' rustdesk "$@"
   '';
+
+  # Voice dictation into the focused window - one toggle key.
+  # First press starts recording, second press stops and transcribes locally
+  # with whisper.cpp (multilingual, auto language), then routes the result:
+  #   "send"        -> press Enter
+  #   "delete"      -> clear the input line (Ctrl+U)
+  #   anything else -> typed into the focused window
+  voice-terminal = pkgs.writeShellScriptBin "voice-terminal" ''
+    WTYPE="${pkgs.wtype}/bin/wtype"
+    NOTIFY="${pkgs.libnotify}/bin/notify-send"
+    WHISPER="${pkgs.whisper-cpp.override { vulkanSupport = true; }}/bin/whisper-cli"
+    PW_RECORD="${pkgs.pipewire}/bin/pw-record"
+    CURL="${pkgs.curl}/bin/curl"
+
+    RUN_DIR="''${XDG_RUNTIME_DIR:-/tmp}/voice-terminal"
+    mkdir -p "$RUN_DIR"
+    PIDFILE="$RUN_DIR/record.pid"
+    WAV="$RUN_DIR/record.wav"
+    STATEFILE="$RUN_DIR/state"
+
+    # Waybar indicator (custom/voice, signal 6)
+    set_state() {
+      echo "$1" > "$STATEFILE"
+      ${pkgs.procps}/bin/pkill -RTMIN+6 waybar 2>/dev/null || true
+    }
+    clear_state() {
+      rm -f "$STATEFILE"
+      ${pkgs.procps}/bin/pkill -RTMIN+6 waybar 2>/dev/null || true
+    }
+
+    MODEL_DIR="$HOME/.local/share/voice-terminal"
+    # large-v3-turbo: same multilingual auto-detection as full v3, smaller and
+    # faster to load (the per-dictation cost). Earlier French misdetections were
+    # traced to a dead headset mic feeding noise, not to the model.
+    MODEL="$MODEL_DIR/ggml-large-v3-turbo-q8_0.bin"
+    MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin"
+
+    if [ -f "$PIDFILE" ]; then
+      # ── Stop recording and transcribe ──
+      PID=$(cat "$PIDFILE")
+      rm -f "$PIDFILE"
+      if kill -INT "$PID" 2>/dev/null; then
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+          kill -0 "$PID" 2>/dev/null || break
+          sleep 0.1
+        done
+        kill -KILL "$PID" 2>/dev/null || true
+      fi
+
+      # < 0.5s of 16kHz s16 mono audio = nothing was said
+      if [ ! -s "$WAV" ] || [ "$(stat -c %s "$WAV")" -lt 16000 ]; then
+        rm -f "$WAV"
+        clear_state
+        $NOTIFY -t 2000 "Voice Terminal" "Nothing recorded" -i "audio-input-microphone"
+        exit 0
+      fi
+
+      set_state "transcribing"
+      $NOTIFY -t 1500 "Voice Terminal" "Transcribing..." -i "audio-input-microphone"
+      # Language forced via voice-lang (fr/en/...), defaults to auto-detection
+      VLANG=$(cat "$MODEL_DIR/lang" 2>/dev/null || echo auto)
+      TEXT=$($WHISPER -m "$MODEL" -f "$WAV" -l "$VLANG" -t 8 -np -nt 2>/dev/null \
+        | tr '\n' ' ' | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+      rm -f "$WAV"
+      clear_state
+      if [ -z "$TEXT" ]; then
+        $NOTIFY -t 2000 "Voice Terminal" "Heard nothing" -i "audio-input-microphone"
+        exit 0
+      fi
+
+      # Command matching is case/punctuation-insensitive
+      LOWER=$(printf '%s' "$TEXT" | tr '[:upper:]' '[:lower:]' | tr -d '.,!?')
+      set -- $LOWER
+      CMD="''${1:-}"
+
+      case "$CMD" in
+        send)
+          $WTYPE -k Return
+          ;;
+        delete)
+          $WTYPE -M ctrl -k u -m ctrl
+          ;;
+        *)
+          printf '%s' "$TEXT" | $WTYPE -
+          ;;
+      esac
+    else
+      # ── Start recording ──
+      if [ ! -f "$MODEL" ]; then
+        mkdir -p "$MODEL_DIR"
+        # flock: repeated key presses must not start concurrent downloads
+        exec 9> "$MODEL_DIR/.download.lock"
+        if ! ${pkgs.util-linux}/bin/flock -n 9; then
+          $NOTIFY -t 3000 "Voice Terminal" "Model download already in progress..." -i "audio-input-microphone"
+          exit 0
+        fi
+        set_state "downloading"
+        $NOTIFY -t 5000 "Voice Terminal" "Downloading Whisper model (874 MB, one time)..." -i "audio-input-microphone"
+        if $CURL -fsSL -o "$MODEL.part" "$MODEL_URL"; then
+          mv "$MODEL.part" "$MODEL"
+          clear_state
+          $NOTIFY -t 4000 "Voice Terminal" "Model ready - press the Copilot key to dictate" -i "audio-input-microphone"
+        else
+          rm -f "$MODEL.part"
+          clear_state
+          $NOTIFY -u critical "Voice Terminal" "Model download failed" -i "audio-input-microphone"
+        fi
+        exit 0
+      fi
+      rm -f "$WAV"
+      $PW_RECORD --rate 16000 --channels 1 --format s16 "$WAV" &
+      echo $! > "$PIDFILE"
+      set_state "recording"
+      $NOTIFY -t 2000 "Voice Terminal" "Recording... press the Copilot key to stop" -i "audio-input-microphone"
+    fi
+  '';
+
+  # Switch the voice-terminal transcription language: voice-lang fr|en|auto|<code>
+  # No argument prints the current setting. "auto" (default) detects per clip.
+  voice-lang = pkgs.writeShellScriptBin "voice-lang" ''
+    NOTIFY="${pkgs.libnotify}/bin/notify-send"
+    LANG_FILE="$HOME/.local/share/voice-terminal/lang"
+
+    if [ -z "''${1:-}" ]; then
+      echo "voice-lang: $(cat "$LANG_FILE" 2>/dev/null || echo auto)"
+      exit 0
+    fi
+
+    case "$1" in
+      auto|[a-z][a-z]) ;;
+      *) echo "usage: voice-lang [auto|fr|en|<iso code>]"; exit 1 ;;
+    esac
+
+    mkdir -p "$(dirname "$LANG_FILE")"
+    echo "$1" > "$LANG_FILE"
+    $NOTIFY -t 2000 "Voice Terminal" "Language: $1" -i "audio-input-microphone"
+    echo "voice-lang: $1"
+  '';
 in
 {
   inherit
@@ -1186,5 +1325,7 @@ in
     joplin-current-workspace
     bruno-current-workspace
     rustdesk-current-workspace
+    voice-terminal
+    voice-lang
     ;
 }

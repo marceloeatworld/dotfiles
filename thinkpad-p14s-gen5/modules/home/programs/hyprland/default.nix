@@ -113,5 +113,7 @@ in
     hyprScripts.quick-notes
     hyprScripts.sysinfo-panel
     hyprScripts.hypr-keys
+    hyprScripts.voice-terminal
+    hyprScripts.voice-lang
   ];
 }

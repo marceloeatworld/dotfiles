@@ -169,6 +169,17 @@ nix flake update
 | `SUPER + O` | Quick notes (floating nvim) |
 | `SUPER + X` | Malware analysis lab menu |
 | `SUPER + F1` | Keybindings cheatsheet |
+| `Copilot key` | Voice dictation (whisper.cpp, press to record, press again to transcribe) |
+
+**Copilot key trick** (between AltGr and right Ctrl): the firmware sends a hardwired
+chord (`LShift down, LMeta down, F23 down/up`, then releases), not a single scancode.
+Hyprland matches binds against unmodified level-1 keysyms only, so keysym binds
+(`XF86Assistant`, `XF86TouchpadOff`) never fire. The only binding that works is by
+keycode: `hl.bind("SUPER + SHIFT + code:201", ...)` (keycode 201 = KEY_F23), see
+`modules/home/programs/hyprland/keybinds.nix`. Verified 2026-07-14 with temporary
+`hyprctl eval` marker binds. To test a bind candidate without risk, register it at
+runtime (`hyprctl eval 'hl.bind(...)'` touching a marker file), press the physical
+key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 
 **Window Management**
 | Key | Action |
