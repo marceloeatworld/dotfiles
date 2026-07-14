@@ -96,7 +96,7 @@ let
     case "$state" in
       recording)    printf '{"text":"󰍬 REC","tooltip":"Voice: recording - press the Copilot key to stop","class":"recording"}\n' ;;
       transcribing) printf '{"text":"󰍬 ...","tooltip":"Voice: transcribing...","class":"transcribing"}\n' ;;
-      downloading)  printf '{"text":"󰍬 DL","tooltip":"Voice: downloading Whisper model (874 MB, one time)","class":"downloading"}\n' ;;
+      downloading)  printf '{"text":"󰍬 DL","tooltip":"Voice: downloading Whisper model (574 MB, one time)","class":"downloading"}\n' ;;
       *)            printf '{"text":""}\n' ;;
     esac
   '';

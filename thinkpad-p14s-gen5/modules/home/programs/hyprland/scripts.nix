@@ -1187,10 +1187,11 @@ let
 
     MODEL_DIR="$HOME/.local/share/voice-terminal"
     # large-v3-turbo: same multilingual auto-detection as full v3, smaller and
-    # faster to load (the per-dictation cost). Earlier French misdetections were
-    # traced to a dead headset mic feeding noise, not to the model.
-    MODEL="$MODEL_DIR/ggml-large-v3-turbo-q8_0.bin"
-    MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin"
+    # faster to load (the per-dictation cost). q5_0 measured identical to q8_0
+    # on French dictation. Earlier French misdetections were traced to a dead
+    # headset mic feeding noise, not to the model.
+    MODEL="$MODEL_DIR/ggml-large-v3-turbo-q5_0.bin"
+    MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"
 
     if [ -f "$PIDFILE" ]; then
       # ── Stop recording and transcribe ──
@@ -1252,7 +1253,7 @@ let
           exit 0
         fi
         set_state "downloading"
-        $NOTIFY -t 5000 "Voice Terminal" "Downloading Whisper model (874 MB, one time)..." -i "audio-input-microphone"
+        $NOTIFY -t 5000 "Voice Terminal" "Downloading Whisper model (574 MB, one time)..." -i "audio-input-microphone"
         if $CURL -fsSL -o "$MODEL.part" "$MODEL_URL"; then
           mv "$MODEL.part" "$MODEL"
           clear_state
