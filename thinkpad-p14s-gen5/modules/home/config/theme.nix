@@ -60,7 +60,7 @@ let
         magenta = "#d4a0ff";         # Brighter violet - ~8.5:1 (more vivid)
         # UI - all pass WCAG AA (≥3:1 for non-text UI)
         border = "#5c6288";          # Steel blue border - ~3.2:1
-        selection = "#4a5890";       # Deep selection blue - ~3.0:1 (distinct from border)
+        selection = "#5464a4";       # Vivid selection blue - 3.0:1 vs bg, fg on it 4.5:1
         comment = "#6b72a0";         # Slate indigo comment - ~4.5:1 (bluer, distinct from foregroundDim)
         # Terminal bright variants
         brightBlack = "#505680";     # ~3.0:1 (distinct from comment)
@@ -110,7 +110,7 @@ let
         magenta = "#c488c4";         # ~6.1:1 - cleaner purple (less muddy, more character)
         # UI - all pass WCAG AA (≥3:1 for UI)
         border = "#686870";          # ~3.02:1
-        selection = "#456b98";       # ~3.02:1
+        selection = "#31649f";       # ~2.7:1 vs bg, fg on it ~4.1:1 (saturated for visibility)
         comment = "#888888";         # ~4.7:1 - neutral gray
         # Terminal bright variants
         brightBlack = "#6c6c6c";     # ~3.17:1
@@ -158,7 +158,7 @@ let
         # UI - border ≥3:1; selection must stay clearly distinct from both
         # background and backgroundAlt.
         border = "#948a7a";          # ~3.04:1
-        selection = "#d8c8ae";       # ~1.5:1 vs bg, fg on it ~8.4:1
+        selection = "#be8a36";       # ~2.7:1 vs bg, fg on it 4.5:1 (amber highlighter)
         comment = "#6b6678";
         # Terminal variants: keep ANSI white readable on light backgrounds.
         brightBlack = "#57606a";
@@ -204,7 +204,7 @@ let
         magenta = "#c8a0c8";         # Nordic violet - ~5.8:1 (more purple, less muddy pink)
         # UI - Frost, all pass WCAG AA (≥3:1 for UI)
         border = "#5e6e88";          # Polar frost border - ~3.0:1
-        selection = "#4e6080";       # Deep frost selection - ~3.0:1 (clearly distinct from border)
+        selection = "#5a75a4";       # Frost selection blue - ~2.7:1 vs bg, fg on it ~4.0:1
         comment = "#8090a8";         # Frost-blue comment - ~4.6:1 (blue-tinted, not gray)
         # Terminal bright variants
         brightBlack = "#5c6878";     # Visible bright black - ~3.0:1 (was invisible)
@@ -250,7 +250,7 @@ let
         magenta = "#c49af7";         # Brighter violet - ~7.8:1 (more vivid, distinct from blue)
         # UI - all pass WCAG AA (≥3:1 for UI)
         border = "#4e5580";          # Night sky border - ~3.0:1
-        selection = "#3d5098";       # Deep neon selection - ~3.0:1 (bluer, distinct from border)
+        selection = "#3c57bb";       # Neon selection blue - ~2.7:1 vs bg, fg on it ~4.0:1
         comment = "#6070a0";         # Indigo comment - ~4.5:1 (more blue, matches theme)
         # Terminal bright variants
         brightBlack = "#505878";     # Visible dark - ~3.0:1 (was too dark)
@@ -296,7 +296,7 @@ let
         magenta = "#cba6f7";         # Mocha Mauve - ~8.07:1
         # UI - all pass WCAG AA (≥3:1 for UI)
         border = "#585b70";          # Mocha Surface2 - ~3.02:1
-        selection = "#5b4f82";       # Warm purple selection - ~3.0:1 (mauve-tinted, distinct from border)
+        selection = "#6958a1";       # Mauve selection - ~2.7:1 vs bg, fg on it ~4.1:1
         comment = "#7c8098";         # Warm slate comment - ~4.6:1 (slight purple warmth)
         # Terminal bright variants
         brightBlack = "#4e5068";     # Distinct from border (~3.0:1)
@@ -342,7 +342,7 @@ let
         magenta = "#7a5a78";         # Plum ink - ~4.9:1
         # UI - visible on paper without heavy dark chrome
         border = "#8a7a62";          # Sepia rule - ~3.5:1
-        selection = "#d5c29e";       # Warm parchment highlight
+        selection = "#b28228";       # Antique gold highlight - ~2.9:1 vs bg, fg on it 4.6:1
         comment = "#6f6356";         # Marginalia gray-brown - ~4.9:1
         # Terminal bright variants tuned for a light terminal background
         brightBlack = "#8a7a62";     # Visible muted ink

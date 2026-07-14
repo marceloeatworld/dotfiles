@@ -13,8 +13,8 @@
 
 let
   # AUTO-UPDATED BY update-llama-cpp SCRIPT
-  version = "9964";
-  hash = "sha256-pvo+q7gDL9mmrdWBdQKfcREMiwDIF5wBhfbRa6LUxdA=";
+  version = "10001";
+  hash = "sha256-920L5tTVzl2HCRHIsFCJNeE744lcneerl0sIxmWb1t8=";
   # webui npm deps hash for this pinned version (decouples from nixpkgs)
   npmDepsHash = "sha256-6s9skw1wzEfm9QKktTqea3J+oudQAsS6O2VnZEMXAdw=";
 in
