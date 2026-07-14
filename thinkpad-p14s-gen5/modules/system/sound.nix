@@ -11,8 +11,8 @@ let
     ${pkgs.coreutils}/bin/sleep 2
 
     # Set Ryzen HD Audio as default (not HDMI)
-    # Match sink ID by looking for "Ryzen" in the sink name (resilient to WirePlumber output format changes)
-    SINK=$(${pkgs.wireplumber}/bin/wpctl status 2>/dev/null | ${pkgs.gnugrep}/bin/grep -i "ryzen.*speaker" | ${pkgs.gnugrep}/bin/grep -oP '^\s*\K\d+' | ${pkgs.coreutils}/bin/head -1)
+    # Sink section only; the sink is named Headphones or Speaker depending on the active split profile
+    SINK=$(${pkgs.wireplumber}/bin/wpctl status 2>/dev/null | ${pkgs.gnused}/bin/sed -n '/Sinks:/,/Sources:/p' | ${pkgs.gnugrep}/bin/grep -i "ryzen" | ${pkgs.gnugrep}/bin/grep -oP '\d+' | ${pkgs.coreutils}/bin/head -1)
     if [ -n "''${SINK:-}" ]; then
       ${pkgs.wireplumber}/bin/wpctl set-default "$SINK"
       echo "Default sink set to Ryzen HD Audio (ID: $SINK)"

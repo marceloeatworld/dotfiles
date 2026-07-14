@@ -1,11 +1,21 @@
 #!/usr/bin/env bash
 # Cycle audio output: Auto (jack detection) → Forced Speakers → HDMI → Auto
 #
-# Auto:     Auto-Mute handles routing (jack → headphones, no jack → speakers)
-# Speakers: Forces speakers even when jack is plugged (disables Auto-Mute)
+# Auto:     card profile follows the jack (jack → headphones, no jack → speakers)
+# Speakers: forces the Speaker profile even when jack is plugged
 # HDMI:     Routes audio to HDMI/DisplayPort (projector, TV, ARC)
+#
+# PipeWire 1.6 split profiles: on the ALC257, Headphones and Speaker are two
+# separate card profiles, not two ports of one sink. Forcing speakers therefore
+# means switching the card profile, plus disabling the hardware Auto-Mute that
+# would otherwise keep the speaker amp muted while the jack is plugged.
 
 STATE_FILE="$HOME/.config/audio-output-state"
+
+# Analog card (ALC257) and its split profiles
+PCARD="alsa_card.pci-0000_c4_00.6"
+SPEAKER_PROFILE="HiFi (Mic1, Mic2, Speaker)"
+HEADPHONES_PROFILE="HiFi (Headphones, Mic1, Mic2)"
 
 # Auto-detect the analog sound card (find card with Speaker control)
 CARD=""
@@ -68,12 +78,28 @@ deactivate_hdmi() {
   [ -n "$ANALOG_SINK" ] && wpctl set-default "$ANALOG_SINK"
 }
 
+# Helper: set the analog profile to what auto mode would choose right now.
+# WirePlumber persists manually-set profiles, so after a forced override the
+# profile must be explicitly restored to match the jack.
+sync_profile_to_jack() {
+  local hp_line
+  hp_line=$(pactl list cards | grep -F '[Out] Headphones:')
+  if [ -n "$hp_line" ] && ! echo "$hp_line" | grep -q 'not available'; then
+    pactl set-card-profile "$PCARD" "$HEADPHONES_PROFILE"
+  else
+    pactl set-card-profile "$PCARD" "$SPEAKER_PROFILE"
+  fi
+}
+
 case "$CURRENT_STATE" in
   auto)
     # Switch to forced speakers mode
     echo "speakers" > "$STATE_FILE"
 
     deactivate_hdmi
+
+    # Activate the Speaker profile so the speaker sink exists even with the jack plugged
+    pactl set-card-profile "$PCARD" "$SPEAKER_PROFILE"
 
     if [ -n "$CARD" ]; then
       amixer -c "$CARD" sset "Auto-Mute Mode" "Disabled" 2>/dev/null
@@ -93,6 +119,7 @@ case "$CURRENT_STATE" in
       amixer -c "$CARD" sset "Speaker" unmute 2>/dev/null
       amixer -c "$CARD" sset "Master" unmute 2>/dev/null
     fi
+    sync_profile_to_jack
 
     if activate_hdmi; then
       echo "hdmi" > "$STATE_FILE"
@@ -116,6 +143,7 @@ case "$CURRENT_STATE" in
       amixer -c "$CARD" sset "Speaker" unmute 2>/dev/null
       amixer -c "$CARD" sset "Master" unmute 2>/dev/null
     fi
+    sync_profile_to_jack
 
     notify-send "Audio Output" "󰋋 Auto: Speaker/Headphone (${VOL_PCT}%)" -i audio-speakers
     ;;
@@ -130,6 +158,7 @@ case "$CURRENT_STATE" in
       amixer -c "$CARD" sset "Speaker" unmute 2>/dev/null
       amixer -c "$CARD" sset "Master" unmute 2>/dev/null
     fi
+    sync_profile_to_jack
 
     notify-send "Audio Output" "󰋋 Auto: Speaker/Headphone (${VOL_PCT}%)" -i audio-speakers
     ;;
