@@ -10,7 +10,7 @@ openrouter_api_key: ""
 github_personal_access_token: ""
 tfe_token: ""
 #ENC[AES256_GCM,data:50nxV8u9O6amt10=,iv:IbYzkrbOUBAM8ogWN7DSeJdYnRr4uwxkNe3w3nC0V9s=,tag:RH4cspXmHEcdRCuAnvfplQ==,type:comment]
-fal_key: ""
+fal_key: ENC[AES256_GCM,data:sXVTrKTm33tgEtb9I57MintmQPFtYTj8HOBkFoSGjRf1beZYqET1tXWhKBZcgX0i5J81hk+Nocrt8YKYLTcnElpDdv4W,iv:BNoBl7ugSZ39LeHstYq+B/AWpsGKC8xhlQ6+D7tPTFc=,tag:2sbGXDxDqJMnhvRTt3HtIw==,type:str]
 hf_token: ""
 sops:
     age:
@@ -23,7 +23,7 @@ sops:
             MO7eUp49WSkMEwGPuRCy1UKXDRgjF9sIyVr1pvwVFF21NoDn1w6zZA==
             -----END AGE ENCRYPTED FILE-----
           recipient: age1kzrccuz8l293g7tuhxhkrlkecsphnqvdmp8uan2e8c38j3h0e47ssl2add
-    lastmodified: "2026-06-30T15:55:09Z"
-    mac: ENC[AES256_GCM,data:hb87r1lfYj5JwRST3wzyrYJf3bATBhQC7JEunB1LG8JnneNdhN6zTF+x8wX0kei7C5Py+ctD0ewuL4626tB3F18xcyncADxGzqz7BrXAtBZyIjOlfnUlputlITLlWBvG5sO/qM2OCALnOi3c2GO/ys+3xXE3Xt8Y1ACkd0qaSxc=,iv:nQ3iOGtR2PrlEEcq7D0rEesUe290fFo4d6YSM85TPKI=,tag:62jdQVtIZkxO0/W5Ywo4Qw==,type:str]
+    lastmodified: "2026-07-20T12:10:47Z"
+    mac: ENC[AES256_GCM,data:DJhV0S5duPXzp/zDuv2+wCunqFvzfLVnldb3R88LCfxzKnPmdQridVWwW3NdeZyq5xhPxAUXtn75eOPAv5cIJZjMp5+GL9fVtszVGSintQPzTxr/PKzqXAGRwenD4GkUZw/DJdGSnN2VS5kl8Tp82dObt5QvrBO21E9+WrrI758=,iv:vNxAo/Q3yTomBoDzfRh3E+y3Uvsqnuf4bDj8htYXLQE=,tag:Vwvr9ByYR8JIB0OgyaooaQ==,type:str]
     unencrypted_suffix: _unencrypted
-    version: 3.13.1
+    version: 3.13.2

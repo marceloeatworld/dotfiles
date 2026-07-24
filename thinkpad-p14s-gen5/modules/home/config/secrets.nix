@@ -115,13 +115,13 @@ in
     };
   };
 
-  # Keep decrypted secrets out of every interactive shell by default.
-  # Use load-ai-secrets for the current shell, or with-ai-secrets for one command.
+  # Secrets are auto-loaded in every interactive shell (see call at the end).
+  # unload-ai-secrets removes them; with-ai-secrets scopes them to one command.
   programs.zsh.initContent = ''
     __load_sops_secret() {
       local env_name="$1"
       local secret_path="$2"
-      [ -r "$secret_path" ] && export "$env_name=$(< "$secret_path")"
+      [ -s "$secret_path" ] && export "$env_name=$(< "$secret_path")"
     }
 
     load-ai-secrets() {
@@ -153,5 +153,7 @@ in
         exec "$@"
       )
     }
+
+    load-ai-secrets
   '';
 }

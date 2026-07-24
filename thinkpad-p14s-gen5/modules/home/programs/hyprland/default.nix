@@ -1,4 +1,4 @@
-# Hyprland - locked nixpkgs package, no plugins (stability).
+# Hyprland - pinned official flake, no plugins (stability).
 #
 # Config follows the official Lua recommendation:
 #   https://wiki.hypr.land/Configuring/Start/
@@ -7,10 +7,10 @@
 # Each sibling lives in ~/.config/hypr/ (written by the matching Nix module
 # via xdg.configFile) and runs in its own Lua scope, so a syntax error in one
 # file does not abort loading of the others.
-{ pkgs, inputs, ... }:
+{ pkgs, inputs, hyprlandPackages, ... }:
 
 let
-  hyprlandPkg = pkgs.hyprland;
+  hyprlandPkg = hyprlandPackages.hyprland;
 
   hyprScripts = import ./scripts.nix {
     inherit pkgs hyprlandPkg;
@@ -78,7 +78,6 @@ in
     wl-freeze # Freeze window (SIGSTOP) — pause/resume resource-heavy apps
     grimblast # Screenshots (region, window, output) — official hyprwm/contrib
     hyprprop # Window property inspector (click to inspect, like xprop)
-    hyprmagnifier # Screen magnifier/zoom (accessibility)
     hyprmon # TUI monitor configuration (native, replaces nwg-displays)
     # ── Wayland tools ──
     cliphist # Clipboard history manager

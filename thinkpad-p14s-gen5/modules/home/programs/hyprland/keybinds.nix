@@ -133,6 +133,9 @@
     -- Bind by keycode: Hyprland matches unmodified keysyms only, so the level-2
     -- XF86Assistant keysym never fires; keycode 201 (KEY_F23) does (verified 2026-07-14).
     hl.bind("SUPER + SHIFT + code:201", hl.dsp.exec_cmd("${hyprScripts.voice-terminal}/bin/voice-terminal")) -- Voice dictation (toggle record)
+    -- Right Super key alone (e.g. external Cherry Stream keyboard) also toggles voice dictation.
+    -- Modifier-only binds need the target mod in the mask plus the release flag.
+    hl.bind("SUPER + SUPER_R", hl.dsp.exec_cmd("${hyprScripts.voice-terminal}/bin/voice-terminal"), { release = true })
     hl.bind(mod .. " + X",         hl.dsp.exec_cmd("lab-menu")) -- Malware analysis lab (FLARE-VM + REMnux)
     hl.bind(mod .. " + I",         hl.dsp.exec_cmd("hyprsysteminfo"))
     hl.bind(mod .. " + SHIFT + I", hl.dsp.exec_cmd("${hyprScripts.sysinfo-panel}/bin/sysinfo-panel"))

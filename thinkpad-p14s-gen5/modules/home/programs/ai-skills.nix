@@ -191,7 +191,7 @@ let
           $DRY_RUN_CMD cp "$src/$file" "$dest/$name/$file"
         done
 
-        for dir in references scripts assets templates examples; do
+        for dir in references scripts assets templates examples forge grimoire; do
           [ -d "$src/$dir" ] || continue
           $DRY_RUN_CMD cp -r "$src/$dir" "$dest/$name/$dir"
         done
@@ -721,6 +721,10 @@ in
     # ── NixOS (purpose-built skill repo) ──
     _git_sync "${cache}/nixos" "https://github.com/marceloeatworld/nixos-ai-skill"
     _copy_skill_repo "${cache}/nixos" "nixos"
+
+    # ── img2threejs (image to procedural Three.js; scripts in forge/, docs in grimoire/) ──
+    _git_sync "${cache}/img2threejs" "https://github.com/hoainho/img2threejs"
+    _copy_skill_repo "${cache}/img2threejs" "img2threejs"
 
     # ── Caveman (terse response and review/commit skills) ──
     _git_sync "${cache}/caveman" "https://github.com/JuliusBrussee/caveman"

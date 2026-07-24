@@ -12,10 +12,10 @@
 { lib, fetchurl, stdenv, ... }:
 
 let
-  version = "0.144.3";
-  sha256 = "sha256-ubSujptWHGTfvF71LGMZy6dQrIfePH9ViFAmIx466ok=";
+  version = "0.145.0";
+  sha256 = "sha256-v68Tybo08q12TkqRbEnPcXeuujKc8PcZ4iJ1ZvyNZio=";
   # Separate release asset since 0.143.0; codex spawns this helper at runtime
-  codeModeHostSha256 = "sha256-NnURRlACC9c5RoTgXWYNYEPucZkI+DnooLv2sTu/ZP4=";
+  codeModeHostSha256 = "sha256-rCMXeVbDDMH58YDCe9gPW7W3Z4DbVfuU3MImRNSQhS4=";
 in
 stdenv.mkDerivation {
   pname = "codex";

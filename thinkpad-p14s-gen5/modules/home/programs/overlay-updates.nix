@@ -236,6 +236,7 @@
           "$HOME/.cache/ai-skills/fal-ai|https://github.com/fal-ai-community/skills"
           "$HOME/.cache/ai-skills/vercel|https://github.com/vercel-labs/agent-skills"
           "$HOME/.cache/ai-skills/design-md|https://github.com/google-labs-code/design.md"
+          "$HOME/.cache/ai-skills/img2threejs|https://github.com/hoainho/img2threejs"
         )
 
         for entry in "''${skill_repos[@]}"; do
@@ -349,14 +350,37 @@
           # authenticate to GitHub and dodge the 60 req/h anonymous rate limit.
           __load_github_personal_access_token
           __set_nix_github_access_token
-          # Hyprland, its portal, and Mesa all come from nixpkgs, so updating
-          # nixpkgs advances the complete graphics stack together.
+          # Hyprland stays out of the daily update so it is not re-downloaded
+          # every day. Use update-hyprland for the Hyprland stack.
           # nixpkgs-llama stays pinned (update-llama owns it).
           nix flake update disko home-manager jail-nix \
             nix-index-database nixos-hardware nixpkgs sops-nix &&
             { update-overlays || true; } &&
             nix flake check --no-build &&
             nix build --no-link --impure .#nixosConfigurations.pop.config.system.build.toplevel &&
+            nh os switch .
+        )
+        update_status=$?
+
+        clean-dotfiles-result-links
+        return $update_status
+      }
+
+      # Update the Hyprland stack and rebuild. Kept out of the daily "update"
+      # so Hyprland is not re-downloaded/rebuilt every day; run deliberately
+      # (e.g. weekly). Binaries come from hyprland.cachix.org as long as the
+      # flake keeps the packages unmodified.
+      function update-hyprland() {
+        local flake update_status
+        flake=$(dotfiles-flake-dir) || return 1
+
+        clean-dotfiles-result-links
+
+        (
+          cd "$flake" || exit 1
+          __load_github_personal_access_token
+          __set_nix_github_access_token
+          nix flake update hyprland hyprshutdown &&
             nh os switch .
         )
         update_status=$?

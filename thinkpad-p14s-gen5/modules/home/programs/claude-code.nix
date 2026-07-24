@@ -547,7 +547,8 @@ let
         "Read(//etc/shadow)"
         "Read(//etc/sudoers)"
         "Read(//etc/ssh/**)"
-        # ── Edit/Write restrictions ──
+        # ── Edit restrictions (Edit rules cover all file-editing tools,
+        # including Write; Write(path) rules are not matched) ──
         "Edit(~/.env)"
         "Edit(~/.env.local)"
         "Edit(~/.ssh/**)"
@@ -561,17 +562,6 @@ let
         "Edit(~/.netrc)"
         "Edit(~/.npmrc)"
         "Edit(//etc/**)"
-        "Write(~/.env)"
-        "Write(~/.env.local)"
-        "Write(~/.ssh/**)"
-        "Write(~/.aws/**)"
-        "Write(~/.gnupg/**)"
-        "Write(~/.password-store/**)"
-        "Write(~/.kube/**)"
-        "Write(~/.docker/**)"
-        "Write(~/.config/containers/**)"
-        "Write(~/.config/sops/**)"
-        "Write(//etc/**)"
       ];
       defaultMode = "default";
       # Keep Claude on the normal permission model. The bwrap sandbox is not

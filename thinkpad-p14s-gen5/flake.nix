@@ -24,6 +24,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Hyprland official flake, pinned to master. Restored 2026-07-17: the
+    # nixpkgs 0.55.4 release has a use-after-free on monitor replug (stale
+    # window->monitor pointer, crash in damageMonitor/isMirror on click),
+    # hit daily via the HDMI switch. Master carries the hardening fixes
+    # (#14893, #15035, #15242, #15234); no release ships them yet.
+    hyprland.url = "github:hyprwm/Hyprland";
+
     # No plugin flake input: hyprfocus (removed 2026-07-08, repeated SEGV in
     # libhyprfocus.so) and hyprexpo (SEGV on AMD iGPU) both crashed sessions.
     # Plugins stay out until upstream stabilizes.
@@ -52,7 +59,7 @@
 
   };
 
-  outputs = { self, nixpkgs, nixpkgs-llama, home-manager, nixos-hardware, disko, hyprshutdown, sops-nix, ... } @ inputs:
+  outputs = { self, nixpkgs, nixpkgs-llama, home-manager, nixos-hardware, disko, hyprland, hyprshutdown, sops-nix, ... } @ inputs:
     let
       system = "x86_64-linux";
 
@@ -107,28 +114,18 @@
             cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DUPDATE_DEPS=OFF" ];
           });
         })
-        # Temporary: AppArmor 5.0.0 patches rc.apparmor.functions and makes
-        # apparmor-utils reference it, but the parser install omits the file.
-        # This breaks apparmor.service reload during every NixOS activation.
-        # Restore the prepared helper and rebuild its two consumers against it.
+        # Temporary: nixpkgs moved rc.apparmor.functions from apparmor-parser
+        # to the new apparmor-init package, but apparmor-utils still points
+        # aa-remove-unknown at the parser path, so apparmor.service reload
+        # fails during activation. Redirect it to apparmor-init's copy.
+        # Drop once apparmor-utils is fixed upstream.
         (final: prev: {
-          apparmor-parser = prev.apparmor-parser.overrideAttrs (old: {
-            # The cached upstream parser has already passed its exhaustive
-            # suite; this override changes installation only.
-            doCheck = false;
-            postInstall = (old.postInstall or "") + ''
-              if [[ ! -e "$out/lib/apparmor/rc.apparmor.functions" ]]; then
-                install -Dm0444 ../init/rc.apparmor.functions \
-                  "$out/lib/apparmor/rc.apparmor.functions"
-              fi
-            '';
+          apparmor-utils = prev.apparmor-utils.overrideAttrs (old: {
+            postPatch = builtins.replaceStrings
+              [ "${final.apparmor-parser}/lib/apparmor/rc.apparmor.functions" ]
+              [ "${final.apparmor-init}/lib/apparmor/rc.apparmor.functions" ]
+              old.postPatch;
           });
-          apparmor-teardown = prev.apparmor-teardown.override {
-            inherit (final) apparmor-parser;
-          };
-          apparmor-utils = prev.apparmor-utils.override {
-            inherit (final) apparmor-parser apparmor-teardown;
-          };
         })
         # VS Code Latest - Always use the latest version from Microsoft
         # Update: overlays/vscode-latest.nix (version + sha256)
@@ -207,8 +204,26 @@
         })
       ];
 
+      # Common special args passed to all modules
+      hyprlandPackages =
+        let
+          # Unmodified packages from the Hyprland flake. Any override here
+          # changes the derivation hash and defeats hyprland.cachix.org,
+          # forcing Hyprland + portal + guiutils to recompile from source on
+          # every flake update. Keep these stock so binaries substitute.
+          hyprland = inputs.hyprland.packages.${system}.hyprland;
+
+          xdg-desktop-portal-hyprland = inputs.hyprland.packages.${system}.xdg-desktop-portal-hyprland;
+        in
+        {
+          inherit
+            hyprland
+            xdg-desktop-portal-hyprland
+            ;
+        };
+
       specialArgs = {
-        inherit inputs;
+        inherit inputs hyprlandPackages;
       };
     in
     {
@@ -221,6 +236,9 @@
           {
             nixpkgs.hostPlatform = system;
             nixpkgs.config.allowUnfree = true;
+            # vesktop still depends on the EOL electron_40 line; drop this
+            # once nixpkgs moves vesktop to a supported electron.
+            nixpkgs.config.permittedInsecurePackages = [ "electron-40.10.5" ];
             nixpkgs.overlays = sharedOverlays;
           }
 

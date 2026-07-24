@@ -1,22 +1,27 @@
 # Hyprland Wayland Compositor Configuration
-{ pkgs, ... }:
+{ pkgs, inputs, hyprlandPackages, ... }:
 
+let
+  hyprlandPkgs = inputs.hyprland.inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+in
 {
-  # Hyprland, its portal, and Mesa all come from the same locked nixpkgs
-  # snapshot, keeping their ABI and graphics stack aligned.
+  # Keep Mesa in sync with the Hyprland flake input. Hyprland's Nix docs call
+  # out Mesa mismatches as a common cause of FPS drops/stutter with games.
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
+    package = hyprlandPkgs.mesa;
+    package32 = hyprlandPkgs.pkgsi686Linux.mesa;
   };
 
   # Enable Hyprland with UWSM.
-  # Use the stable Hyprland package from the locked nixpkgs snapshot.
+  # Hyprland itself is pinned in flake.nix for session stability.
   programs.hyprland = {
     enable = true;
     withUWSM = true; # Universal Wayland Session Manager - recommended
     xwayland.enable = true;
-    package = pkgs.hyprland;
-    portalPackage = pkgs.xdg-desktop-portal-hyprland;
+    package = hyprlandPackages.hyprland; # Official flake, unmodified for cachix hits
+    portalPackage = hyprlandPackages.xdg-desktop-portal-hyprland;
   };
 
   # XDG Desktop Portal configuration
