@@ -128,7 +128,7 @@ nix flake update
 ## Features
 
 - **Hyprland 0.55+** - Tiling Wayland compositor via UWSM, Lua config, official Hyprland flake, and Mesa matched to the Hyprland input
-- **Hypr Ecosystem** - hyprlock, hypridle, hyprpaper, hyprlauncher, hyprsunset, hyprpicker, hyprpwcenter, hyprsysteminfo, hyprfreeze, grimblast, hyprshutdown, hyprprop, hyprmagnifier, hyprmon, hyprcursor
+- **Hypr Ecosystem** - hyprlock, hypridle, hyprpaper, hyprlauncher, hyprsunset, hyprpicker, hyprpwcenter, hyprsysteminfo, hyprfreeze, grimblast, hyprshutdown, hyprprop, hyprmon, hyprcursor
 - **7 Themes** - Switch with `theme-selector` (Ristretto, Neobrutalist, Neobrutalist Light, Nord, Tokyo Night, Catppuccin, Paper)
 - **Ferdium** - Multi-account messaging workspace for WhatsApp and WhatsApp Business in one window
 - **Firejail** - 17 wrapped apps plus dedicated Brave/Brave-HW profiles (Wireshark, KeePassXC, LibreOffice, Ghidra, etc.)
