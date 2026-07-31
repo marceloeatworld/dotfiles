@@ -189,6 +189,7 @@ in
     # NOTE: Brave browser is installed via Firejail wrappedBinaries in security.nix
     ./programs/webapps.nix # Web apps (WhatsApp, Spotify, etc.)
     ./programs/geforce-now.nix # GeForce NOW cloud gaming (dedicated Chromium, unjailed)
+    ./programs/autenticacao-gov.nix # Cartao de Cidadao auth (jailed plugin + cc-gov Brave window)
     ./programs/desktop-apps.nix # Desktop entries for apps
     ./programs/media.nix # Media tools (swayimg, PhotoGIMP, Flowblade)
     ./programs/yt-dlp.nix # YouTube downloader

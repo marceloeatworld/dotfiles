@@ -924,18 +924,14 @@ let
       # The reload re-executes the Lua config and resets every runtime
       # hl.config override; re-apply the active perf mode from its state file.
       ${hyprScripts.perf-mode-auto}/bin/perf-mode-auto >/dev/null 2>&1 || true
-      # A USR2 sent before waybar installs its reload handler kills it
-      # (Type=simple: active at exec, handler comes later). If waybar became
-      # active <10s ago, wait 2s so the handler exists; do not skip the
-      # signal, a freshly started bar may have read the old theme symlinks
-      # an instant before the relink above.
-      waybar_enter_us=$(${pkgs.systemd}/bin/systemctl --user show waybar.service --property ActiveEnterTimestampMonotonic --value 2>/dev/null || echo 0)
-      read -r uptime_s _ < /proc/uptime
-      if [ "''${waybar_enter_us:-0}" -gt 0 ] 2>/dev/null && \
-         [ $(( ''${uptime_s%.*} * 1000000 - waybar_enter_us )) -lt 10000000 ]; then
-        ${pkgs.coreutils}/bin/sleep 2
-      fi
-      ${pkgs.procps}/bin/pkill -SIGUSR2 waybar >/dev/null 2>&1 || true
+      # The pinned waybar (0.15.0-unstable-98b2a56) crashes with SIGTRAP on a
+      # large fraction of SIGUSR2 reloads ("unhandled exception ... in signal
+      # handler" while re-reading config), at any process age (journal shows
+      # dumps at 4 s and at 1d8h uptime, each right after a theme-sync USR2).
+      # A restart is deterministic, costs the same as the crash-then-restart
+      # path, and also covers a freshly started bar that read the old theme
+      # symlinks an instant before the relink above.
+      ${pkgs.systemd}/bin/systemctl --user try-restart waybar.service >/dev/null 2>&1 || true
       ${pkgs.mako}/bin/makoctl reload >/dev/null 2>&1 || \
         ${pkgs.systemd}/bin/systemctl --user restart mako.service >/dev/null 2>&1 || true
       ${pkgs.systemd}/bin/systemctl --user restart swayosd.service >/dev/null 2>&1 || true

@@ -74,9 +74,7 @@ let
         cursorSize = 24;
         kvantumTheme = "KvYaru";
         nvimColorscheme = "monokai-pro";
-        nvimFlavor = "ristretto";
-        wallpaper = "underwater-dust-02.png";
-        preferDark = true;
+        nvimFlavor = "ristretto";        preferDark = true;
       };
     };
 
@@ -124,9 +122,7 @@ let
         cursorSize = 24;
         kvantumTheme = "KvDark";
         nvimColorscheme = "monokai-pro";
-        nvimFlavor = "classic";
-        wallpaper = "current-underwater.jpeg";
-        preferDark = true;
+        nvimFlavor = "classic";        preferDark = true;
       };
     };
 
@@ -172,9 +168,7 @@ let
         cursorSize = 24;
         kvantumTheme = "KvBeige";
         nvimColorscheme = "catppuccin";
-        nvimFlavor = "latte";
-        wallpaper = "current-underwater.jpeg";
-        preferDark = false;
+        nvimFlavor = "latte";        preferDark = false;
       };
     };
 
@@ -218,9 +212,7 @@ let
         cursorSize = 24;
         kvantumTheme = "KvArcDark";
         nvimColorscheme = "nord";
-        nvimFlavor = "";
-        wallpaper = "underwater-dust-03.png";
-        preferDark = true;
+        nvimFlavor = "";        preferDark = true;
       };
     };
 
@@ -264,9 +256,7 @@ let
         cursorSize = 24;
         kvantumTheme = "KvArcDark";
         nvimColorscheme = "tokyonight";
-        nvimFlavor = "night";
-        wallpaper = "underwater-dust-01.png";
-        preferDark = true;
+        nvimFlavor = "night";        preferDark = true;
       };
     };
 
@@ -310,9 +300,7 @@ let
         cursorSize = 24;
         kvantumTheme = "KvMojaveMixed";
         nvimColorscheme = "catppuccin";
-        nvimFlavor = "mocha";
-        wallpaper = "underwater-dust-02.png";
-        preferDark = true;
+        nvimFlavor = "mocha";        preferDark = true;
       };
     };
 
@@ -361,9 +349,7 @@ let
         cursorSize = 24;
         kvantumTheme = "KvBeige";
         nvimColorscheme = "catppuccin";
-        nvimFlavor = "latte";
-        wallpaper = "underwater-dust-03.png";
-        preferDark = false;
+        nvimFlavor = "latte";        preferDark = false;
       };
     };
   };
@@ -372,14 +358,13 @@ let
   # The theme-selector script updates this file and rebuilds
   themeFile = ./current-theme;
 
-  # Try to read theme file, fallback to "ristretto"
+  # Read theme file if present, fallback to "ristretto". A pathExists guard is
+  # required: tryEval does not catch readFile I/O errors, so a missing file
+  # would abort evaluation instead of falling back.
   currentTheme =
-    let
-      fileContent = builtins.tryEval (builtins.readFile themeFile);
-    in
-      if fileContent.success
-      then builtins.replaceStrings ["\n" " " "\t"] ["" "" ""] fileContent.value
-      else "ristretto";
+    if builtins.pathExists themeFile
+    then builtins.replaceStrings ["\n" " " "\t"] ["" "" ""] (builtins.readFile themeFile)
+    else "ristretto";
 
   # Validate theme exists, fallback to ristretto
   validTheme = if builtins.hasAttr currentTheme themes then currentTheme else "ristretto";
@@ -601,11 +586,6 @@ in
         type = lib.types.str;
         default = selectedTheme.appearance.nvimFlavor;
         description = "Neovim colorscheme flavor/style";
-      };
-      wallpaper = lib.mkOption {
-        type = lib.types.str;
-        default = selectedTheme.appearance.wallpaper;
-        description = "Wallpaper filename under assets/wallpapers";
       };
       preferDark = lib.mkOption {
         type = lib.types.bool;

@@ -62,7 +62,7 @@ rp=$(pango_escape "$(grep 'version = ' overlays/runpodctl-latest.nix 2>/dev/null
 pn=$(pango_escape "$(grep 'version = ' overlays/pnpm-latest.nix 2>/dev/null | head -1 | sed 's/.*"\(.*\)".*/\1/')")
 ll=$(pango_escape "$(grep 'version = ' overlays/llama-cpp-latest.nix 2>/dev/null | head -1 | sed 's/.*"\(.*\)".*/\1/')")
 # Waybar tracks master; show the running binary's base version instead of the git rev
-wb=$(pango_escape "$(waybar --version 2>/dev/null | head -1 | sed 's/^Waybar v\{0,1\}//; s/[ -].*//')")
+wb=$(pango_escape "$(waybar --version 2>/dev/null | grep -m1 '^Waybar' | sed 's/^Waybar v\{0,1\}//; s/[ -].*//')")
 [ -n "$wb" ] || wb="0.15.0"
 
 ov="<span color='$C_DIM'>Claude Code</span>  <span color='$C_FG'>$cc</span>"

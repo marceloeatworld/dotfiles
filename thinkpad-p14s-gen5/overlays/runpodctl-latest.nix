@@ -11,8 +11,8 @@
 { lib, fetchurl, stdenv, installShellFiles, ... }:
 
 let
-  version = "2.7.2";
-  sha256 = "sha256-rPXEmjGStSLpXK6SU5+m/Ni+jEiAKqJsfz8uyYCrT1w=";
+  version = "2.8.0";
+  sha256 = "sha256-MxhOubTt41JFgtgd+4SgpjJALOwR/rl9muRuJtMJDEw=";
 in
 stdenv.mkDerivation {
   pname = "runpodctl";

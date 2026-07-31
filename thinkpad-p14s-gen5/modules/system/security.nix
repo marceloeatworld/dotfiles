@@ -1,26 +1,27 @@
 # Security configuration
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
-  # Brave with Wayland flags (used by Firejail wrapper below)
-  brave-wayland = pkgs.brave.override {
-    commandLineArgs = [
-      "--ozone-platform=wayland"
-      "--ozone-platform-hint=wayland"
-      # The nixpkgs brave wrapper prepends its own --enable/--disable-features;
-      # Chromium only honors the LAST occurrence, so these two lists are the
-      # effective ones and must carry everything we want.
-      # AcceleratedVideoDecodeLinuxGL = VA-API hardware video decode (radeonsi,
-      # LIBVA_DRIVER_NAME in amd-optimizations.nix). Without it YouTube/Twitch
-      # PiP decodes VP9/AV1 on the CPU; the 780M decodes both in hardware.
-      "--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,WaylandWindowDecorations,AcceleratedVideoDecodeLinuxGL"
-      "--disable-features=WaylandWpColorManagerV1,AsyncDns,OutdatedBuildDetector,UseChromeOSDirectVideoDecoder"
-      "--dns-over-https-mode=off"
-      "--enable-gpu-rasterization"
-      "--enable-zero-copy"
-      "--enable-smooth-scrolling"
-    ];
-  };
+  # Brave Wayland/VA-API flags, passed as CLI args by the wrappers below.
+  # pkgs.brave lost .override { commandLineArgs = ...; } when nixpkgs
+  # restructured it into make-brave.nix (the exported attr is a plain
+  # derivation now), so the flags moved from an override to wrapper argv.
+  # The nixpkgs brave wrapper prepends its own --enable/--disable-features;
+  # Chromium only honors the LAST occurrence, so these two lists are the
+  # effective ones and must carry everything we want.
+  # AcceleratedVideoDecodeLinuxGL = VA-API hardware video decode (radeonsi,
+  # LIBVA_DRIVER_NAME in amd-optimizations.nix). Without it YouTube/Twitch
+  # PiP decodes VP9/AV1 on the CPU; the 780M decodes both in hardware.
+  brave-flags = lib.escapeShellArgs [
+    "--ozone-platform=wayland"
+    "--ozone-platform-hint=wayland"
+    "--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,WaylandWindowDecorations,AcceleratedVideoDecodeLinuxGL"
+    "--disable-features=WaylandWpColorManagerV1,AsyncDns,OutdatedBuildDetector,UseChromeOSDirectVideoDecoder"
+    "--dns-over-https-mode=off"
+    "--enable-gpu-rasterization"
+    "--enable-zero-copy"
+    "--enable-smooth-scrolling"
+  ];
 
   # Daily Brave profile: keep the normal Firejail browser profile strict.
   # Hardware/WebUSB access is split into the explicit brave-hw command below.
@@ -48,7 +49,7 @@ let
   #   - absent  → firejail --name=brave --profile=... <brave> "$@"
   brave-wrapper = pkgs.writeShellScriptBin "brave" ''
     FIREJAIL=/run/wrappers/bin/firejail
-    BRAVE=${brave-wayland}/bin/brave
+    BRAVE=${pkgs.brave}/bin/brave
     SYSTEMD_RUN="${pkgs.systemd}/bin/systemd-run --user --quiet --scope --slice=app-brave.slice"
 
     # Check if a sandbox named "brave" is already running.
@@ -56,15 +57,15 @@ let
     if "$FIREJAIL" --list 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q ":brave:"; then
       # Join existing sandbox - no profile/whitelist args allowed here
       # systemd-run --scope places this invocation under app-brave.slice (memory-capped)
-      exec $SYSTEMD_RUN "$FIREJAIL" --join=brave "$BRAVE" "$@"
+      exec $SYSTEMD_RUN "$FIREJAIL" --join=brave "$BRAVE" ${brave-flags} "$@"
     else
       # Create new sandbox with full profile (whitelists, ignores, etc.)
-      exec $SYSTEMD_RUN "$FIREJAIL" --name=brave --profile=${brave-profile} "$BRAVE" "$@"
+      exec $SYSTEMD_RUN "$FIREJAIL" --name=brave --profile=${brave-profile} "$BRAVE" ${brave-flags} "$@"
     fi
   '';
 
   brave-hw-wrapper = pkgs.writeShellScriptBin "brave-hw" ''
-    BRAVE=${brave-wayland}/bin/brave
+    BRAVE=${pkgs.brave}/bin/brave
     SYSTEMD_RUN="${pkgs.systemd}/bin/systemd-run --user --quiet --scope --slice=app-brave.slice"
     USER_DATA_DIR="$HOME/.config/brave-hw"
 
@@ -80,6 +81,7 @@ let
       --no-first-run \
       --no-default-browser-check \
       --new-window \
+      ${brave-flags} \
       "$@"
   '';
 in
@@ -180,7 +182,7 @@ in
 
       # GIMP - sandboxed (external images)
       gimp = {
-        executable = "${pkgs.gimp3}/bin/gimp-3.0";
+        executable = "${pkgs.gimp3}/bin/gimp";
         profile = "${pkgs.firejail}/etc/firejail/gimp.profile";
         extraArgs = [
           "--whitelist=~/Pictures"

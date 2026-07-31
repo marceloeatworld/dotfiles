@@ -28,7 +28,6 @@ USAGE MODES:
    → Use for initial setup or if you suspect cache corruption
 """
 
-import os
 import sys
 import json
 import time
@@ -160,64 +159,6 @@ def derive_address_at_index(zpub: str, index: int, chain: int = 0) -> Optional[s
     except Exception as e:
         print(f"Error deriving address at chain {chain}, index {index}: {e}", file=sys.stderr)
         return None
-
-
-def derive_addresses_from_cache_or_scan(zpub: str, cached_data: Optional[Dict] = None) -> Tuple[List[str], int]:
-    """
-    Derive addresses intelligently: use cache if available, or scan with gap limit
-
-    Args:
-        zpub: Extended public key
-        cached_data: Previously cached address data
-
-    Returns:
-        Tuple of (list of all addresses to check, max_index)
-    """
-    if cached_data and cached_data.get('addresses'):
-        # Use cached addresses
-        addresses = cached_data['addresses']
-        max_index = cached_data.get('max_index', len(addresses) - 1)
-        print(f"  Using {len(addresses)} cached addresses (up to index {max_index})", file=sys.stderr)
-
-        # Also derive a few more addresses after max_index to detect new usage
-        scan_extra = 5  # Check 5 more addresses after cached max
-        for i in range(max_index + 1, max_index + scan_extra + 1):
-            if i >= MAX_ADDRESS_INDEX:
-                break
-            addr = derive_address_at_index(zpub, i)
-            if addr:
-                addresses.append(addr)
-                max_index = i
-
-        print(f"  Extended scan to index {max_index}", file=sys.stderr)
-        return addresses, max_index
-    else:
-        # No cache: full gap limit scan
-        print(f"  No cache found, performing full gap limit scan...", file=sys.stderr)
-        addresses = []
-        consecutive_empty = 0
-        current_index = 0
-
-        while current_index < MAX_ADDRESS_INDEX and consecutive_empty < GAP_LIMIT:
-            # Derive address
-            address = derive_address_at_index(zpub, current_index)
-            if not address:
-                break
-            addresses.append(address)
-
-            # Check balance
-            balance = get_address_balance(address)
-            if balance > 0:
-                consecutive_empty = 0
-                print(f"    Found balance at index {current_index}: {balance:.8f} BTC", file=sys.stderr)
-            else:
-                consecutive_empty += 1
-
-            current_index += 1
-
-        max_index = current_index - 1
-        print(f"  Scanned up to index {max_index} ({len(addresses)} addresses total)", file=sys.stderr)
-        return addresses, max_index
 
 
 def get_address_balance(address: str) -> float:

@@ -20,6 +20,7 @@ in
   home.packages = [
     nvim-launcher
     pkgs.rustdesk-flutter           # RustDesk (stable version - unstable has FFmpeg build issues)
+    pkgs.thunderbird                # Mail reader (Google Takeout mbox archives)
     pkgs.popsicle                   # USB flasher (System76) - lightweight, GTK native
     pkgs.woeusb-ng                   # Windows USB flasher - for Windows ISO
     pkgs.ntfs3g                      # NTFS support - required by woeusb-ng

@@ -28,6 +28,7 @@ let
     INSTALL="${pkgs.coreutils}/bin/install"
     RM="${pkgs.coreutils}/bin/rm"
     PRINTF="${pkgs.coreutils}/bin/printf"
+    BASENAME="${pkgs.coreutils}/bin/basename"
 
     user_home="''${HOME:-${config.users.users.marcelo.home}}"
     if [ -n "''${SUDO_USER:-}" ] && [ "''${SUDO_USER:-}" != "root" ]; then
@@ -76,6 +77,13 @@ let
     fi
 
     ${pkgs.coreutils}/bin/chmod 0644 "$SERVICE_DIR/active-mode"
+
+    # The service units use DynamicUser, so $SERVICE_DIR resolves through
+    # /var/lib/private (0700 root) and unprivileged tools cannot read the
+    # staged state. Mirror "MODE MODEL" in a user-readable marker next to
+    # the models for llm-switch/llm-local.
+    "$PRINTF" '%s %s\n' "$MODE" "$("$BASENAME" "$REAL_MODEL")" > "$MODELS_DIR/.llm-active"
+    ${pkgs.coreutils}/bin/chmod 0644 "$MODELS_DIR/.llm-active"
   '';
 
   # Models are copied from ~/models into /var/lib/llama-cpp by llm-model-activate.
@@ -84,9 +92,6 @@ let
     set -euo pipefail
 
     MODELS_DIR="$HOME/models"
-    SERVICE_DIR="/var/lib/llama-cpp"
-    ACTIVE_MODEL="$SERVICE_DIR/active-model.gguf"
-    MODE_FILE="$SERVICE_DIR/active-mode"
 
     MODEL_QWYTHOS="Qwythos-9B-Claude-Mythos-5-1M-Q4_K_M.gguf"
     MODEL_GEMMA_CODER="gemma4-coding-Q4_K_M.gguf"
@@ -96,20 +101,20 @@ let
     MMPROJ_OCR="mmproj-GLM-OCR-Q8_0.gguf"
     USER_ACTIVE_MODEL="$MODELS_DIR/active-model.gguf"
 
-    STAT="${pkgs.coreutils}/bin/stat"
     DU="${pkgs.coreutils}/bin/du"
     CUT="${pkgs.coreutils}/bin/cut"
     LN="${pkgs.coreutils}/bin/ln"
     READLINK="${pkgs.coreutils}/bin/readlink"
     BASENAME="${pkgs.coreutils}/bin/basename"
-    CAT="${pkgs.coreutils}/bin/cat"
     SYSTEMCTL="/run/current-system/sw/bin/systemctl"
     ACTIVATE="${llmModelActivate}/bin/llm-model-activate"
 
-    current_size=0
-    if [ -f "$ACTIVE_MODEL" ] || [ -L "$ACTIVE_MODEL" ]; then
-      current_size=$("$STAT" -c%s "$ACTIVE_MODEL" 2>/dev/null || echo 0)
-    fi
+    # Staged state marker written by llm-model-activate. /var/lib/llama-cpp
+    # itself is unreadable here: the units use DynamicUser, so it resolves
+    # through /var/lib/private (0700 root).
+    active_mode=text
+    current_name=""
+    read -r active_mode current_name < "$MODELS_DIR/.llm-active" 2>/dev/null || true
 
     stop_services() {
       sudo "$SYSTEMCTL" stop llama-cpp 2>/dev/null || true
@@ -165,20 +170,15 @@ let
           echo "User active model: none. Run: llm-switch qwythos"
         fi
 
-        if [ "$current_size" = "0" ]; then
-          echo "Service staged model: unreadable or not staged"
+        if [ -n "$current_name" ]; then
+          echo "Service staged model: $current_name"
+          echo "Mode: $active_mode"
         else
-          active_name="unknown"
-          for m in "$MODEL_QWYTHOS" "$MODEL_GEMMA_CODER" "$MODEL_QWOPUS" "$MODEL_DEVSTRAL" "$MODEL_OCR"; do
-            ms=$("$STAT" -c%s "$MODELS_DIR/$m" 2>/dev/null || echo -1)
-            [ "$ms" = "$current_size" ] && active_name="$m"
-          done
-          echo "Service staged model: $active_name"
-          echo "Mode: $("$CAT" "$MODE_FILE" 2>/dev/null || echo unknown)"
+          echo "Service staged model: not staged"
         fi
         echo "Services:"
-        echo "  text: $("$SYSTEMCTL" is-active llama-cpp 2>/dev/null || echo unknown)"
-        echo "  ocr:  $("$SYSTEMCTL" is-active llama-cpp-ocr 2>/dev/null || echo unknown)"
+        echo "  text: $("$SYSTEMCTL" is-active llama-cpp 2>/dev/null)"
+        echo "  ocr:  $("$SYSTEMCTL" is-active llama-cpp-ocr 2>/dev/null)"
         echo ""
         echo "Available models:"
         [ -f "$MODELS_DIR/$MODEL_QWYTHOS" ] && echo "  qwythos   -> $MODEL_QWYTHOS (5.63GB)" || echo "  qwythos   -> $MODEL_QWYTHOS (not downloaded)"
@@ -217,9 +217,7 @@ let
       exit 1
     fi
 
-    target_size=$("$STAT" -c%s "$MODELS_DIR/$target" 2>/dev/null || echo -1)
-    active_mode=$("$CAT" "$MODE_FILE" 2>/dev/null || echo text)
-    if [ "$current_size" = "$target_size" ] && [ "$current_size" != "0" ] && [ "$active_mode" = "$mode" ]; then
+    if [ "$current_name" = "$target" ] && [ "$active_mode" = "$mode" ]; then
       echo "Already using $label"
       exit 0
     fi
@@ -246,8 +244,9 @@ let
     set -euo pipefail
 
     SYSTEMCTL="/run/current-system/sw/bin/systemctl"
-    MODE_FILE="/var/lib/llama-cpp/active-mode"
-    MODE=$(${pkgs.coreutils}/bin/cat "$MODE_FILE" 2>/dev/null || echo text)
+    # Mode comes from the user-readable marker written by llm-model-activate;
+    # /var/lib/llama-cpp/active-mode is behind /var/lib/private (0700 root).
+    MODE=$(${pkgs.coreutils}/bin/cut -d' ' -f1 "$HOME/models/.llm-active" 2>/dev/null || echo text)
 
     if [ "$MODE" = "ocr" ]; then
       SERVICE="llama-cpp-ocr"

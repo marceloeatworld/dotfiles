@@ -27,9 +27,10 @@ let
   pluginBin = pkgs.writeShellScriptBin "plugin-autenticacao-gov" ''
     # Java Swing renders a gray window on non-reparenting WMs without this.
     export _JAVA_AWT_WM_NONREPARENTING=1
-    exec ${pkgs.jre}/bin/java \
-      -Dsun.security.smartcardio.library=${lib.getLib pkgs.pcsclite}/lib/libpcsclite.so.1 \
-      -jar ${pluginJar}
+    # The jar extracts a bundled JNI lib (libPCSC4Java) to /tmp that links
+    # against libpcsclite.so.1, so pcsclite must be on the linker path.
+    export LD_LIBRARY_PATH=${lib.getLib pkgs.pcsclite}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+    exec ${pkgs.jre}/bin/java -jar ${pluginJar}
   '';
 
   jailedPlugin = jail "jailed-autenticacao-gov" pluginBin (
@@ -46,6 +47,9 @@ let
   # Same pattern as brave-hw (modules/system/security.nix): dedicated
   # user-data-dir outside the shared firejail "brave" sandbox, so the gov
   # session never joins or contaminates the daily browsing profile.
+  # Usage: cc-gov [url]. Opens a regular window (address bar included) because
+  # card logins start on third-party sites (e.g. digitarq.arquivos.pt) that
+  # redirect to autenticacao.gov.pt, where the page talks to the plugin.
   ccGov = pkgs.writeShellScriptBin "cc-gov" ''
     ${jailedPlugin}/bin/jailed-autenticacao-gov &
     PLUGIN_PID=$!
@@ -58,7 +62,7 @@ let
       --new-window \
       --ozone-platform=wayland \
       --ozone-platform-hint=wayland \
-      --app="https://autenticacao.gov.pt/"
+      "''${1:-https://autenticacao.gov.pt/}"
   '';
 in
 {

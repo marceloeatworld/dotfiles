@@ -104,29 +104,6 @@
             })
           ];
         })
-        # Temporary: vulkan-validation-layers 1.4.350 is broken in the locked
-        # nixos-unstable snapshot (update_deps.py tries to `git clone` inside
-        # the sandbox, nixpkgs issue #540288). Pulled via hardware.graphics
-        # extraPackages (amd-optimizations.nix). Mirrors the upstream fix
-        # merged 2026-07-10 (PR #540072). Drop once the locked nixpkgs has it.
-        (final: prev: {
-          vulkan-validation-layers = prev.vulkan-validation-layers.overrideAttrs (old: {
-            cmakeFlags = (old.cmakeFlags or [ ]) ++ [ "-DUPDATE_DEPS=OFF" ];
-          });
-        })
-        # Temporary: nixpkgs moved rc.apparmor.functions from apparmor-parser
-        # to the new apparmor-init package, but apparmor-utils still points
-        # aa-remove-unknown at the parser path, so apparmor.service reload
-        # fails during activation. Redirect it to apparmor-init's copy.
-        # Drop once apparmor-utils is fixed upstream.
-        (final: prev: {
-          apparmor-utils = prev.apparmor-utils.overrideAttrs (old: {
-            postPatch = builtins.replaceStrings
-              [ "${final.apparmor-parser}/lib/apparmor/rc.apparmor.functions" ]
-              [ "${final.apparmor-init}/lib/apparmor/rc.apparmor.functions" ]
-              old.postPatch;
-          });
-        })
         # VS Code Latest - Always use the latest version from Microsoft
         # Update: overlays/vscode-latest.nix (version + sha256)
         (final: prev:
@@ -175,6 +152,12 @@
           codex = import ./overlays/codex-latest.nix {
             inherit (prev) lib fetchurl stdenv;
           };
+        })
+        # Yaru theme - removed from nixpkgs 2026-07-22 (gtk-engine-murrine
+        # cleanup); restored locally without the GTK 2 murrine propagation.
+        # All 6 config.theme presets use Yaru GTK/icon theme names.
+        (final: prev: {
+          yaru-theme = prev.callPackage ./overlays/yaru-theme.nix { };
         })
         # RunPod CLI - Prebuilt static Go binary, manages GPU workloads
         # Update: overlays/runpodctl-latest.nix (version + sha256)
@@ -236,9 +219,6 @@
           {
             nixpkgs.hostPlatform = system;
             nixpkgs.config.allowUnfree = true;
-            # vesktop still depends on the EOL electron_40 line; drop this
-            # once nixpkgs moves vesktop to a supported electron.
-            nixpkgs.config.permittedInsecurePackages = [ "electron-40.10.5" ];
             nixpkgs.overlays = sharedOverlays;
           }
 
@@ -272,6 +252,7 @@
           ./modules/system/vpn-dns-switch.nix # Automatic DNS switching for VPN (Quad9 ↔ Proton)
           ./modules/system/ddcutil.nix # DDC/CI support for external monitor brightness control
           ./modules/system/sunxi-fel.nix # Allwinner FEL USB access for sunxi-fel without sudo (PocketCHIP)
+          ./modules/system/smartcard.nix # pcscd for the Cartao de Cidadao USB reader
           ./modules/system/security-tools.nix # Security audit tools (nmap, wireshark, aircrack-ng, hashcat)
           ./modules/system/nh.nix # NH - Modern Nix Helper
           ./modules/system/performance.nix # Zram, ananicy-cpp, earlyoom, gamemode

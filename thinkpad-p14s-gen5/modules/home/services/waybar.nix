@@ -540,7 +540,6 @@ in
         };
 
         "network" = {
-          interface-types = [ "wifi" "ethernet" "bridge" "wireguard" "tun" ];
           format = "󰌘 {ifname}";
           format-wifi = "{icon} {signalStrength}%";
           format-ethernet = "󰈀 {bandwidthDownBytes}";

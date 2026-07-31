@@ -44,8 +44,7 @@ _:
     -- default and only deliberate transparency needs a rule here.
     --------------------------------------------------------------------------
     -- File managers - slight transparency
-    hl.window_rule({ match = { class = "^(thunar)$" }, opacity = "0.95" })
-    hl.window_rule({ match = { class = "^(nemo)$" },   opacity = "0.95" })
+    hl.window_rule({ match = { class = "^(nemo)$" }, opacity = "0.95" })
 
     hl.window_rule({ match = { class = "^(brave-browser|Brave-browser)$" }, tile = true })
 
@@ -72,7 +71,7 @@ _:
     hl.window_rule({ match = { title = "^(Picture-in-Picture)$" }, float = true })
     hl.window_rule({ match = { title = "^(Picture-in-Picture)$" }, pin = true })
     hl.window_rule({ match = { title = "^(Picture-in-Picture)$" }, size = {640, 360} })
-    hl.window_rule({ match = { title = "^(Picture-in-Picture)$" }, move = {"100%-650", "100%-370"} })
+    hl.window_rule({ match = { title = "^(Picture-in-Picture)$" }, move = {"monitor_w-650", "monitor_h-370"} })
     hl.window_rule({ match = { title = "^(Picture-in-Picture)$" }, opacity = "1.0 override" })
 
     --------------------------------------------------------------------------
@@ -97,7 +96,7 @@ _:
     hl.window_rule({ match = twClass, float = true })
     hl.window_rule({ match = twClass, pin = true })
     hl.window_rule({ match = twClass, size = {960, 540} })
-    hl.window_rule({ match = twClass, move = {10, "100%-550"} })
+    hl.window_rule({ match = twClass, move = {10, "monitor_h-550"} })
     hl.window_rule({ match = twClass, opacity = "1.0 override 0.85" })
     hl.window_rule({ match = twClass, render_unfocused = true })
     hl.window_rule({ match = twClass, content = "video" })
@@ -133,8 +132,7 @@ _:
     --------------------------------------------------------------------------
     -- Dim background around polkit/auth dialogs
     --------------------------------------------------------------------------
-    hl.window_rule({ match = { class = "^(hyprpolkitagent)$" },                                dim_around = true })
-    hl.window_rule({ match = { class = "^(org.kde.polkit-kde-authentication-agent-1)$" },      dim_around = true })
+    hl.window_rule({ match = { class = "^(hyprpolkitagent)$" }, dim_around = true })
 
     --------------------------------------------------------------------------
     -- Tag windows for batch operations (0.54+)
