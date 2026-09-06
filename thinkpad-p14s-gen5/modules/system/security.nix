@@ -15,7 +15,7 @@ let
   brave-flags = lib.escapeShellArgs [
     "--ozone-platform=wayland"
     "--ozone-platform-hint=wayland"
-    "--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,WaylandWindowDecorations,AcceleratedVideoDecodeLinuxGL"
+    "--enable-features=TouchpadOverscrollHistoryNavigation,UseOzonePlatform,WaylandWindowDecorations,AcceleratedVideoDecodeLinuxGL,AcceleratedVideoEncoder"
     "--disable-features=WaylandWpColorManagerV1,AsyncDns,OutdatedBuildDetector,UseChromeOSDirectVideoDecoder"
     "--dns-over-https-mode=off"
     "--enable-gpu-rasterization"
@@ -53,12 +53,40 @@ let
   # Spotify streams into ~/.cache/spotify (2.5 GB found on 2026-09-06). Drop
   # the stream cache once the client exits. Users/ keeps login and settings.
   # Runs inside the jail; ~/.cache/spotify is whitelisted read-write there.
-  # Chromium's own zygote sandbox cannot be created inside a firejail jail
-  # (no new privileges, seccomp): Electron aborts with
-  # "zygote_host_impl_linux.cc: Check failed". Firejail plus AppArmor provide
-  # the confinement instead, as for every other firejail Electron profile.
-  vesktop-in-jail = pkgs.writeShellScriptBin "vesktop-in-jail" ''
-    exec ${pkgs.vesktop}/bin/vesktop --no-sandbox "$@"
+  # Vesktop (Vencord Discord client). Same shape as the Brave wrapper below:
+  # upstream vesktop.profile has "join-or-start vesktop", and firejail rejects
+  # every CLI option (--profile, --whitelist, --apparmor) when joining, so a
+  # wrappedBinaries entry broke any second launch (tray click, discord:// URL)
+  # with "invalid option ... after --join". All hardening lives in the profile.
+  # --no-sandbox: Chromium's own zygote sandbox cannot be created inside a
+  # firejail jail (no new privileges, seccomp) and Electron aborts with
+  # "zygote_host_impl_linux.cc: Check failed"; firejail plus AppArmor confine
+  # it instead, as for every other firejail Electron profile.
+  vesktop-profile = pkgs.writeText "vesktop-jail.profile" ''
+    include ${pkgs.firejail}/etc/firejail/vesktop.profile
+
+    whitelist ''${HOME}/.config/theme
+    whitelist ''${HOME}/.config/vesktop
+    whitelist ''${HOME}/.cache/vesktop
+    caps.drop all
+    nonewprivs
+    noroot
+    seccomp
+    private-dev
+    private-tmp
+    dbus-user.talk org.freedesktop.Notifications
+    dbus-user.talk org.kde.StatusNotifierWatcher
+    dbus-user.talk org.freedesktop.portal.Desktop
+    apparmor
+  '';
+  vesktop-wrapper = pkgs.writeShellScriptBin "vesktop" ''
+    FIREJAIL=/run/wrappers/bin/firejail
+    VESKTOP=${pkgs.vesktop}/bin/vesktop
+    if "$FIREJAIL" --list 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q ":vesktop:"; then
+      exec "$FIREJAIL" --join=vesktop "$VESKTOP" --no-sandbox "$@"
+    else
+      exec "$FIREJAIL" --name=vesktop --profile=${vesktop-profile} "$VESKTOP" --no-sandbox "$@"
+    fi
   '';
 
   spotify-clean-exit = pkgs.writeShellScriptBin "spotify-clean-exit" ''
@@ -151,26 +179,7 @@ in
         ];
       };
 
-      # Vesktop (Vencord) - sandboxed Discord client
-      # vesktop.profile is minimal (private-bin only), so add hardening
-      vesktop = {
-        executable = "${vesktop-in-jail}/bin/vesktop-in-jail";
-        profile = "${pkgs.firejail}/etc/firejail/vesktop.profile";
-        extraArgs = [
-          themeWhitelist
-          "--whitelist=~/.config/vesktop"
-          "--whitelist=~/.cache/vesktop"
-          "--caps.drop=all"
-          "--nonewprivs"
-          "--noroot"
-          "--seccomp"
-          "--private-dev"
-          "--private-tmp"
-          "--dbus-user.talk=org.freedesktop.Notifications"
-          "--dbus-user.talk=org.kde.StatusNotifierWatcher"
-          "--dbus-user.talk=org.freedesktop.portal.Desktop"
-        ];
-      };
+      # NOTE: vesktop is NOT listed here either, see vesktop-wrapper above.
 
       # Spotify - sandboxed (Electron app with telemetry)
       spotify = {
@@ -266,6 +275,14 @@ in
           themeWhitelist
           "--whitelist=~/Documents"
           "--whitelist=~/Downloads"
+          # A PDF anywhere else was invisible inside the jail (empty window).
+          # Project trees, pictures and removable disks are visible read-only.
+          "--whitelist=~/codes"
+          "--read-only=~/codes"
+          "--whitelist=~/Pictures"
+          "--read-only=~/Pictures"
+          "--whitelist=/run/media/marcelo"
+          "--read-only=/run/media/marcelo"
           "--whitelist=~/.config/zathura"
           "--whitelist=~/.local/share/zathura"
           "--nosound"
@@ -424,6 +441,12 @@ in
         ${pkgs.gnugrep}/bin/grep -q 'nix/store/\*\* ix,' $out
       '';
     };
+    # Brave (in firejail-default) must start the Claude in Chrome extension's
+    # native messaging host, a wrapper script Claude Code writes under
+    # ~/.claude/chrome; AppArmor denied that exec after the first rebuild.
+    includes."local/firejail-default" = ''
+      owner @{HOME}/.claude/chrome/chrome-native-host ix,
+    '';
   };
 
   # Polkit rules for TLP battery threshold management
@@ -465,6 +488,7 @@ in
   environment.systemPackages = [
     brave-wrapper
     brave-hw-wrapper
+    vesktop-wrapper
     pkgs.libsecret # secret-tool for debugging GNOME Keyring/libsecret
   ];
 }

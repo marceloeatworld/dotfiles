@@ -22,7 +22,6 @@ in
       zoom-min = 10;
       guioptions = "";  # Hide statusbar and inputbar (minimal UI)
       render-loading = true;
-      show-scrollbars = false;
 
       # Font
       font = "${theme.fonts.mono} ${toString theme.fonts.monoSize}";
