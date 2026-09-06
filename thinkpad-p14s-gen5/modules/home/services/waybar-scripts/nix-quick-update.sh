@@ -21,32 +21,15 @@ cd "$FLAKE_DIR" || exit 1
 {
   echo "=== $(date) ==="
   # Selective update matching the update() shell function (overlay-updates.nix).
-  # Hyprland, its portal, and Mesa advance together through nixpkgs;
-  # nixpkgs-llama stays pinned and is owned by update-llama.
+  # The Hyprland flake inputs are left out (update-hyprland) and nixpkgs-llama
+  # stays pinned (update-llama).
   nix flake update disko home-manager jail-nix nix-index-database nixos-hardware nixpkgs sops-nix 2>&1
   echo ""
   echo "=== Overlay updates ==="
-  # Source shell functions (they're defined in zsh initContent)
-  # Use direct API calls instead for background execution
-  update_count=0
-
-  # Check Claude Code
-  CC_LATEST=$(curl -s "https://registry.npmjs.org/@anthropic-ai/claude-code/latest" 2>/dev/null | jq -r '.version')
-  CC_CURRENT=$(grep 'version = ' overlays/claude-code-latest.nix | sed 's/.*"\(.*\)".*/\1/')
-  [ -n "$CC_LATEST" ] && [ "$CC_LATEST" != "null" ] && [ "$CC_LATEST" != "$CC_CURRENT" ] && echo "Claude Code: $CC_CURRENT → $CC_LATEST" && update_count=$((update_count + 1))
-
-  # Check VS Code
-  VS_LATEST=$(curl -s "https://update.code.visualstudio.com/api/update/linux-x64/stable/latest" 2>/dev/null | jq -r '.productVersion')
-  VS_CURRENT=$(grep 'version = ' overlays/vscode-latest.nix | sed 's/.*"\(.*\)".*/\1/')
-  [ -n "$VS_LATEST" ] && [ "$VS_LATEST" != "null" ] && [ "$VS_LATEST" != "$VS_CURRENT" ] && echo "VS Code: $VS_CURRENT → $VS_LATEST" && update_count=$((update_count + 1))
-
-  # Check OpenCode
-  OC_LATEST=$(curl -s "https://api.github.com/repos/anomalyco/opencode/releases/latest" 2>/dev/null | jq -r '.tag_name' | sed 's/^v//')
-  OC_CURRENT=$(grep 'version = ' overlays/opencode-latest.nix | sed 's/.*"\(.*\)".*/\1/')
-  [ -n "$OC_LATEST" ] && [ "$OC_LATEST" != "null" ] && [ "$OC_LATEST" != "$OC_CURRENT" ] && echo "OpenCode: $OC_CURRENT → $OC_LATEST" && update_count=$((update_count + 1))
-
-  echo ""
-  echo "Overlay updates available: $update_count"
+  # update-overlays is a zsh function (overlay-updates.nix): it bumps every
+  # quick overlay (VS Code, Claude Code, OpenCode, ForgeCode, Codex, RunPod,
+  # pnpm) plus the agent skills, the same step the `update` function runs.
+  zsh -ic 'update-overlays' 2>&1
 } > "$LOG" 2>&1
 
 # Count changed inputs (grep -c can return multi-line, take first number only)

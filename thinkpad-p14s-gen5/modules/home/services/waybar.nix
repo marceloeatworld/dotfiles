@@ -95,8 +95,7 @@ let
     [ -f "$f" ] && state="$(cat "$f")"
     case "$state" in
       recording)    printf '{"text":"󰍬 REC","tooltip":"Voice: recording - press the Copilot key to stop","class":"recording"}\n' ;;
-      transcribing) printf '{"text":"󰍬 ...","tooltip":"Voice: transcribing...","class":"transcribing"}\n' ;;
-      downloading)  printf '{"text":"󰍬 DL","tooltip":"Voice: downloading Whisper model (574 MB, one time)","class":"downloading"}\n' ;;
+      transcribing) printf '{"text":"󰍬 ...","tooltip":"Voice: transcribing (Gemini)...","class":"transcribing"}\n' ;;
       *)            printf '{"text":""}\n' ;;
     esac
   '';
@@ -315,42 +314,50 @@ in
       mainBar = {
         layer = "top";
         position = "top";
-        height = 33;
-        spacing = 2;
+        height = 34;
+        spacing = 4;
         reload_style_on_change = true;  # Auto-reload CSS on theme change (no waybar restart)
 
         modules-left = [ "hyprland/workspaces" "hyprland/submap" "hyprland/window" ];
         modules-center = [ "mpris" ];  # Just the media title — double-click MPRIS to dock YouTube
+        # Right side is organised as "islands": plain container groups (class
+        # island, see CSS) that replace the old text separators. Each island
+        # holds one theme: info, audio/network, hardware, session, tools.
         modules-right = [
-          # ── Alerts ──
+          # ── Alerts (only visible when something needs attention) ──
           "custom/voice"              # Voice dictation state (recording/transcribing)
           "privacy"                   # Mic/screenshare indicator
           "systemd-failed-units"      # Built-in, event-driven
-          "custom/sep"
-          # ── Glanceable info ──
-          "group/finance"             # Bitcoin (leader) → wallets, polymarket
-          "custom/weather"
-          "custom/sep"
-          # ── Audio & display ──
-          "group/audio"               # Output (leader) → mic, brightness
-          "custom/sep"
-          # ── Connectivity ──
-          "group/connectivity"        # Network (leader) → VPN, Bluetooth
-          "custom/sep"
-          # ── Hardware drawer ──
-          "group/hardware"            # CPU (leader) → memory, temps, disk
-          "custom/removable-disks"
-          "custom/sep"
-          # ── Session ──
-          "battery"
-          "custom/theme"
-          "clock"
-          "custom/sep"
-          # ── Tools & power ──
-          "group/tools"               # Nix (leader) → notifications, layout, idle, gamemode
-          "group/power"              # Lock (leader) → shutdown, reboot
-          "tray"
+          "group/info#island"         # Bitcoin drawer + weather
+          "group/io#island"           # Audio drawer + connectivity drawer
+          "group/hw#island"           # Hardware drawer + removable disks
+          "group/session#island"      # Battery, theme, clock
+          "group/utils#island"        # Tools drawer, power drawer, tray
         ];
+
+        # ── Island containers (no drawer, purely visual grouping). Waybar looks
+        # the definition up by the full reference, so the "#island" class
+        # suffix is part of the key. ──
+        "group/info#island" = {
+          orientation = "inherit";
+          modules = [ "group/finance" "custom/weather" ];
+        };
+        "group/io#island" = {
+          orientation = "inherit";
+          modules = [ "group/audio" "group/connectivity" ];
+        };
+        "group/hw#island" = {
+          orientation = "inherit";
+          modules = [ "group/hardware" "custom/removable-disks" ];
+        };
+        "group/session#island" = {
+          orientation = "inherit";
+          modules = [ "battery" "custom/theme" "clock" ];
+        };
+        "group/utils#island" = {
+          orientation = "inherit";
+          modules = [ "group/tools" "group/power" "tray" ];
+        };
 
         # ── Drawer groups (collapse modules to save space) ──
         "group/finance" = {
@@ -467,6 +474,7 @@ in
             "3" = [];
             "4" = [];
             "5" = [];
+            "6" = [];
           };
         };
 
@@ -522,7 +530,7 @@ in
           format-alt = "{icon} {time} ({power:.1f}W)";
           format-icons = [ "󰂎" "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
           tooltip-format = "{timeTo}\nPower: {power:.1f}W\nHealth: {health}%\nCycles: {cycles}";
-          on-click = "battery-mode";  # Cycle charge mode (Conservation → Balanced → Full)
+          on-click = "battery-mode";  # Toggle charge thresholds: conservation 55-60 <-> full 95-100
         };
 
         "bluetooth" = {
@@ -597,7 +605,14 @@ in
 
         "memory" = {
           format = "󰍛 {percentage}%";
-          tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB\nAvailable: {avail:0.1f}GB\nSwap: {swapUsed:0.1f}GB / {swapTotal:0.1f}GB";
+          format-alt = "󰍛 {percentage}%  󰾴 {swapPercentage}%";  # Click: show swap use too
+          # Swap here is zram, i.e. compressed RAM: past ~50% the machine starts
+          # to thrash (the "freeze"). Color the module before that point.
+          states = {
+            warning = 75;
+            critical = 90;
+          };
+          tooltip-format = "RAM: {used:0.1f}GB / {total:0.1f}GB\nAvailable: {avail:0.1f}GB\nSwap (zram): {swapUsed:0.1f}GB / {swapTotal:0.1f}GB ({swapPercentage}%)";
           on-click = "ghostty -e btop";
           interval = 10;
         };
@@ -827,11 +842,6 @@ in
           on-click-right = "${ejectUsb}";
         };
 
-        "custom/sep" = {
-          format = "│";
-          tooltip = false;
-        };
-
         "custom/monitor-rotation" = {
           format = "󰹑";
           tooltip-format = "Monitor settings";
@@ -899,39 +909,52 @@ in
         background: alpha(@bg, 0.96);
         color: @fg;
         border-bottom: 1px solid alpha(@border_color, 0.35);
-        box-shadow: inset 0 -1px alpha(@accent, 0.08);
       }
 
-      /* ── Workspaces ── */
-      #workspaces { margin: 0 5px 0 4px; }
+      /* ── Islands: rounded surface cards that group related modules ── */
+      .island {
+        background: alpha(@surface, 0.55);
+        border: 1px solid alpha(@border_color, 0.45);
+        border-radius: 8px;
+        margin: 4px 3px;
+        padding: 0 3px;
+      }
+      .island:hover { border-color: alpha(@border_color, 0.8); }
+
+      /* ── Workspaces (an island of their own) ── */
+      #workspaces {
+        background: alpha(@surface, 0.55);
+        border: 1px solid alpha(@border_color, 0.45);
+        border-radius: 8px;
+        margin: 4px 6px 4px 6px;
+        padding: 0 3px;
+      }
       #workspaces button {
-        min-width: 20px;
+        min-width: 18px;
         padding: 0 7px;
-        margin: 0 1px;
+        margin: 2px 1px;
         color: @muted;
         background: transparent;
-        border-bottom: 2px solid transparent;
+        border-radius: 6px;
       }
       #workspaces button.active {
         color: @accent;
-        border-bottom: 2px solid @accent;
-        background: alpha(@accent, 0.10);
-        text-shadow: 0 0 6px alpha(@accent, 0.28);
+        background: alpha(@accent, 0.18);
+        font-weight: bold;
       }
       #workspaces button.urgent {
         color: @red;
-        border-bottom: 2px solid @red;
-        background: alpha(@red, 0.10);
+        background: alpha(@red, 0.16);
         animation: pulse 1.5s ease-in-out infinite alternate;
       }
-      #workspaces button.empty { color: @muted; opacity: 0.28; }
+      #workspaces button.empty { color: @muted; opacity: 0.35; }
       #workspaces button.special {
         color: @accent_secondary;
-        border-bottom: 2px solid @accent_secondary;
+        background: alpha(@accent_secondary, 0.14);
       }
       #workspaces button:hover {
         color: @fg;
-        background: alpha(@fg, 0.06);
+        background: alpha(@fg, 0.08);
       }
 
       @keyframes pulse {
@@ -941,8 +964,8 @@ in
 
       /* ── Window title ── */
       #window {
-        margin: 0 8px;
-        color: @muted;
+        margin: 0 6px;
+        color: @dim;
         font-size: 12px;
       }
       window#waybar.empty #window { opacity: 0.3; }
@@ -950,8 +973,10 @@ in
       /* ── Submap (active mode indicator) ── */
       #submap {
         padding: 0 10px;
+        margin: 4px 3px;
         color: @bg;
         background: @accent;
+        border-radius: 8px;
         font-weight: bold;
       }
 
@@ -962,6 +987,7 @@ in
         font-weight: bold;
         min-width: 98px;
       }
+      #tray { padding: 0 8px; }
 
       /* ── All modules — text-first, subtle state accents ── */
       #custom-bitcoin, #custom-wallets, #custom-vpn, #custom-nix-updates,
@@ -973,20 +999,11 @@ in
       #gamemode,
       #custom-gamemode-toggle, #language,
       #custom-lock, #custom-shutdown, #custom-reboot {
-        padding: 0 6px;
-        margin: 0 1px;
+        padding: 0 7px;
+        margin: 2px 0;
         background: transparent;
         color: @dim;
-        border-radius: 4px;
-        border-bottom: 2px solid transparent;
-      }
-
-      /* ── Separator ── */
-      #custom-sep {
-        color: @muted;
-        opacity: 0.32;
-        padding: 0 1px;
-        font-size: 11px;
+        border-radius: 6px;
       }
 
       /* ── Drawer children (collapsed modules) ── */
@@ -1034,43 +1051,34 @@ in
       #idle_inhibitor.activated {
         color: @accent;
         background: alpha(@accent, 0.08);
-        border-bottom-color: @accent;
       }
       #idle_inhibitor.deactivated { opacity: 0.35; }
 
       /* ── Theme switch ── */
       #custom-theme {
         color: @accent;
-        background: alpha(@accent, 0.08);
-        border-bottom-color: alpha(@accent, 0.55);
         min-width: 22px;
       }
-      #custom-theme.light {
-        color: @orange;
-        background: alpha(@orange, 0.10);
-        border-bottom-color: alpha(@orange, 0.55);
-      }
-      #custom-theme.dark {
-        color: @accent_secondary;
-        background: alpha(@accent_secondary, 0.10);
-        border-bottom-color: alpha(@accent_secondary, 0.55);
-      }
+      #custom-theme.light { color: @orange; }
+      #custom-theme.dark { color: @accent_secondary; }
 
       /* ── Media (MPRIS) ── */
       #mpris {
         color: @muted;
         padding: 0 12px;
+        margin: 4px 0;
+        border-radius: 8px;
       }
       #mpris.playing {
         color: @green;
-        border-bottom-color: alpha(@green, 0.65);
+        background: alpha(@green, 0.10);
+        border: 1px solid alpha(@green, 0.35);
       }
       #mpris.paused { color: @dim; opacity: 0.6; }
 
       /* ── GameMode ── */
       #gamemode {
         color: @accent;
-        border-bottom-color: alpha(@accent, 0.65);
       }
       #custom-gamemode-toggle.active {
         color: @accent;
@@ -1086,19 +1094,16 @@ in
       #battery { min-width: 58px; }
       #battery.charging {
         color: @green;
-        border-bottom-color: alpha(@green, 0.7);
       }
       #battery.full { color: @dim; opacity: 0.5; }
       #battery.warning:not(.charging) {
         color: @orange;
         background: alpha(@orange, 0.08);
-        border-bottom-color: @orange;
       }
       #battery.critical:not(.charging) {
         color: @red;
         font-weight: bold;
         background: alpha(@red, 0.10);
-        border-bottom-color: @red;
         animation: blink 1s steps(6) infinite alternate;
       }
       @keyframes blink {
@@ -1115,6 +1120,15 @@ in
 
       /* ── Glanceable numeric modules ── */
       #cpu, #memory { min-width: 48px; }
+      #memory.warning {
+        color: @orange;
+        background: alpha(@orange, 0.08);
+      }
+      #memory.critical {
+        color: @red;
+        font-weight: bold;
+        background: alpha(@red, 0.10);
+      }
       #temperature, #temperature.gpu { min-width: 42px; }
       #backlight { min-width: 58px; }
 
@@ -1124,7 +1138,6 @@ in
       #network { min-width: 54px; }
       #network.disconnected {
         color: @red;
-        border-bottom-color: @red;
       }
       #network.wifi { color: @dim; }
 
@@ -1132,7 +1145,6 @@ in
       #custom-removable-disks.empty { opacity: 0.35; }
       #custom-removable-disks.attached {
         color: @green;
-        border-bottom-color: alpha(@green, 0.65);
       }
 
       /* ── Temperature ── */
@@ -1141,7 +1153,6 @@ in
         color: @red;
         font-weight: bold;
         background: alpha(@red, 0.08);
-        border-bottom-color: @red;
       }
 
       /* ── Voice dictation ── */
@@ -1149,16 +1160,13 @@ in
         color: @red;
         font-weight: bold;
         background: alpha(@red, 0.10);
-        border-bottom-color: @red;
         animation: blink 1s steps(6) infinite alternate;
       }
       #custom-voice.transcribing { color: @cyan; }
-      #custom-voice.downloading { color: @blue; }
 
       /* ── VPN ── */
       #custom-vpn.connected {
         color: @green;
-        border-bottom-color: alpha(@green, 0.65);
       }
       #custom-vpn.disconnected { color: @dim; opacity: 0.4; }
 
@@ -1167,34 +1175,28 @@ in
       #custom-nix-updates.updates {
         color: @accent;
         background: alpha(@accent, 0.08);
-        border-bottom-color: @accent;
       }
       #systemd-failed-units.degraded {
         color: @red;
         font-weight: bold;
         background: alpha(@red, 0.10);
-        border-bottom-color: @red;
       }
       #custom-mako.notification {
         color: @fg;
-        border-bottom-color: alpha(@accent, 0.65);
       }
 
       /* ── Power ── */
       #custom-lock:hover {
         color: @accent;
         background: alpha(@accent, 0.1);
-        border-bottom-color: @accent;
       }
       #custom-shutdown:hover {
         color: @red;
         background: alpha(@red, 0.1);
-        border-bottom-color: @red;
       }
       #custom-reboot:hover {
         color: @accent;
         background: alpha(@accent, 0.1);
-        border-bottom-color: @accent;
       }
       .power-child { color: @dim; }
 

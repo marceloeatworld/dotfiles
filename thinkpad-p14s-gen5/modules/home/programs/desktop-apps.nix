@@ -19,7 +19,7 @@ in
   # Install the launcher script and applications
   home.packages = [
     nvim-launcher
-    pkgs.rustdesk-flutter           # RustDesk (stable version - unstable has FFmpeg build issues)
+    pkgs.rustdesk-flutter           # RustDesk remote desktop
     pkgs.thunderbird                # Mail reader (Google Takeout mbox archives)
     pkgs.popsicle                   # USB flasher (System76) - lightweight, GTK native
     pkgs.woeusb-ng                   # Windows USB flasher - for Windows ISO

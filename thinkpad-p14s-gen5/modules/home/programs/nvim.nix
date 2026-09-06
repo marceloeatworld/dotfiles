@@ -191,7 +191,7 @@
 
     initLua = ''
       -- ════════════════════════════════════════════════════════════════════
-      -- LEADER KEY (must be set before lazy)
+      -- LEADER KEY (must be set before plugins read it)
       -- ════════════════════════════════════════════════════════════════════
       vim.g.mapleader = " "
       vim.g.maplocalleader = "\\"
@@ -399,7 +399,7 @@
       end
 
       -- ════════════════════════════════════════════════════════════════════
-      -- ALPHA (Dashboard) - Must be before lazy.nvim
+      -- ALPHA (Dashboard)
       -- ════════════════════════════════════════════════════════════════════
       local alpha_ok, alpha = pcall(require, "alpha")
       if alpha_ok then
@@ -830,10 +830,10 @@
       })
 
       -- ════════════════════════════════════════════════════════════════════
-      -- TREESITTER (Neovim 0.11+ native configuration)
+      -- TREESITTER
       -- ════════════════════════════════════════════════════════════════════
-      -- Treesitter is now configured natively via nvim-treesitter.withAllGrammars
-      -- Highlight and indent are enabled by default with grammars installed
+      -- Grammars come from nvim-treesitter.withAllGrammars; the configs module
+      -- is only used to disable highlight/indent on big files.
       vim.treesitter.language.register('bash', 'zsh')
 
       local ts_ok, ts_configs = pcall(require, "nvim-treesitter.configs")
@@ -1327,7 +1327,6 @@
 ║   Space ac → Toggle AI chat          Space aa → Actions menu         ║
 ║   Space ai → Inline prompt           Space ap → Add selection (vis)  ║
 ║                                                                      ║
-║ VS Code:  Install "Continue" extension → endpoint localhost:8080     ║
 ║ OpenCode: Provider "local-llm" configured (opencode.json)            ║
 ║ Terminal: llm "prompt" → Chat   llm-switch qwythos/gemma/qwopus     ║
 ╠══════════════════════════════════════════════════════════════════════╣
@@ -1335,11 +1334,6 @@
 ║   Space opl → List PRs               Space opc → Create PR          ║
 ║   Space oil → List issues            Space oic → Create issue       ║
 ║   Space or  → Start review                                          ║
-╠══════════════════════════════════════════════════════════════════════╣
-║ RED TEAM (kali start → Kali container + LLM)                         ║
-║   llm "prompt"              → Ask LLM for red team advice            ║
-║   recon-ai <target>         → AI-assisted nmap + analysis            ║
-║   ai-agent "objective"      → Autonomous AI agent [R/S/E/Q]         ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║ VS-CODE STYLE (your custom shortcuts)                                ║
 ║   Ctrl+s → Save    Ctrl+z → Undo    Ctrl+y → Redo    Ctrl+a → Select ║

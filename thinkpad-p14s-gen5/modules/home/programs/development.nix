@@ -42,8 +42,6 @@ let
   '';
 in
 {
-  # npm-global removed: claude-code, opencode, codex, forgecode, pnpm are all
-  # provided by Nix overlays (home.packages). No global npm installs needed.
   home.sessionPath = [
     "$HOME/.local/bin"
   ];
@@ -76,7 +74,7 @@ in
     icu # Required by .NET for globalization support
 
     # C++ Development (complete modern toolchain)
-    gcc # GCC 15.2.0 - Primary C++ compiler with C++23 support
+    gcc # Primary C/C++ compiler
     gdb # GDB debugger (essential for C++ debugging)
     gef # GDB Enhanced Features - better debugging UX
     gnumake # Make build system
@@ -118,7 +116,7 @@ in
     choose # cut/awk modern
     hyperfine # CLI benchmarking
     ouch # Compression/decompression (auto-detects format)
-    zellij # Verified against locked nixpkgs: rustc 1.95.0 builds zellij 0.44.3
+    zellij # Terminal multiplexer
     gitui # TUI Git (alternative to lazygit, faster)
     gh-dash # GitHub dashboard TUI
 
@@ -299,4 +297,67 @@ in
     CPUQuota=800%
     CPUWeight=50
   '';
+
+  # Rootless podman keeps every image ever built under
+  # ~/.local/share/containers; the system podman-prune timer only cleans
+  # root's storage. 1810 images / 69 GB had accumulated by 2026-09-06.
+  # Weekly: drop untagged images and images unused for a week. Images used
+  # by a container (running or stopped) are never removed.
+  systemd.user.services.podman-image-prune = {
+    Unit.Description = "Prune unused rootless podman images";
+    Service = {
+      Type = "oneshot";
+      ExecStart = [
+        "${pkgs.podman}/bin/podman image prune -f"
+        "${pkgs.podman}/bin/podman image prune -a -f --filter until=168h"
+      ];
+      Nice = 10;
+      IOSchedulingClass = "idle";
+    };
+  };
+  systemd.user.timers.podman-image-prune = {
+    Unit.Description = "Weekly rootless podman image prune";
+    Timer = {
+      OnCalendar = "weekly";
+      Persistent = true;
+      RandomizedDelaySec = "1h";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
+
+  # uvx builds a fresh ~0.5 GB headroom environment whenever the pinned
+  # interpreter store path changes (every nixpkgs bump) and never removes the
+  # old ones: 665 environments / 55 GB by 2026-09-06. `uv cache prune` cannot
+  # run while any uvx-launched MCP server holds the cache lock, so drop
+  # environments older than 14 days ourselves, skipping any a running
+  # process executes from.
+  systemd.user.services.uv-archive-prune = {
+    Unit.Description = "Prune old uvx environments";
+    Service = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "uv-archive-prune" ''
+        set -eu
+        dir="$HOME/.cache/uv/archive-v0"
+        [ -d "$dir" ] || exit 0
+        inuse=$(${pkgs.coreutils}/bin/readlink /proc/[0-9]*/exe 2>/dev/null \
+          | ${pkgs.gnugrep}/bin/grep -oE 'archive-v0/[^/]+' | ${pkgs.coreutils}/bin/sort -u || true)
+        ${pkgs.findutils}/bin/find "$dir" -mindepth 1 -maxdepth 1 -mtime +14 -print0 \
+          | while IFS= read -r -d "" entry; do
+              case "$inuse" in *"archive-v0/$(${pkgs.coreutils}/bin/basename "$entry")"*) continue ;; esac
+              ${pkgs.coreutils}/bin/rm -rf "$entry"
+            done
+      '';
+      Nice = 10;
+      IOSchedulingClass = "idle";
+    };
+  };
+  systemd.user.timers.uv-archive-prune = {
+    Unit.Description = "Weekly uvx environment prune";
+    Timer = {
+      OnCalendar = "weekly";
+      Persistent = true;
+      RandomizedDelaySec = "1h";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
 }

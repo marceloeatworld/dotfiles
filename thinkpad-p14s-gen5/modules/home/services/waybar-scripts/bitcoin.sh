@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bitcoin price monitor: Coinbase (price) + CoinGecko (market data) + Mempool.space (blockchain)
-# Optimized: Parallel API requests, sats/USD calculation, halving countdown, fear & greed
+# Parallel API requests, sats/USD, fees, halving countdown, difficulty, recent blocks, mempool
 
 ALERT_FILE="$HOME/.config/waybar/bitcoin-alerts.conf"
 LAST_PRICE_FILE="$HOME/.config/waybar/bitcoin-last-price"

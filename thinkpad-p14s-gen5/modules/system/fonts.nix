@@ -11,8 +11,8 @@
   fonts.packages = with pkgs; [
     # Base fonts
     inter                  # Inter (used by theme.nix as default sans font)
-    liberation_ttf         # Liberation Sans, Serif, Mono (default serif/sans)
-    noto-fonts             # Noto Sans (used by GTK)
+    liberation_ttf         # Liberation Sans, Serif, Mono (fallbacks)
+    noto-fonts             # Noto Sans/Serif (fallbacks; default serif)
     noto-fonts-color-emoji # Emoji support
     noto-fonts-cjk-sans    # CJK (Chinese/Japanese/Korean) support
 
@@ -21,7 +21,7 @@
 
     # Nerd Fonts (for terminals and Waybar)
     nerd-fonts.jetbrains-mono   # JetBrainsMono Nerd Font (default monospace)
-    nerd-fonts.caskaydia-cove   # CaskaydiaMono Nerd Font (Cascadia Code)
+    nerd-fonts.caskaydia-cove   # CaskaydiaCove Nerd Font (Paper theme mono)
     nerd-fonts.fira-code        # FiraCode Nerd Font
     nerd-fonts.hack             # Hack Nerd Font
   ];

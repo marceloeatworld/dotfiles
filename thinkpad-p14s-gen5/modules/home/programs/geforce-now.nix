@@ -1,4 +1,4 @@
-# GeForce NOW cloud gaming (browser client, no native Linux app)
+# GeForce NOW cloud gaming through the browser client.
 #
 # Self-contained: a dedicated Chromium used ONLY for GeForce NOW, plus one
 # desktop entry. Remove the import in home.nix and delete

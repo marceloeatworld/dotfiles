@@ -19,7 +19,7 @@
 # To update:
 #   1. Run: update-pnpm (shell function — restricted to v10.x)
 #   2. Or manually:
-#      a. Check latest v10: curl -sL "https://api.github.com/repos/pnpm/pnpm/releases?per_page=50" | jq -r '[.[] | select(.tag_name | startswith("v10."))][0].tag_name'
+#      a. Check latest v10: curl -sL https://registry.npmjs.org/pnpm | jq -r '."dist-tags"."latest-10"'
 #      b. Get hash: nix-prefetch-url "https://registry.npmjs.org/pnpm/-/pnpm-VERSION.tgz"
 #      c. Convert: nix hash convert --hash-algo sha256 --to sri HASH
 #      d. Update version and sha256 below

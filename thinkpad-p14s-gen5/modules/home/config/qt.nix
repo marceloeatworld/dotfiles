@@ -3,7 +3,6 @@
 
 let
   theme = config.theme;
-  kvantumThemePackage = pkgs.qt6Packages.qtstyleplugin-kvantum;
 in
 {
   qt = {
@@ -15,19 +14,16 @@ in
     };
   };
 
-  # Kvantum dark theme configuration
+  # Build-time fallback; theme-switch relinks this file to the runtime theme's
+  # kvantum.kvconfig at activation. The per-theme Kvantum theme directories
+  # (stock theme + theme selection colors) are generated in runtime-theme.nix.
   xdg.configFile."Kvantum/kvantum.kvconfig" = {
     force = true;
     text = ''
       [General]
-      theme=${theme.appearance.kvantumTheme}
+      theme=${theme.appearance.kvantumTheme}-${theme.name}
     '';
   };
-
-  # Themes are shipped with the Qt6 package; the Qt5 style plugin only ships
-  # the plugin itself on this nixpkgs revision.
-  xdg.configFile."Kvantum/${theme.appearance.kvantumTheme}".source =
-    "${kvantumThemePackage}/share/Kvantum/${theme.appearance.kvantumTheme}";
 
   # qtwayland packages needed for Qt apps to run on Wayland
   # Kvantum Qt6 package needed for Qt6 apps (Qt5 pulled by style.package)

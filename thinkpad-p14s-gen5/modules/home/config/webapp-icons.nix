@@ -12,6 +12,9 @@ let
     "docker.png"
     "windows.png"
     "claude.png"
+    "protonmail.png"
+    "protonpass.png"
+    "twitch.png"
   ];
 in
 {

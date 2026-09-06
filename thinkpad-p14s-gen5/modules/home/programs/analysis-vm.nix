@@ -632,7 +632,7 @@ EOF
     exec ${analysis-vm}/bin/analysis-vm flare "$@"
   '';
 
-  # Lab menu: wofi-based quick actions (bound to SUPER+X in hyprland.nix)
+  # Lab menu: wofi-based quick actions (bound to SUPER+X in hyprland/keybinds.nix)
   lab-menu = pkgs.writeShellScriptBin "lab-menu" ''
     VIRSH="${pkgs.libvirt}/bin/virsh --connect qemu:///system"
     VIEWER="${pkgs.virt-viewer}/bin/virt-viewer --connect qemu:///system"

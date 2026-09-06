@@ -12,10 +12,12 @@
 
     # Build optimizations
     # max-jobs "auto" (=16) x cores 16 allowed up to 256 compile threads during
-    # updates (heat, fans, laggy UI). 2 parallel derivations x 16 cores, plus
-    # the nix-daemon CPUQuota below, bounds sustained heat; one big build
-    # already saturates the CPU so throughput barely changes.
-    max-jobs = 2;
+    # updates (heat, fans, laggy UI). One derivation at a time x 16 cores, plus
+    # the nix-daemon CPUQuota below, bounds sustained heat and memory: two
+    # parallel Hyprland/llama.cpp-sized builds next to a loaded desktop pushed
+    # the machine into swap and froze it (2026-09-04). One big build already
+    # saturates the CPU, so throughput barely changes.
+    max-jobs = 1;
     cores = 16;
     builders-use-substitutes = true;
     keep-going = true;              # Continue building when one derivation fails
@@ -51,12 +53,8 @@
   nix.daemonCPUSchedPolicy = "batch";
   systemd.services.nix-daemon.serviceConfig.CPUQuota = "1000%";
 
-  # Garbage collection (now managed by NH)
-  # NH handles garbage collection with smarter logic
-  # See modules/system/nh.nix for configuration
-  nix.gc = {
-    automatic = false;  # Disabled - NH manages this
-  };
+  # Garbage collection is handled by nh clean (modules/system/nh.nix).
+  nix.gc.automatic = false;
 
   # NOTE: allowUnfree is set in flake.nix (single source of truth)
 
@@ -87,18 +85,14 @@
     # Proxmark3 - RFID/NFC research client (Iceman/RRG fork, matches RDV4 firmware)
     proxmark3
 
-    # Required by xdg-desktop-portal for Flatpak apps (e.g. GeForce NOW probes
-    # `wg` to detect WireGuard VPN state and `xrandr` for display info).
-    wireguard-tools
-    xrandr
     xauth               # X11 forwarding: ssh -X/-Y generates the X cookie
   ];
 
   # Enable nix-ld for running unpatched dynamic binaries
   programs.nix-ld.enable = true;
 
-  # Create /bin/bash symlink for scripts expecting it (common on NixOS)
-  # Required for plugins like claude-code ralph-wiggum hooks
+  # /bin/bash symlink for third-party scripts and hooks with a hardcoded
+  # #!/bin/bash shebang.
   system.activationScripts.binbash = ''
     mkdir -p /bin
     ln -sf ${pkgs.bash}/bin/bash /bin/bash

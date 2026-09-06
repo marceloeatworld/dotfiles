@@ -85,14 +85,17 @@ in
     pulse.enable = true;
     jack.enable = true;
 
-    # Conservative buffering to prevent audio pops and underruns
+    # Conservative buffering to prevent audio pops and underruns.
+    # Keys must be quoted: unquoted `context.properties` becomes nested JSON
+    # that PipeWire ignores (min-quantum stayed at the default 32 until
+    # 2026-09-05). Verify with: pw-metadata -n settings 0
     extraConfig.pipewire = {
       "92-low-latency" = {
-        context.properties = {
-          default.clock.rate = 48000;
-          default.clock.quantum = 1024;
-          default.clock.min-quantum = 512;
-          default.clock.max-quantum = 2048;
+        "context.properties" = {
+          "default.clock.rate" = 48000;
+          "default.clock.quantum" = 1024;
+          "default.clock.min-quantum" = 512;
+          "default.clock.max-quantum" = 2048;
         };
       };
     };

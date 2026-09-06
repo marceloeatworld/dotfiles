@@ -65,17 +65,16 @@ let
     ${pkgs.libnotify}/bin/notify-send -t 5000 "SHA256 copied" "$(${pkgs.coreutils}/bin/head -n 1 "$tmp")" -i dialog-information || true
   '';
 
+  # Runtime-only wallpaper switch over the hyprpaper wire protocol (hyprctl
+  # from Hyprland 0.56, hyprpaper 0.8): an empty monitor name means every
+  # output. ~/.config/hypr/hyprpaper.conf is a read-only Home Manager symlink,
+  # so the choice lasts until the next login; make it permanent in hyprland/default.nix.
   nemo-set-wallpaper = pkgs.writeShellScriptBin "nemo-set-wallpaper" ''
     set -euo pipefail
 
     [ "$#" -eq 1 ] || exit 0
-    config_file="$HOME/.config/hypr/hyprpaper.conf"
-    ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$config_file")"
-
-    printf 'preload = %s\nwallpaper = ,%s\n' "$1" "$1" > "$config_file"
-    ${pkgs.psmisc}/bin/killall hyprpaper 2>/dev/null || true
-    ${pkgs.hyprpaper}/bin/hyprpaper >/dev/null 2>&1 &
-    ${pkgs.libnotify}/bin/notify-send -t 1500 "Wallpaper" "Updated from Nemo" -i preferences-desktop-wallpaper || true
+    hyprctl hyprpaper wallpaper ",$1"
+    ${pkgs.libnotify}/bin/notify-send -t 1500 "Wallpaper" "Updated from Nemo (until next login)" -i preferences-desktop-wallpaper || true
   '';
 
   nemo-lazygit = pkgs.writeShellScriptBin "nemo-lazygit" ''

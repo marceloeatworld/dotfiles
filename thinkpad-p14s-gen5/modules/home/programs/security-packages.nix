@@ -54,7 +54,7 @@
 
     ### Data Analysis & Crypto (CyberChef)
 
-    **CyberChef** - The Cyber Swiss Army Knife (v10.19.4)
+    **CyberChef** - The Cyber Swiss Army Knife
     Web-based tool for encryption, encoding, compression, and data analysis.
 
     ```bash

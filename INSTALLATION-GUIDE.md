@@ -250,7 +250,7 @@ uwsm start hyprland-uwsm.desktop
 ```bash
 # NixOS version
 nixos-version
-# → 26.05.20260523.2991645 or newer unstable snapshot
+# → 26.11.20260904.801bef6 or newer unstable snapshot
 
 # Graphical session
 echo $XDG_SESSION_TYPE
@@ -286,7 +286,7 @@ nh os switch .
 
 ```bash
 # Test keybindings
-SUPER + D           # Hyprlauncher (launcher)
+SUPER + D           # Wofi (launcher)
 SUPER + Return      # Ghostty (terminal)
 SUPER + B           # Brave
 SUPER + Q           # Close window
@@ -296,7 +296,7 @@ SUPER + Escape      # Lock screen
 ### 4. Launch desktop and web apps:
 
 ```bash
-# Hyprlauncher -> type "Ferdium", "Spotify", "Vesktop", "Claude"
+# Wofi -> type "Ferdium", "Spotify", "Vesktop", "Claude"
 SUPER + D
 
 # Or in terminal
@@ -349,7 +349,7 @@ nmtui
 
 ```bash
 # Check logs
-journalctl --user -u hyprland
+journalctl --user -u wayland-wm@hyprland-uwsm.desktop.service
 
 # Launch manually
 uwsm start hyprland-uwsm.desktop

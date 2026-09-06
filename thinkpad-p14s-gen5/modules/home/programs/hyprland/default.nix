@@ -65,6 +65,17 @@ in
     '';
   };
 
+  # uwsm's wayland-wm@.service inherits systemd's default OOMPolicy=stop: if
+  # the kernel OOM killer picks ANY process inside the unit's cgroup (apps
+  # spawned by Hyprland autostart, e.g. ferdium), systemd stops the whole unit
+  # and the session dies with it. Happened on 2026-08-13: a magick fan-out
+  # exhausted RAM, the kernel killed ferdium, systemd tore down Hyprland.
+  # continue = only a kill of the main (compositor) process ends the unit.
+  xdg.configFile."systemd/user/wayland-wm@.service.d/oom-policy.conf".text = ''
+    [Service]
+    OOMPolicy=continue
+  '';
+
   # Hyprland-specific packages (core Wayland tools are in system/hyprland.nix)
   home.packages = with pkgs; [
     # ── Hypr ecosystem ──
@@ -76,7 +87,12 @@ in
     hyprsunset # Blue light filter
     hyprsysteminfo # System info display (GPU, CPU, Hyprland version)
     wl-freeze # Freeze window (SIGSTOP) — pause/resume resource-heavy apps
-    grimblast # Screenshots (region, window, output) — official hyprwm/contrib
+    # Screenshots (region, window, output) — official hyprwm/contrib.
+    # grimblast only needs hyprctl, but it wraps its PATH with nixpkgs' own
+    # hyprland. Pointing it at the flake package keeps nixpkgs' hyprland out of
+    # the closure entirely; otherwise every nixpkgs bump drags in a second
+    # Hyprland that is not on hyprland.cachix.org and must compile from source.
+    (grimblast.override { hyprland = hyprlandPackages.hyprland; })
     hyprprop # Window property inspector (click to inspect, like xprop)
     hyprmon # TUI monitor configuration (native, replaces nwg-displays)
     # ── Wayland tools ──
@@ -113,6 +129,9 @@ in
     hyprScripts.sysinfo-panel
     hyprScripts.hypr-keys
     hyprScripts.voice-terminal
-    hyprScripts.voice-lang
+    hyprScripts.voice-command
   ];
+
+  # Voice logs (what was heard, what Gemini returned, what ran): keep 7 days
+  systemd.user.tmpfiles.rules = [ "d %h/.local/state/voice-terminal 0700 - - 7d" ];
 }

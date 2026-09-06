@@ -1,6 +1,6 @@
 # Centralized AI agent skills for Claude Code, ForgeCode, OpenCode, and Codex
 # First rebuild clones missing repos, subsequent rebuilds only redistribute the cache
-# Refresh with network: update-skills (shell function in shell.nix)
+# Refresh with network: update-skills (shell function in overlay-updates.nix)
 { config, pkgs, ... }:
 
 let

@@ -101,6 +101,11 @@
                 };
               };
 
+              # Upstream breakage: androguard's test-only dependency pyqt5 fails
+              # to build on Python 3.14. jadx -> quark-engine -> androguard.
+              androguard = python-prev.androguard.overridePythonAttrs {
+                doCheck = false;
+              };
             })
           ];
         })
@@ -155,7 +160,7 @@
         })
         # Yaru theme - removed from nixpkgs 2026-07-22 (gtk-engine-murrine
         # cleanup); restored locally without the GTK 2 murrine propagation.
-        # All 6 config.theme presets use Yaru GTK/icon theme names.
+        # All 7 config.theme presets use Yaru GTK/icon theme names.
         (final: prev: {
           yaru-theme = prev.callPackage ./overlays/yaru-theme.nix { };
         })
@@ -183,6 +188,17 @@
         (final: prev: {
           waybar = import ./overlays/waybar-latest.nix {
             inherit (pkgsLlama) waybar fetchFromGitHub;
+          };
+        })
+        # Silence the "stdenv.isLinux is deprecated" evaluation warnings that
+        # nixpkgs started emitting on 2026-05-09. The only caller left in our
+        # closure is the sops-nix home-manager module (upstream fix pending in
+        # sops-nix PR #977). Re-adding the plain attributes shadows the
+        # warn-wrapped aliases without touching mkDerivation, so every
+        # derivation hash stays identical. Drop this once sops-nix is fixed.
+        (final: prev: {
+          stdenv = prev.stdenv // {
+            inherit (prev.stdenv.hostPlatform) isLinux isDarwin;
           };
         })
       ];
@@ -249,14 +265,14 @@
           ./modules/system/btrfs.nix
           ./modules/system/amd-optimizations.nix # AMD Ryzen 7 PRO 8840HS + Radeon 780M
           ./modules/system/fonts.nix # System-wide fonts (REQUIRED for Hyprland/Wayland)
-          ./modules/system/vpn-dns-switch.nix # Automatic DNS switching for VPN (Quad9 ↔ Proton)
+          ./modules/system/vpn-dns-switch.nix # Automatic DNS switching (dnscrypt-proxy <-> Proton VPN) + captive portal
           ./modules/system/ddcutil.nix # DDC/CI support for external monitor brightness control
           ./modules/system/sunxi-fel.nix # Allwinner FEL USB access for sunxi-fel without sudo (PocketCHIP)
           ./modules/system/smartcard.nix # pcscd for the Cartao de Cidadao USB reader
+          ./modules/system/scanner.nix # SANE support for the Canon CanoScan LiDE 400
           ./modules/system/security-tools.nix # Security audit tools (nmap, wireshark, aircrack-ng, hashcat)
           ./modules/system/nh.nix # NH - Modern Nix Helper
           ./modules/system/performance.nix # Zram, ananicy-cpp, earlyoom, gamemode
-          ./modules/system/flatpak.nix # Flatpak support (GeForce Now, etc.)
 
           # Home Manager
           home-manager.nixosModules.home-manager

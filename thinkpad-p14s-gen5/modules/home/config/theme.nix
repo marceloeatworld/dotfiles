@@ -74,7 +74,8 @@ let
         cursorSize = 24;
         kvantumTheme = "KvYaru";
         nvimColorscheme = "monokai-pro";
-        nvimFlavor = "ristretto";        preferDark = true;
+        nvimFlavor = "ristretto";
+        preferDark = true;
       };
     };
 
@@ -122,7 +123,8 @@ let
         cursorSize = 24;
         kvantumTheme = "KvDark";
         nvimColorscheme = "monokai-pro";
-        nvimFlavor = "classic";        preferDark = true;
+        nvimFlavor = "classic";
+        preferDark = true;
       };
     };
 
@@ -168,7 +170,8 @@ let
         cursorSize = 24;
         kvantumTheme = "KvBeige";
         nvimColorscheme = "catppuccin";
-        nvimFlavor = "latte";        preferDark = false;
+        nvimFlavor = "latte";
+        preferDark = false;
       };
     };
 
@@ -212,7 +215,8 @@ let
         cursorSize = 24;
         kvantumTheme = "KvArcDark";
         nvimColorscheme = "nord";
-        nvimFlavor = "";        preferDark = true;
+        nvimFlavor = "";
+        preferDark = true;
       };
     };
 
@@ -256,7 +260,8 @@ let
         cursorSize = 24;
         kvantumTheme = "KvArcDark";
         nvimColorscheme = "tokyonight";
-        nvimFlavor = "night";        preferDark = true;
+        nvimFlavor = "night";
+        preferDark = true;
       };
     };
 
@@ -300,7 +305,8 @@ let
         cursorSize = 24;
         kvantumTheme = "KvMojaveMixed";
         nvimColorscheme = "catppuccin";
-        nvimFlavor = "mocha";        preferDark = true;
+        nvimFlavor = "mocha";
+        preferDark = true;
       };
     };
 
@@ -349,7 +355,8 @@ let
         cursorSize = 24;
         kvantumTheme = "KvBeige";
         nvimColorscheme = "catppuccin";
-        nvimFlavor = "latte";        preferDark = false;
+        nvimFlavor = "latte";
+        preferDark = false;
       };
     };
   };

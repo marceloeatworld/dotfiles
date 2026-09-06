@@ -15,6 +15,7 @@ let
   );
 
   vscodeTheme = import ../lib/vscode-theme.nix { };
+  themeConfigs = import ../lib/theme-configs.nix { inherit lib; };
 
   stripHash = color: builtins.substring 1 6 color;
   boolString = value: if value then "true" else "false";
@@ -22,7 +23,6 @@ let
   gtkColorSchemeFor = theme:
     if theme.appearance.preferDark then "prefer-dark" else "prefer-light";
 
-  hyprColor = color: "0xFF${stripHash color}";
   # Shared by Ghostty and Alacritty so both terminals render identically.
   terminalBackground = theme:
     if theme.appearance.preferDark then theme.colors.background else "#e6dfd5";
@@ -191,43 +191,6 @@ let
     magenta = "${theme.colors.magenta}"
     cyan = "${theme.colors.cyan}"
     white = "${theme.colors.brightWhite}"
-  '';
-
-  makoConf = theme: ''
-    background-color=${theme.colors.backgroundAlt}
-    text-color=${theme.colors.foreground}
-    border-color=${theme.colors.accent}
-    progress-color=over ${theme.colors.surface}
-    border-radius=6
-    border-size=2
-    width=360
-    height=150
-    max-visible=3
-    margin=8
-    padding=14
-    default-timeout=4000
-    ignore-timeout=false
-    font=${theme.fonts.mono} 10
-    icons=true
-    max-icon-size=32
-    icon-location=left
-    actions=true
-    group-by=app-name
-    format=<b>%s</b>\n%b
-    layer=overlay
-    anchor=top-right
-
-    [urgency=low]
-    default-timeout=2000
-    border-color=${theme.colors.border}
-
-    [urgency=high]
-    border-color=${theme.colors.red}
-    default-timeout=0
-
-    [app-name=SwayOSD]
-    default-timeout=1000
-    group-by=app-name
   '';
 
   swayosdCss = theme: ''
@@ -469,25 +432,6 @@ let
     }
   '';
 
-  hyprtoolkitConf = theme: ''
-    background = ${hyprColor theme.colors.background}
-    base = ${hyprColor theme.colors.background}
-    alternate_base = ${hyprColor theme.colors.surface}
-
-    text = ${hyprColor theme.colors.foreground}
-    bright_text = ${hyprColor theme.colors.brightWhite}
-
-    accent = ${hyprColor theme.colors.accent}
-    accent_secondary = ${hyprColor theme.colors.accentSecondary}
-
-    font_size = 12
-    h1_size = 17
-    h2_size = 14
-    h3_size = 12
-    small_font_size = 10
-    icon_theme = hicolor
-  '';
-
   btopTheme = theme: ''
     theme[main_bg]="${theme.colors.background}"
     theme[main_fg]="${theme.colors.foreground}"
@@ -543,9 +487,19 @@ let
     theme[process_end]="${theme.colors.red}"
   '';
 
-  kvantumConfig = theme: ''
+  kvantumConfig = themeName: theme: ''
     [General]
-    theme=${theme.appearance.kvantumTheme}
+    theme=${kvantumThemeName themeName theme}
+  '';
+
+  # GTK text selection (entries, text views, labels, and Chromium/Electron
+  # web content when they follow the GTK theme). Overrides the Yaru accent so
+  # selections use the same color everywhere. Imported by gtk.nix.
+  gtkSelectionCss = theme: ''
+    selection {
+      background-color: ${theme.colors.selection};
+      color: ${theme.colors.foreground};
+    }
   '';
 
   gtkSettingsIni = theme: ''
@@ -580,15 +534,17 @@ let
         "theme/themes/${themeName}/hypr.lua".text = hyprLua theme;
         "theme/themes/${themeName}/ghostty.conf".text = ghosttyConf theme;
         "theme/themes/${themeName}/alacritty.toml".text = alacrittyToml theme;
-        "theme/themes/${themeName}/mako.conf".text = makoConf theme;
+        "theme/themes/${themeName}/mako.conf".text = themeConfigs.makoConf theme;
         "theme/themes/${themeName}/swayosd.css".text = swayosdCss theme;
         "theme/themes/${themeName}/wofi.css".text = wofiCss theme;
         "theme/themes/${themeName}/nemo.css".text = nemoCss theme;
         "theme/themes/${themeName}/vscode-settings.json".text =
           builtins.toJSON (vscodeTheme.settingsFor theme);
-        "theme/themes/${themeName}/hyprtoolkit.conf".text = hyprtoolkitConf theme;
+        "theme/themes/${themeName}/hyprtoolkit.conf".text = themeConfigs.hyprtoolkitConf theme;
+        "theme/themes/${themeName}/hyprlock.conf".text = themeConfigs.hyprlockConf theme;
         "theme/themes/${themeName}/btop.theme".text = btopTheme theme;
-        "theme/themes/${themeName}/kvantum.kvconfig".text = kvantumConfig theme;
+        "theme/themes/${themeName}/kvantum.kvconfig".text = kvantumConfig themeName theme;
+        "theme/themes/${themeName}/gtk-selection.css".text = gtkSelectionCss theme;
         "theme/themes/${themeName}/gtk-3.0-settings.ini".text = gtkSettingsIni theme;
         "theme/themes/${themeName}/gtk-4.0-settings.ini".text = gtkSettingsIni theme;
         "theme/themes/${themeName}/gtkrc-2.0".text = gtk2Rc theme;
@@ -597,22 +553,41 @@ let
     { }
     runtimeThemeNames;
 
+  # One Kvantum theme per runtime theme, derived from the stock Kvantum theme
+  # with the highlight colors replaced by the theme's selection/foreground.
+  # Qt apps (and Brave, which follows the Qt palette) then use the same
+  # selection color as the terminals, VS Code and GTK. Themes are keyed by
+  # runtime theme name because two runtime themes can share a Kvantum base.
   kvantumThemePackage = pkgs.qt6Packages.qtstyleplugin-kvantum;
-  runtimeKvantumThemes = lib.unique (map
-    (themeName: runtimeThemes.${themeName}.appearance.kvantumTheme)
-    runtimeThemeNames);
-  extraKvantumThemes = builtins.filter
-    (themeName: themeName != config.theme.appearance.kvantumTheme)
-    runtimeKvantumThemes;
+  kvantumThemeName = themeName: theme: "${theme.appearance.kvantumTheme}-${themeName}";
+  kvantumThemeDir = themeName: theme:
+    let
+      base = theme.appearance.kvantumTheme;
+      name = kvantumThemeName themeName theme;
+    in
+    pkgs.runCommand "kvantum-${name}" { } ''
+      mkdir -p "$out/${name}"
+      cp -r "${kvantumThemePackage}/share/Kvantum/${base}/." "$out/${name}/"
+      mv "$out/${name}/${base}.svg" "$out/${name}/${name}.svg"
+      ${pkgs.gnused}/bin/sed \
+        -e 's/^highlight\.color=.*/highlight.color=${theme.colors.selection}/' \
+        -e 's/^inactive\.highlight\.color=.*/inactive.highlight.color=${theme.colors.selection}/' \
+        -e 's/^highlight\.text\.color=.*/highlight.text.color=${theme.colors.foreground}/' \
+        "$out/${name}/${base}.kvconfig" > "$out/${name}/${name}.kvconfig"
+      rm "$out/${name}/${base}.kvconfig"
+    '';
   kvantumAssets = lib.foldl'
     (acc: themeName:
+      let
+        theme = runtimeThemes.${themeName};
+        name = kvantumThemeName themeName theme;
+      in
       acc // {
-        "Kvantum/${themeName}".source =
-          "${kvantumThemePackage}/share/Kvantum/${themeName}";
+        "Kvantum/${name}".source = "${kvantumThemeDir themeName theme}/${name}";
       }
     )
     { }
-    extraKvantumThemes;
+    runtimeThemeNames;
 
   vscodeSettingsUpdater = pkgs.writeText "theme-switch-vscode-settings.js" ''
     const fs = require("fs");
@@ -890,6 +865,7 @@ let
     link_config "$theme_dir/mako.conf" "$config_home/mako/config"
     link_config "$theme_dir/kvantum.kvconfig" "$config_home/Kvantum/kvantum.kvconfig"
     link_config "$theme_dir/hyprtoolkit.conf" "$config_home/hypr/hyprtoolkit.conf"
+    link_config "$theme_dir/hyprlock.conf" "$config_home/hypr/hyprlock.conf"
     link_config "$theme_dir/btop.theme" "$config_home/btop/themes/current.theme"
 
     # shellcheck disable=SC1091
@@ -913,6 +889,11 @@ let
 
     update_vscode_settings
 
+    # The day/night timers run this from a systemd user unit whose XDG_DATA_DIRS
+    # carries no gsettings schemas, so gsettings failed with "No schemas
+    # installed" and dconf kept the previous theme's values (portal
+    # color-scheme, GTK4 apps, Chromium dark mode all went stale).
+    export GSETTINGS_SCHEMA_DIR="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas"
     ${pkgs.glib}/bin/gsettings set org.gnome.desktop.interface color-scheme "$GTK_COLOR_SCHEME" >/dev/null 2>&1 || true
     ${pkgs.glib}/bin/gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME" >/dev/null 2>&1 || true
     ${pkgs.glib}/bin/gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" >/dev/null 2>&1 || true

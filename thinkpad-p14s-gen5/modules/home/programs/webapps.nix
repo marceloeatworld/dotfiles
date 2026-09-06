@@ -5,7 +5,7 @@
 {
   # Desktop entries for web apps
   xdg.desktopEntries = {
-    # YouTube (bonus - useful for Hyprland window rules)
+    # YouTube (PiP window rules match this app class)
     youtube-web = {
       name = "YouTube";
       genericName = "Video Streaming";
@@ -16,18 +16,18 @@
       categories = [ "Network" "AudioVideo" "Video" ];
     };
 
-    # Twitch (bonus - useful for Hyprland window rules)
+    # Twitch (PiP window rules match this app class)
     twitch-web = {
       name = "Twitch";
       genericName = "Live Streaming";
       comment = "Twitch Web Application";
       exec = "brave --app=https://twitch.tv/";
-      icon = "twitch";
+      icon = "twitch";  # assets/icons/twitch.png (webapp-icons.nix)
       terminal = false;
       categories = [ "Network" "AudioVideo" "Video" ];
     };
 
-    # ChatGPT (bonus - popular for productivity)
+    # ChatGPT
     chatgpt-web = {
       name = "ChatGPT";
       genericName = "AI Assistant";
@@ -38,7 +38,7 @@
       categories = [ "Office" ];  # Single main category to avoid duplicates
     };
 
-    # GitHub (bonus - for developers)
+    # GitHub
     github-web = {
       name = "GitHub";
       genericName = "Development Platform";
@@ -66,7 +66,7 @@
       genericName = "Email Client";
       comment = "Proton Mail Web Application";
       exec = "brave --app=https://mail.proton.me/";
-      icon = "protonmail";  # From Papirus icon theme
+      icon = "protonmail";  # assets/icons/protonmail.png (webapp-icons.nix)
       terminal = false;
       categories = [ "Network" "Email" "Office" ];
       mimeType = [ "x-scheme-handler/mailto" ];
@@ -89,7 +89,7 @@
       genericName = "Password Manager";
       comment = "Proton Pass Web Application";
       exec = "brave --app=https://pass.proton.me/";
-      icon = "dialog-password";  # Generic password icon from system
+      icon = "protonpass";  # assets/icons/protonpass.png (webapp-icons.nix)
       terminal = false;
       categories = [ "Network" "Utility" "Security" ];
     };

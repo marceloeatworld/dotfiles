@@ -1,111 +1,12 @@
 # Terminal cheatsheet command (`keys`)
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
-  keysContent = ''
-    ━━━━━━━━━━━━━━━ HYPRLAND ━━━━━━━━━━━━━━━
-    Super+Enter     Terminal (Ghostty)
-    Super+B         Browser (Brave)
-    Super+E         File manager (Nemo)
-    Super+D         App launcher (Wofi, all apps)
-    Super+A         Audio control panel
-    Super+Y         YouTube PiP (toggle show/hide)
-    Super+U         Twitch PiP (toggle show/hide)
-    Super+R         XFeed panel (toggle show/hide)
-    2xClick media   Dock/undock PiP on waybar (YT/Twitch)
-    Super+Q         Close window
-    Super+Shift+Q   Force kill window
-    Super+O         Quick notes
-    Super+I         System info panel
-    Super+Shift+I   Detailed system info
-    Super+X         Malware lab menu
-    Super+Z         Freeze/unfreeze focused app
-    Super+F1        Keybindings cheatsheet
+  keymap = import ./hyprland/keymap.nix { inherit lib; };
+  # Hyprland sections come from hyprland/keymap.nix (shared with Super+F1
+  # and the hyprlock labels); the rest is maintained here.
+  keysContent = keymap.cheatsheet + ''
 
-    ━━━━━━━━━━━━━ WINDOWS ━━━━━━━━━━━━━
-    Super+F         Fullscreen
-    Super+Shift+F   Fullscreen (keep bar)
-    Super+Space     Toggle floating
-    Super+P         Pin (all workspaces)
-    Super+W         Center floating window
-    Super+T         Toggle split (H/V)
-    Super+Tab       Last focused window
-    Alt+Tab         Next window
-    Alt+Shift+Tab   Previous window
-    Super+H/J/K/L       Move focus
-    Super+Shift+HJKL    Move window
-    Super+Ctrl+HJKL     Resize window (40px)
-    Super+Ctrl+Shift+HJKL Swap tiled windows
-    Super+Mouse L       Move window (drag)
-    Super+Mouse R       Resize window (drag)
-      Floating windows snap to edges/other windows
-
-    ━━━━━━━━━━━━ GROUPS (TABS) ━━━━━━━━━━━━
-    Super+G         Toggle group
-    Super+Shift+G   Lock group
-    Super+[ / ]     Prev/next tab in group
-    Super+Ctrl+[ / ] Reorder tab in group
-      Drag windows into groups to tab them
-
-    ━━━━━━━━━━━━ WORKSPACES ━━━━━━━━━━━━
-    Super+1-9/0     Workspace 1-10
-    Super+Shift+1-9/0 Move window to WS 1-10
-    Super+Ctrl+1-5  Focus WS on current monitor
-    Super+Shift+Tab Swap workspaces between monitors
-    Super+Ctrl+M    Move current WS to next monitor
-    Super+Shift+P   Toggle laptop screen (eDP-1)
-    Super+Scroll    Cycle existing workspaces
-    Super+Alt+H/L   Move window to prev/next WS
-    Super+S         Special workspace
-    Super+Shift+S   Move to special WS
-    Super+minus     Minimize to special
-    Super+Shift+minus  Show minimized
-    3-finger swipe  Switch workspace (touchpad+touch)
-
-    ━━━━━━━━━━━━━━━ UTILS ━━━━━━━━━━━━━━━
-    Super+V         Clipboard history
-    Super+Shift+V   Clear clipboard
-    Super+C         Color picker
-    Super+N         Blue light filter (cycle 8 levels)
-    Super+Shift+N   Blue light off
-    Super+M         Battery mode (55-60/95-100%)
-    Super+Shift+M   Performance mode (battery/balanced/max)
-    Super+Shift+T   Toggle touchpad
-    Super+Shift+C   Window inspector (hyprprop)
-    Super+Shift+R   Restart Waybar
-
-    ━━━━━━━━━━━━ SCREENSHOTS ━━━━━━━━━━━━
-    Print              Region -> clipboard
-    Super+Print        Region -> file
-    Shift+Print        Full screen -> clipboard
-    Super+Shift+Print  Full screen -> file
-    Super+Ctrl+Print   Active window -> clipboard
-
-    ━━━━━━━━━━━━━ SYSTEM ━━━━━━━━━━━━━
-    Super+Esc            Lock screen
-    Super+Shift+Esc      Power off
-    Super+Ctrl+Esc       Reboot
-    Super+Alt+Esc        Suspend to RAM
-    Super+Ctrl+Shift+Esc  Monitors off
-
-    ━━━━━━━━━━━━ KEYBOARD ━━━━━━━━━━━━
-    Super+F3         Switch layout (FR ↔ US)
-      Waybar: click language indicator
-
-    ━━━━━━━━━━━━━━ WIFI ━━━━━━━━━━━━━━
-    Super+F2         Reconnect WiFi
-    Super+Shift+F2   Scan & connect (wofi menu)
-    Super+Ctrl+F2    Toggle WiFi on/off
-    captive-on       Bypass DNS (portals)
-    captive-off      Restore secure DNS
-
-    ━━━━━━━━━━━━━ MEDIA ━━━━━━━━━━━━━
-    Volume keys      Volume up/down/mute (SwayOSD)
-    Brightness keys  Brightness up/down (SwayOSD)
-    Play/Pause       Media play/pause
-    Next/Prev        Media next/prev
-    Stop             Media stop
-    Mic Mute         Microphone toggle
 
     ━━━━━━━━━━━━━━ XFEED ━━━━━━━━━━━━━━
     Super+R              Show/hide XFeed (pauses while hidden)
@@ -126,7 +27,7 @@ let
     Ctrl+Shift+T           New tab
     Ctrl+Shift+W           Close tab
     Ctrl+Shift+Right/Left  Next/prev tab
-    Ctrl+Shift+1-5         Go to tab 1-5
+    Ctrl+Shift+1-9         Go to tab 1-9
     Ctrl+Shift+Enter       Split down
     Ctrl+Shift+\           Split right
     Ctrl+Alt+Enter         Split up
@@ -505,6 +406,25 @@ let
     systemctl status <s>   Service status
     systemctl --failed     Failed services
     tlp-stat               Battery/power info
+
+    ━━━━━━━━━━━━ SCANNER ━━━━━━━━━━━━
+    scan-doc               Document A4 -> auto-named TIFF
+    scan-doc name.tif      Document, chosen name
+    scan-photo             Photo, full A4 area
+    scan-photo 50 68       Photo cropped to 50x68 mm
+    scan-photo p.tif 50 68 Photo, chosen name + size
+    scanimage -L           List detected scanners
+    xsane                  GUI frontend (every option)
+      Canon LiDE 400; 48-bit colour, 600 dpi, linear gamma
+      Bare name -> ~/Pictures/scans/; a path is used as given
+      Flatbed only: no negatives or slides (no transparency unit)
+      Rotate:  magick in.tif -rotate -90 out.tif
+      Rotate:  magick in.tif -rotate 180 out.tif
+      Readable copy (for AI or printing):
+        magick in.tif -gamma 2.2 -contrast-stretch 0.5%x0.5%
+          -resize 2200x -quality 92 read.jpg
+      Faint ink: add -channel R -separate before -gamma
+      Check depth: identify -verbose f.tif | grep -i depth
 
     ━━━━━━━━━ STEGANOGRAPHY ━━━━━━━━━
     st3gg encode <f> "msg"  Hide data in image

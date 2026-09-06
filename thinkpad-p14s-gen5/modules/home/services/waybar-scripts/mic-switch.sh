@@ -1,48 +1,46 @@
 #!/usr/bin/env bash
-# Microphone input switcher: cycle through available audio sources
-# Skips video sources (webcam etc.)
+# Microphone input switcher: cycle through the available audio sources.
+# Skips monitors, video sources and sources whose active port is unplugged
+# (e.g. the jack mic with nothing connected).
 
-AUDIO_SECTION=$(wpctl status | sed -n '/^Audio/,/^Video/p')
-SOURCE_SECTION=$(echo "$AUDIO_SECTION" | sed -n '/Sources:/,/Filters:/p')
+# name<TAB>description for every usable source, in pactl order
+mapfile -t ENTRIES < <(
+  pactl list sources | awk '
+    function flush() {
+      if (name != "" && name !~ /\.monitor$/ && name !~ /^v4l2_/ && !(port in down))
+        print name "\t" desc
+      name = ""
+    }
+    /^Source #/           { flush(); desc = ""; port = ""; delete down }
+    /^\tName: /           { name = $2 }
+    /^\tDescription: /    { desc = $0; sub(/^\tDescription: /, "", desc) }
+    # Ports are listed before "Active Port"; remember the unplugged ones
+    /^\t\t\[.*not available\)$/ { p = $0; sub(/^\t\t/, "", p); sub(/:.*/, "", p); down[p] = 1 }
+    /^\tActive Port: /    { port = $0; sub(/^\tActive Port: /, "", port) }
+    END                   { flush() }
+  '
+)
 
-# Get all audio source IDs (match "82." pattern, not "1.00" volume)
-SOURCES=$(echo "$SOURCE_SECTION" | grep -oP '\*?\s*\K\d+(?=\.\s)')
-
-if [ -z "$SOURCES" ]; then
+COUNT=${#ENTRIES[@]}
+if [ "$COUNT" -eq 0 ]; then
   notify-send -u critical "Mic Switch" "No microphone sources found" -i dialog-error
   exit 1
 fi
-
-# Get current default source ID (line with *)
-CURRENT=$(echo "$SOURCE_SECTION" | grep '\*' | grep -oP '\*\s*\K\d+(?=\.)')
-
-# Build array of source IDs
-IDS=()
-while read -r id; do
-  IDS+=("$id")
-done <<< "$SOURCES"
-
-COUNT=${#IDS[@]}
 if [ "$COUNT" -lt 2 ]; then
   notify-send "Mic Switch" "Only one microphone available" -i audio-input-microphone
   exit 0
 fi
 
-# Find current index and switch to next
+CURRENT=$(pactl get-default-source)
 NEXT_IDX=0
-for i in "${!IDS[@]}"; do
-  if [ "${IDS[$i]}" = "$CURRENT" ]; then
+for i in "${!ENTRIES[@]}"; do
+  if [ "${ENTRIES[$i]%%$'\t'*}" = "$CURRENT" ]; then
     NEXT_IDX=$(( (i + 1) % COUNT ))
     break
   fi
 done
 
-NEXT_ID="${IDS[$NEXT_IDX]}"
-wpctl set-default "$NEXT_ID"
-
-# Get the name of the new source
-NEXT_NAME=$(wpctl inspect "$NEXT_ID" 2>/dev/null | grep 'node.description' | sed 's/.*= "\(.*\)"/\1/')
-[ -z "$NEXT_NAME" ] && NEXT_NAME=$(wpctl inspect "$NEXT_ID" 2>/dev/null | grep 'node.nick' | sed 's/.*= "\(.*\)"/\1/')
-[ -z "$NEXT_NAME" ] && NEXT_NAME="Source $NEXT_ID"
-
-notify-send "Mic Switch" "Input: $NEXT_NAME" -i audio-input-microphone
+NEXT_NAME="${ENTRIES[$NEXT_IDX]%%$'\t'*}"
+NEXT_DESC="${ENTRIES[$NEXT_IDX]#*$'\t'}"
+pactl set-default-source "$NEXT_NAME"
+notify-send "Mic Switch" "Input: ${NEXT_DESC:-$NEXT_NAME}" -i audio-input-microphone

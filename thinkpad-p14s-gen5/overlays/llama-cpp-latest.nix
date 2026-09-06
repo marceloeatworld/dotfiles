@@ -3,7 +3,8 @@
 # Source: https://github.com/ggml-org/llama.cpp
 #
 # To update:
-#   1. Check latest: curl -s https://api.github.com/repos/ggml-org/llama.cpp/releases/latest | jq -r .tag_name
+#   1. Check latest bNNNN build (releases/latest now returns the stable vX.Y.Z line):
+#      curl -s "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=30" | jq -r '[.[] | select(.tag_name | test("^b[0-9]+$"))][0].tag_name'
 #   2. Get hash: nix-prefetch-url --unpack "https://github.com/ggml-org/llama.cpp/archive/refs/tags/VERSION.tar.gz"
 #   3. Convert: nix hash convert --hash-algo sha256 --to sri HASH
 #   4. Update version and hash below
@@ -13,10 +14,10 @@
 
 let
   # AUTO-UPDATED BY update-llama-cpp SCRIPT
-  version = "10001";
-  hash = "sha256-920L5tTVzl2HCRHIsFCJNeE744lcneerl0sIxmWb1t8=";
+  version = "10819";
+  hash = "sha256-6x9ryBR71MSZgJ8e4ysFlQCnQHtFsNnYlPevBUvlPNY=";
   # webui npm deps hash for this pinned version (decouples from nixpkgs)
-  npmDepsHash = "sha256-6s9skw1wzEfm9QKktTqea3J+oudQAsS6O2VnZEMXAdw=";
+  npmDepsHash = "sha256-2Q7XhaLAArmviOLdQsNbYTfdyDE5pW9lR26cRHEVl9k=";
 in
 (llama-cpp.override {
   rocmSupport = true;   # AMD GPU acceleration via ROCm

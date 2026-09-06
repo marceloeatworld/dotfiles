@@ -67,7 +67,7 @@ else
 fi
 TOOLTIP="${TOOLTIP}\n\n<span color='$C_DIM'>Output</span>  <span color='$C_FG'>$MODE_DESC</span>"
 [ -n "$SINK_NAME" ] && TOOLTIP="${TOOLTIP}\n<span color='$C_DIM'>Device</span>  <span color='$C_FG'>$(pango_escape "$SINK_NAME")</span>"
-[ -n "$JACK" ] && TOOLTIP="${TOOLTIP}\n<span color='$C_GREEN'>🎧 Headphones plugged</span>"
+[ -n "$JACK" ] && TOOLTIP="${TOOLTIP}\n<span color='$C_GREEN'>󰋋 Headphones plugged</span>"
 TOOLTIP="${TOOLTIP}\n\n<span color='$C_DIM'>Left: Cycle │ Right: Mute │ Middle: Mixer</span>"
 TOOLTIP="${TOOLTIP//\\n/$'\n'}"
 

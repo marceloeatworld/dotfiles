@@ -292,12 +292,14 @@
         # Pinned to v10.x: pnpm v11 (2026-04-28) broke nixpkgs's pnpmConfigHook.
         # Re-enable v11+ once nixpkgs catches up.
         # Uses npm tarball (JS bundle) so the wrapper runs on system Node 22.
+        # The npm "latest-10" dist-tag tracks the v10 line; the GitHub release
+        # list no longer contains v10 tags once v11/v12 releases push them out.
         update-binary-overlay \
           "pnpm" \
           "overlays/pnpm-latest.nix" \
-          "https://api.github.com/repos/pnpm/pnpm/releases?per_page=50" \
-          "[.[] | select(.tag_name | startswith(\"v10.\"))][0].tag_name" \
-          "v" \
+          "https://registry.npmjs.org/pnpm" \
+          ".\"dist-tags\".\"latest-10\"" \
+          "" \
           "https://registry.npmjs.org/pnpm/-/pnpm-{version}.tgz" \
           "sha256"
       }
@@ -391,21 +393,33 @@
 
       # Update llama.cpp and rebuild (long compile time)
       function update-llama() {
+        # llama.cpp now tags stable releases vX.Y.Z and marks the per-merge
+        # bNNNN builds as prereleases, so releases/latest returns "v0.4.0"
+        # and would produce the tag "bv0.4.0". Keep following the bNNNN
+        # line the overlay pins (tag = "b" + version) by picking the newest
+        # b* entry from the release list.
+        local OVERLAY BACKUP
+        OVERLAY=$(overlay-path "overlays/llama-cpp-latest.nix") || return 1
+        BACKUP=$(mktemp)
+        cp "$OVERLAY" "$BACKUP"
         update-binary-overlay \
           "llama.cpp" \
           "overlays/llama-cpp-latest.nix" \
-          "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest" \
-          ".tag_name" \
+          "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=30" \
+          "[.[] | select(.tag_name | test(\"^b[0-9]+$\"))][0].tag_name" \
           "b" \
           "https://github.com/ggml-org/llama.cpp/archive/refs/tags/{raw}.tar.gz" \
           "hash" \
           "unpack" \
           "b"
         local update_status=$?
-        [[ $update_status -eq 2 ]] || return $update_status
-
-        local OVERLAY
-        OVERLAY=$(overlay-path "overlays/llama-cpp-latest.nix") || return 1
+        if [[ $update_status -ne 2 ]]; then
+          # 0 = up to date, 1 = download failed after version/hash were sed'd in
+          [[ $update_status -eq 1 ]] && cp "$BACKUP" "$OVERLAY"
+          rm -f "$BACKUP"
+          return $update_status
+        fi
+        rm -f "$BACKUP"
 
         # Refresh npmDepsHash: the webui npm lockfile changes between releases,
         # so the prior hash is stale. Build once to let Nix report the correct

@@ -9,10 +9,10 @@ Personal NixOS configurations with flakes and home-manager.
 **Primary configuration** - Hyprland (Wayland) with themeable UI (7 themes)
 
 - **Hardware:** AMD Ryzen 7 PRO 8840HS + Radeon 780M (RDNA 3)
-- **Kernel:** `linuxPackages_latest` (currently 7.1.3)
+- **Kernel:** `linuxPackages_latest` (currently 7.2.3)
 - **Storage:** 1TB NVMe (LUKS + Btrfs, 7 subvolumes)
-- **RAM:** 32GB + zram (zstd, 75% / ~24GB)
-- **NixOS:** `nixos-unstable` (currently 26.11.20260708)
+- **RAM:** 32GB + zram (zstd, 75% / ~20GB)
+- **NixOS:** `nixos-unstable` (currently 26.11.20260904)
 - **State versions:** NixOS/Home Manager 25.05
 
 **Features:**
@@ -25,8 +25,8 @@ Personal NixOS configurations with flakes and home-manager.
 - AI coding agents (Claude Code, ForgeCode, OpenCode, Codex)
 - Kali red-team container
 - Malware analysis VM (libvirt + network killswitch)
-- SDR radio tools (SDR++, GQRX, GNURadio)
-- Extensive security toolkit (aircrack-ng, hashcat, nmap, Wireshark, Ghidra, angr, etc.)
+- SDR radio tools (SDR++, rtl-sdr, SoapySDR)
+- Extensive security toolkit (aircrack-ng, hashcat, nmap, Wireshark, Ghidra, etc.)
 - Performance tuning (zram 75%, ananicy-cpp, earlyoom, GameMode, app memory slices)
 - Firejail sandboxing for 17 wrapped apps plus dedicated Brave/Brave-HW profiles, opt-in jailed-* agent wrappers, and AppArmor
 
@@ -57,17 +57,17 @@ nix flake update
 ```
 dotfiles/
 ├── thinkpad-p14s-gen5/           # ThinkPad P14s Gen 5 AMD configuration
-│   ├── flake.nix                 # Main flake (nixos-unstable + 9 overlays)
-│   ├── flake.lock                # Locked inputs (current system: 26.11.20260708)
-│   ├── overlays/                 # 9 custom package overlays
+│   ├── flake.nix                 # Main flake (nixos-unstable + 10 overlays)
+│   ├── flake.lock                # Locked inputs (current system: 26.11.20260904)
+│   ├── overlays/                 # 10 custom package overlays
 │   ├── hosts/thinkpad/           # Hardware configs, disko (LUKS + Btrfs)
 │   ├── sops/                     # Encrypted secrets (age/sops-nix)
 │   ├── modules/
-│   │   ├── system/               # 20 system modules (boot, networking, security, etc.)
-│   │   └── home/                 # 48 home-manager imports
+│   │   ├── system/               # 21 system modules (boot, networking, security, etc.)
+│   │   └── home/                 # 50 home-manager imports
 │   │       ├── programs/         # 33 program modules + split Hyprland submodules
 │   │       ├── services/         # 5 service modules (waybar, mako, hyprlock, swayosd, mic autoswitch)
-│   │       └── config/           # 10 config modules (theme, gtk, qt, fonts, secrets, etc.)
+│   │       └── config/           # 11 config modules (theme, runtime theme, gtk, qt, fonts, secrets, etc.)
 │   ├── assets/icons/             # Local webapp icons
 │   └── README.md                 # Complete user documentation
 ├── vpn/                          # WireGuard configs (gitignored)
@@ -79,13 +79,13 @@ dotfiles/
 
 - **NixOS unstable / 26.11 generation** - Declarative Linux distribution
 - **Flakes** - Reproducible builds with locked dependencies
-- **Home Manager** - Declarative user environment (48 imports)
+- **Home Manager** - Declarative user environment (50 imports)
 - **Disko** - Declarative disk partitioning (LUKS + Btrfs)
 - **Hyprland** - Modern Wayland compositor (from official flake)
 - **UWSM** - Universal Wayland Session Manager
 - **NH (Nix Helper)** - Modern rebuild tool with visual diffs
 - **Ghostty** - GPU-accelerated terminal
-- **Hyprlauncher** - Official Hyprland app launcher
+- **Wofi** - App launcher (drun) and clipboard picker; hyprlauncher installed, daemon disabled
 - **sops-nix** - Encrypted API keys via age
 
 ## Common Commands
@@ -98,7 +98,7 @@ nh os test .                      # Test without setting boot default
 nh os build .                     # Build and show diff
 nix flake update                  # Update dependencies
 nix flake check                   # Validate configuration
-nh clean all --keep 5             # Clean old generations
+nh clean all --keep 3             # Clean old generations
 ```
 
 ## Shell Aliases And Functions
@@ -108,7 +108,8 @@ nh clean all --keep 5             # Clean old generations
 | `rebuild` | `cd "$(dotfiles-flake-dir)" && nh os switch .` | Rebuild system |
 | `update` | selective `nix flake update` (skips Hyprland stack + nixpkgs-llama) + `update-overlays` + `nh os switch .` | Full update |
 | `update-apps` | `update-overlays`, then `nh os switch .` when something changed | Update overlays + agent skills |
-| `clean` | `nh clean all --keep 5` | Clean old generations |
+| `update-hyprland` | updates hyprland/hyprshutdown inputs + `nh os switch .` | Update the Hyprland stack (run deliberately, e.g. weekly) |
+| `clean` | `nh clean all --keep 3` | Clean old generations |
 | `secrets` | `sops "$(dotfiles-flake-dir)/sops/api-keys.yaml"` | Edit encrypted API keys |
 
 **Auto-update functions:**

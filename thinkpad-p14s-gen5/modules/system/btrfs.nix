@@ -25,12 +25,16 @@
   services.btrbk = {
     instances = {
       btrbk = {
-        onCalendar = "hourly";
+        # One snapshot per day, kept 3 days. The previous hourly schedule with
+        # a 24h window plus 3 daily kept every deleted file alive for days:
+        # after the 2026-09-06 cleanup (250 GB) the disk space only came back
+        # once the snapshots expired.
+        onCalendar = "daily";
         settings = {
           # Global settings
           timestamp_format = "long";
-          snapshot_preserve = "24h 3d"; # Keep: 24h (all), 3 daily
-          snapshot_preserve_min = "1d";
+          snapshot_preserve = "3d"; # Keep 3 daily snapshots
+          snapshot_preserve_min = "latest";
           target_preserve_min = "no";
 
           # Midnight retention can delete a full day of hourly snapshots at
@@ -77,22 +81,10 @@
     "d /.snapshots/home 0755 root root -"
   ];
 
-  # Optional: Enable Btrfs autodefrag (can help on HDDs, less important on SSDs)
-  # Uncomment if needed:
-  # fileSystems."/".options = [ "autodefrag" ];
-
-  # Zstd compression configuration (already in disko-config)
-  # All subvolumes use compress=zstd for better performance and space savings
-
-  # TRIM support for SSD: weekly fstrim batch (services.fstrim above).
-  # Mount options must say nodiscard explicitly because the kernel defaults
-  # btrfs on SSDs to discard=async since 6.2.
-
-  # Swap file configuration
-  # Btrfs swap file is configured in disko-config.nix on a dedicated @swap
-  # subvolume with nodatacow/nodatasum. Hibernation is intentionally disabled
-  # in services.nix until a real resume_offset is measured on the installed
-  # machine:
+  # Compression (compress=zstd) and the nodiscard mount option live in
+  # disko-config.nix. The swap file sits on the dedicated @swap subvolume
+  # (nodatacow/nodatasum). Hibernation is disabled in services.nix until a
+  # real resume_offset is measured on the installed machine:
   #
   #   sudo btrfs inspect-internal map-swapfile -r /swap/swapfile
   #

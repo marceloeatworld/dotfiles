@@ -43,5 +43,13 @@ in
 
     /* Import app-specific CSS */
     @import url("nemo.css");
+
+    /* Runtime theme text selection colors (follows theme-switch) */
+    @import url("${runtimeThemePath}/gtk-selection.css");
+  '';
+
+  home.file.".config/gtk-4.0/gtk.css".text = ''
+    /* Runtime theme text selection colors (follows theme-switch) */
+    @import url("${runtimeThemePath}/gtk-selection.css");
   '';
 }

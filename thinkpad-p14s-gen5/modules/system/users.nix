@@ -24,8 +24,7 @@
     ];
     shell = pkgs.zsh;
 
-    # Password will be set during installation with: nixos-enter && passwd marcelo
-    # initialPassword = "changeme";  # REMOVED for security
+    # Password is set during installation with: nixos-enter && passwd marcelo
   };
 
   # Enable ZSH system-wide
@@ -34,4 +33,9 @@
   # Require a password for sudo from users in the wheel group
   # Set to false to allow passwordless sudo (less secure)
   security.sudo.wheelNeedsPassword = true;
+  # security.sudo.execWheelOnly must stay off: the btrbk service runs as the
+  # unprivileged "btrbk" user and takes snapshots through "sudo -n btrfs"
+  # (NixOS btrbk module sudo rules). With the wrapper restricted to wheel,
+  # every hourly snapshot failed with "/run/wrappers/bin/sudo: Permission
+  # denied" (2026-09-06 02:00).
 }

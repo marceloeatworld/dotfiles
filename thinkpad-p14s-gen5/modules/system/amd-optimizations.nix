@@ -79,20 +79,9 @@ in
       HSA_OVERRIDE_GFX_VERSION = rocmCfg.gfxVersion;
     };
 
-    # NOTE: All sysctl settings are consolidated in performance.nix
-    # (vm.swappiness, vm.vfs_cache_pressure, kernel.nmi_watchdog)
-
-    # CPU frequency scaling for Zen 4
-    # AMD P-State EPP provides better performance than acpi-cpufreq
-    # NOTE: initcall_blacklist=acpi_cpufreq_init removed - amd-pstate active mode comes from the nixos-hardware P14s profile (see boot.nix)
-    # NOTE: GPU parameters are in boot.nix to centralize boot configuration
-    # See boot.nix for amdgpu.* kernel parameters including DMCUB fix
-
-    # NOTE: CPU boost is managed by TLP in services.nix
-    # TLP handles CPU_BOOST_ON_AC and CPU_BOOST_ON_BAT dynamically
-    # Do not force boost settings here to avoid conflicts with TLP
-
-    # NOTE: linux-firmware is pulled in by hardware.enableRedistributableFirmware above.
+    # Sysctls live in performance.nix, amdgpu.* kernel parameters in boot.nix,
+    # amd-pstate active mode comes from the nixos-hardware P14s profile, and
+    # CPU boost is TLP's job (services.nix).
 
     # Performance tuning for NVMe SSD
     services.udev.extraRules = ''
@@ -109,14 +98,10 @@ in
       system-features = [ "gccarch-znver4" "avx512" "avx2" "sse4" ];
     };
 
-    # NOTE: thermald is Intel-only and NOT compatible with AMD CPUs
-
     environment.systemPackages = with pkgs; [
       # AMD monitoring tools
       lm_sensors # Hardware monitoring (sensors command)
       radeontop # GPU usage monitor
-      # NOTE: LACT is in nixpkgs (pkgs.lact, services.lact); intentionally not installed:
-      # lact
 
       # Power monitoring
       powertop

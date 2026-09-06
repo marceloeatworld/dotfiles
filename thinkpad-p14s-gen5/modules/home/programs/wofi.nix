@@ -1,5 +1,5 @@
-# Wofi - dmenu-like picker used for clipboard history (SUPER+V) and one-off
-# WiFi/password prompts. Themed to match the rest of the desktop.
+# Wofi - app launcher (SUPER+D drun) and dmenu picker for clipboard history
+# (SUPER+V), WiFi/VPN selection and the lab menu. Themed via the runtime theme.
 { config, pkgs, ... }:
 
 let

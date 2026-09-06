@@ -3,13 +3,9 @@
 { config, pkgs, ... }:
 
 let
-  # Security hook for blocking access to sensitive files and dangerous commands
-  # Based on official Claude Code hooks documentation:
+  # Hooks follow the official Claude Code hooks documentation:
   # https://code.claude.com/docs/en/hooks
-  # https://code.claude.com/docs/en/hooks-guide
-  # Security hook: PreToolUse — blocks sensitive file access and dangerous commands
-  # Uses exit 0 + JSON permissionDecision per official docs:
-  # https://docs.anthropic.com/en/docs/claude-code/hooks
+
   # PostToolUse hook: auto-inject core principles into any CLAUDE.md created by Claude
   ensureClaudeMdPrincipleHook = pkgs.writeText "ensure_claudemd_principle.py" ''
     #!/usr/bin/env python3
@@ -625,7 +621,14 @@ let
     attribution = {
       commit = "";
       pr = "";
+      sessionUrl = false; # no Claude-Session trailer from cloud/Remote Control sessions
     };
+    # Privacy and hardening (see code.claude.com/docs/en/settings-reference)
+    feedbackSurveyRate = 0; # never show the session quality survey
+    feedbackDrafts = "off"; # Claude cannot queue feedback drafts
+    disableClaudeAiConnectors = true; # MCP servers are declared here, not fetched from claude.ai
+    isolatePeerMachines = true; # approval before SendMessage reaches a session on another machine
+    disableSkillShellExecution = true; # third-party skills cannot run inline !`cmd` blocks
     # Hooks — defense in depth + productivity
     hooks = {
       # Security: block access to sensitive files and dangerous commands
@@ -731,9 +734,14 @@ let
       args = [ "mcp-nixos" ];
       alwaysLoad = true;
     };
+    # Native streamable HTTP: Claude Code performs the OAuth flow itself and
+    # persists the token. The former `pnpm dlx mcp-remote` wrapper re-fetched
+    # the newest release on every launch, and each version keeps its tokens in
+    # its own ~/.mcp-auth/mcp-remote-<version>/ directory, so the browser
+    # consent screen reappeared at every session start.
     "cloudflare-ai-gateway" = {
-      command = "pnpm";
-      args = [ "dlx" "mcp-remote" "https://ai-gateway.mcp.cloudflare.com/mcp" ];
+      type = "http";
+      url = "https://ai-gateway.mcp.cloudflare.com/mcp";
     };
     "playwright" = {
       command = "pnpm";
@@ -750,17 +758,23 @@ let
         "run"
         "-i"
         "--rm"
+        # Docker's journald log driver records the server's info-level
+        # startup lines as error-level journal entries on every session.
+        # stderr still reaches the MCP client through the attached stdio.
+        "--log-driver=none"
         "-e"
         "TFE_TOKEN=\${TFE_TOKEN}"
         "hashicorp/terraform-mcp-server:latest"
       ];
     };
+    # No Authorization header: github_personal_access_token is empty in
+    # sops/api-keys.yaml, so the "Bearer " header made every session start
+    # with "Authorization header is badly formatted". Without the header
+    # Claude Code runs the OAuth flow itself (authenticate once via /mcp),
+    # the same approach as cloudflare-ai-gateway above.
     "github" = {
       type = "http";
       url = "https://api.githubcopilot.com/mcp/";
-      headers = {
-        Authorization = "Bearer \${GITHUB_PERSONAL_ACCESS_TOKEN}";
-      };
       alwaysLoad = true;
     };
   });
@@ -1107,7 +1121,18 @@ in
   home.sessionVariables = {
     DISABLE_UPDATES = "1";
     CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE = "false";
+    # Claude Code's temp files (screenshots, scratchpads, sockets) default to
+    # /tmp, which is a 14 GB tmpfs here. On 2026-09-05 old sessions had left
+    # 12 GB of PNGs and node_modules in it, all resident in RAM/zram, which
+    # starved the machine and ended in a kernel OOM freeze. Keep them on disk.
+    CLAUDE_CODE_TMPDIR = "${config.home.homeDirectory}/.cache/claude-tmp";
   };
+
+  # Private (0700) directory required by CLAUDE_CODE_TMPDIR; entries older than
+  # 7 days are removed by systemd-tmpfiles-clean.
+  systemd.user.tmpfiles.rules = [
+    "d %h/.cache/claude-tmp 0700 - - 7d"
+  ];
 
   # Each rebuild: remove the mutable version payload the auto-updater drops in
   # ~/.local/share/claude. Do NOT rm ~/.local/bin/claude here: this activation
@@ -1215,7 +1240,7 @@ in
     # del(): keys we used to set that are not in the settings schema (or are
     # deprecated aliases); drop them from the live file so they don't linger.
     if [ -f "$SETTINGS" ] && ${pkgs.jq}/bin/jq -e . "$SETTINGS" >/dev/null 2>&1; then
-      ${pkgs.jq}/bin/jq -s '.[1] * .[0] | del(.mcpServers, .installedMarketplaces, .switchModelsOnFlag, .voiceEnabled)' "$DEFAULTS" "$SETTINGS" > "$TMP"
+      ${pkgs.jq}/bin/jq -s '.[1] * .[0] | del(.mcpServers, .installedMarketplaces, .switchModelsOnFlag, .voiceEnabled, .env.BASH_MAX_TIMEOUT_MS)' "$DEFAULTS" "$SETTINGS" > "$TMP"
     else
       ${pkgs.coreutils}/bin/cp "$DEFAULTS" "$TMP"
     fi
@@ -1234,7 +1259,8 @@ in
     TMP=$(${pkgs.coreutils}/bin/mktemp "$HOME/.claude.json.tmp.XXXXXX")
     if [ -f "$ROOT_STATE" ] && ${pkgs.jq}/bin/jq -e . "$ROOT_STATE" >/dev/null 2>&1; then
       ${pkgs.jq}/bin/jq --slurpfile defs "$MCP_DEFAULTS" \
-        '.mcpServers = ((.mcpServers // {}) * $defs[0])' "$ROOT_STATE" > "$TMP"
+        '.mcpServers = ((.mcpServers // {})
+           | with_entries(select(.key | in($defs[0]) | not))) + $defs[0]' "$ROOT_STATE" > "$TMP"
     else
       ${pkgs.jq}/bin/jq -n --slurpfile defs "$MCP_DEFAULTS" '{ mcpServers: $defs[0] }' > "$TMP"
     fi

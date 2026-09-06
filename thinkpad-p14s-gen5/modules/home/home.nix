@@ -7,6 +7,10 @@ let
   # Cloudflare Workers CLI from the official npm package.
   # Bun resolves/caches the npm package at runtime; Node stays in PATH for
   # Wrangler's Node shebang. This avoids pkgs.wrangler and its pnpm-deps build.
+  # Firejail-wrapped apps (security.nix) must not put their own bin/ in the
+  # per-user profile, or the raw binary shadows the wrapper in PATH.
+  desktopFilesOnly = import ./lib/desktop-files-only.nix { inherit pkgs lib; };
+
   wrangler-wrapper = pkgs.writeShellScriptBin "wrangler" ''
     export PATH="${pkgs.nodejs-slim_22}/bin:$PATH"
     exec ${pkgs.bun}/bin/bun x wrangler@${wranglerVersion} "$@"
@@ -183,11 +187,11 @@ in
     ./programs/forgecode.nix # ForgeCode AI coding harness (Rust, ZSH integration)
     ./programs/codex.nix # Codex AI coding agent (OpenAI, Rust musl static)
     ./programs/jailed-agents.nix # Opt-in sandboxed wrappers: jailed-*
-    ./programs/ai-skills.nix # Centralized skills for Claude/Forge/OpenCode
+    ./programs/ai-skills.nix # Centralized skills for Claude/Forge/OpenCode/Codex
 
     # ── Applications ──
-    # NOTE: Brave browser is installed via Firejail wrappedBinaries in security.nix
-    ./programs/webapps.nix # Web apps (WhatsApp, Spotify, etc.)
+    # NOTE: Brave is provided by the custom firejail wrapper in modules/system/security.nix
+    ./programs/webapps.nix # Brave web apps (YouTube, Twitch, ChatGPT, GitHub, Claude, Proton)
     ./programs/geforce-now.nix # GeForce NOW cloud gaming (dedicated Chromium, unjailed)
     ./programs/autenticacao-gov.nix # Cartao de Cidadao auth (jailed plugin + cc-gov Brave window)
     ./programs/desktop-apps.nix # Desktop entries for apps
@@ -203,8 +207,8 @@ in
     # ── Utilities ──
     ./programs/analysis-vm.nix # Malware Analysis Lab (FLARE-VM + REMnux + Dev-Win, libvirt + killswitch)
     ./programs/security-packages.nix # Security tools aliases & docs
-    ./programs/kali-redteam.nix # Kali Linux headless container (red team + local LLM)
-    ./programs/radio-sdr.nix # SDR tools (SDR++, GQRX, rtl-sdr)
+    ./programs/kali-redteam.nix # Kali Linux headless container (Podman, rootless)
+    ./programs/radio-sdr.nix # SDR tools (SDR++, rtl-sdr, SoapySDR)
 
     # ── Services ──
     ./services/waybar.nix # Status bar + custom scripts
@@ -216,7 +220,7 @@ in
     # ── Configuration ──
     ./config/theme.nix # Centralized theme system (colors + fonts)
     ./config/runtime-theme.nix # Runtime day/night theme switcher (no rebuild)
-    ./config/gtk.nix # GTK theme (Adwaita-dark)
+    ./config/gtk.nix # GTK theme (Yaru variant per theme, Bibata cursor)
     ./config/qt.nix # Qt theme
     ./config/fontconfig.nix # Font configuration
     ./config/bat.nix # Bat (cat replacement) + themed tmTheme
@@ -277,6 +281,7 @@ in
 
     # Productivity
     gnome-calculator # Calculator app
+    gramps # Genealogy software (family trees)
 
     jq # JSON processor (essential for CLI work)
     bc # Calculator (used by Bitcoin price script)
@@ -294,22 +299,23 @@ in
 
     # Messaging
     ferdium # Multi-account workspace for WhatsApp + WhatsApp Business
-    vesktop # Discord client with Vencord (replaces discord-web webapp)
+    (desktopFilesOnly vesktop) # Discord client with Vencord (replaces discord-web webapp); binary via firejail wrapper
     halloy # IRC client (Rust GUI, native Wayland)
-
-    # Apps sandboxed via Firejail (security.nix) - packages here for .desktop visibility in launcher
-    spotify # Music streaming
-    vlc # Media player
-    transmission_4-gtk # Torrent client
-    libreoffice-fresh # Office suite
-    inkscape # Vector graphics editor
-    keepassxc # Password manager
-    blender # 3D modelling
-    obs-studio # Screen recording
-    audacity # Audio editor
-    xournalpp # PDF annotation
-    joplin-desktop # Note-taking
     telegram-desktop # Messaging
+
+    # Apps sandboxed via Firejail (security.nix): desktop files and icons only,
+    # the binaries come from the firejail wrappers in /run/current-system/sw/bin.
+    (desktopFilesOnly spotify) # Music streaming
+    (desktopFilesOnly vlc) # Media player
+    (desktopFilesOnly transmission_4-gtk) # Torrent client
+    (desktopFilesOnly libreoffice-stable) # Office suite
+    (desktopFilesOnly inkscape) # Vector graphics editor
+    (desktopFilesOnly keepassxc) # Password manager
+    (desktopFilesOnly blender) # 3D modelling
+    (desktopFilesOnly obs-studio) # Screen recording
+    (desktopFilesOnly audacity) # Audio editor
+    (desktopFilesOnly xournalpp) # PDF annotation
+    (desktopFilesOnly joplin-desktop) # Note-taking
 
     # Wayland specific (core tools in system/hyprland.nix)
     hyprpicker # Color picker for Hyprland
@@ -338,7 +344,7 @@ in
     publicShare = "${config.home.homeDirectory}/Public";
   };
 
-  # Disable XDG autostart for nm-applet (we launch it with delay in hyprland.nix)
+  # Disable XDG autostart for nm-applet (launched with a delay in programs/hyprland/autostart.nix)
   xdg.configFile."autostart/nm-applet.desktop".text = ''
     [Desktop Entry]
     Hidden=true

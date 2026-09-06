@@ -20,10 +20,10 @@
   # Latest supported kernel for current AMDGPU/Zen 4 laptop fixes.
   # linuxPackages_zen was on the 6.19 branch, which is EOL upstream; latest
   # keeps the Radeon 780M and s2idle stack on the newest maintained code.
-  # KNOWN ISSUE on 7.1.3: reboot/poweroff hangs at the final hardware reset
-  # when the external HDMI monitor is connected (amdgpu DCN teardown wedge,
-  # open upstream: drm/amd #4922, #4838). Unplug HDMI before shutdown, or
-  # use: sync && systemctl reboot -ff
+  # KNOWN ISSUE (observed on 7.1.3, not retested on 7.2.x): reboot/poweroff
+  # hangs at the final hardware reset when the external HDMI monitor is
+  # connected (amdgpu DCN teardown wedge, upstream drm/amd #4922, #4838).
+  # Unplug HDMI before shutdown, or use: sync && systemctl reboot -ff
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # Kernel parameters optimized for Ryzen 7 PRO 8840HS
@@ -80,6 +80,18 @@
 
   # /tmp in RAM (tmpfs) - reduces SSD wear for user temp files. Nix >=2.29 builds in /nix/var/nix/builds (on-disk @nix), not /tmp, so the 14G tmpfs (50% of ~27GiB MemTotal) does not constrain builds
   boot.tmp.useTmpfs = true;
+
+  # tmpfs cannot evict on its own: whatever piles up in /tmp stays in RAM (or
+  # zram). systemd's default keeps entries for 10 days; on 2026-09-05 that left
+  # 12 GB of stale scratch files resident. Clean anything untouched for 3 days
+  # (systemd-tmpfiles-clean.timer, daily). The "00-" prefix sorts before
+  # systemd-tmp.conf, so this rule wins for /tmp.
+  systemd.tmpfiles.settings."00-tmp-age"."/tmp".q = {
+    mode = "1777";
+    user = "root";
+    group = "root";
+    age = "3d";
+  };
 
   # Faster boot
   systemd.services.NetworkManager-wait-online.enable = false;

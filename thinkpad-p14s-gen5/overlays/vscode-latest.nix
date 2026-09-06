@@ -6,8 +6,8 @@
 
 let
   # AUTO-UPDATED BY update-vscode SCRIPT
-  version = "1.131.0";
-  sha256 = "sha256-hjLm+a7XosVhJHVVn/PRjGYdNUMsImUG23BESpmEVzE=";
+  version = "1.136.1";
+  sha256 = "sha256-m0pU8NSb6qQT7aE30AxlQaY5MA1HnvysVmrRNBlAkhg=";
 in
 vscode.overrideAttrs (oldAttrs: {
   inherit version;
@@ -17,14 +17,6 @@ vscode.overrideAttrs (oldAttrs: {
     inherit sha256;
     name = "vscode-${version}.tar.gz";
   };
-
-  # Obsolete: nixpkgs' vscode (1.127.0 in the locked snapshot) already targets
-  # @vscode/ripgrep-universal/bin/linux-x64/rg, so this rewrite is the
-  # anticipated harmless no-op. Safe to drop together with the postPatch below.
-  postPatch = builtins.replaceStrings
-    [ "@vscode/ripgrep/bin/rg" ]
-    [ "@vscode/ripgrep-universal/bin/linux-x64/rg" ]
-    oldAttrs.postPatch;
 
   buildInputs = (oldAttrs.buildInputs or []) ++ [
     libxtst

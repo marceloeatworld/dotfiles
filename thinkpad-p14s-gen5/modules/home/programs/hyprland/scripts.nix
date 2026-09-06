@@ -2,6 +2,12 @@
 { pkgs, hyprlandPkg }:
 
 let
+  keymap = import ./keymap.nix { lib = pkgs.lib; };
+
+  # Ferdium sidebar tabs are addressed by their number, as Ctrl+1..9 selects
+  # them: "WhatsApp 1" / "whatsapp un" = tab 1, "WhatsApp 2" = tab 2, ...
+  voiceFerdiumServices = "the user names the tab by its number: 'WhatsApp 1', 'whatsapp deux', 'le 2', 'o segundo' = tab 2, and so on up to 9; a WhatsApp request without a number means tab 1";
+
   balancedHyprConfig = "hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = true, special = false, popups = false }, shadow = { enabled = true, range = 12 }, glow = { enabled = false, range = 6 } } })";
   maxHyprConfig = "hl.config({ animations = { enabled = true }, misc = { render_unfocused_fps = 60 }, decoration = { blur = { enabled = true, special = true, popups = true }, shadow = { enabled = true, range = 20 }, glow = { enabled = true, range = 8 } } })";
   batteryHyprConfig = "hl.config({ animations = { enabled = false }, misc = { render_unfocused_fps = 10 }, decoration = { blur = { enabled = false, special = false, popups = false }, shadow = { enabled = false, range = 12 }, glow = { enabled = false, range = 6 } } })";
@@ -649,7 +655,12 @@ let
   hypr-keys = pkgs.writeShellScriptBin "hypr-keys" ''
         # Get current states
         PERF_STATE=$(cat "$HOME/.config/perf-mode-state" 2>/dev/null || echo "balanced")
-        BAT_MODE=$(cat "$HOME/.config/battery-mode-state" 2>/dev/null || echo "conservation")
+        # Read the real threshold: TLP reapplies 55/60 at boot, so the
+        # battery-mode state file is stale until the next toggle.
+        case "$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null)" in
+          60|"") BAT_MODE="conservation" ;;
+          *)     BAT_MODE="full" ;;
+        esac
         BLUELIGHT=$(cat "$HOME/.config/bluelight-state" 2>/dev/null || echo "off")
 
         case "$PERF_STATE" in
@@ -670,90 +681,7 @@ let
           BL_ICON="󰖨 $BLUELIGHT K"
         fi
 
-        INFO="<b>═══ APPS ═══</b>
-    <tt>Super+Return</tt>    Terminal (Ghostty)
-    <tt>Super+B</tt>         Browser (Brave)
-    <tt>Super+E</tt>         Files (Nemo)
-    <tt>Super+D</tt>         App launcher
-    <tt>Super+A</tt>         Audio panel
-    <tt>Super+Y</tt>         YouTube PiP (show/hide)
-    <tt>Super+U</tt>         Twitch PiP (show/hide)
-    <tt>Super+V</tt>         Clipboard history
-    <tt>Super+O</tt>         Quick notes
-    <tt>Copilot key</tt>     Voice dictation (toggle)
-    <tt>Super+I</tt>         System info (hyprland)
-    <tt>Super+Shift+I</tt>   System info (detailed)
-    <tt>Super+Z</tt>         Freeze/unfreeze window
-
-    <b>═══ WINDOWS ═══</b>
-    <tt>Super+Q</tt>         Kill window
-    <tt>Super+Shift+Q</tt>   Force kill
-    <tt>Super+F</tt>         Fullscreen
-    <tt>Super+Shift+F</tt>   Fullscreen (keep bar)
-    <tt>Super+Space</tt>     Float toggle
-    <tt>Super+P</tt>         Pin (all workspaces)
-    <tt>Super+T</tt>         Toggle split
-    <tt>Super+W</tt>         Center floating
-    <tt>Super+G</tt>         Group windows (tabs)
-    <tt>Super+[ ]</tt>       Switch tabs in group
-    <tt>Super+Ctrl+[ ]</tt>  Reorder tabs in group
-    <tt>Super+Tab</tt>       Last focused window
-    <tt>Alt+Tab</tt>         Cycle windows
-    <tt>Super+Ctrl+Shift+HJKL</tt> Swap positions
-      Floating windows snap to edges
-
-    <b>═══ WORKSPACES ═══</b>
-    <tt>Super+1-9</tt>       Switch workspace
-    <tt>Super+Shift+1-9</tt> Move window to WS
-    <tt>Super+Ctrl+1-5</tt>  Focus WS on this monitor
-    <tt>Super+Shift+Tab</tt> Swap WS between monitors
-    <tt>Super+Ctrl+M</tt>    WS to next monitor
-    <tt>Super+Shift+P</tt>   Toggle laptop screen (eDP-1)
-    <tt>Super+Alt+H/L</tt>   Window to prev/next WS
-    <tt>Super+S</tt>         Scratchpad toggle
-    <tt>Super+Shift+S</tt>   Move to scratchpad
-    <tt>Super+-</tt>         Minimize to special
-    <tt>Super+Shift+-</tt>   Show minimized
-
-    <b>═══ SCREENSHOTS (grimblast) ═══</b>
-    <tt>Print</tt>              Region → clipboard
-    <tt>Super+Print</tt>       Region → file
-    <tt>Shift+Print</tt>       Full → clipboard
-    <tt>Super+Shift+Print</tt> Full → file
-    <tt>Super+Ctrl+Print</tt>  Window → clipboard
-
-    <b>═══ SYSTEM ═══</b>
-    <tt>Super+Escape</tt>    Lock screen
-    <tt>Super+Shift+Esc</tt> Power off (graceful)
-    <tt>Super+Ctrl+Esc</tt>  Reboot (graceful)
-    <tt>Super+Alt+Esc</tt>   Suspend
-    <tt>Super+Ctrl+Shift+Esc</tt> Monitors off
-    <tt>Super+F1</tt>        This cheatsheet
-    <tt>Super+F3</tt>        Keyboard FR/US
-    <tt>Super+Shift+R</tt>   Restart Waybar
-    <tt>Super+C</tt>         Color picker
-    <tt>Super+Shift+C</tt>   Window inspector (hyprprop)
-
-    <b>═══ WIFI ═══</b>
-    <tt>Super+F2</tt>         Reconnect WiFi
-    <tt>Super+Shift+F2</tt>   Scan & connect
-    <tt>Super+Ctrl+F2</tt>    Toggle WiFi on/off
-
-    <b>═══ BATTERY & DISPLAY ═══</b>
-    <tt>Super+M</tt>         Battery mode → $BAT_ICON
-    <tt>Super+Shift+M</tt>   Performance → $PERF_ICON $PERF_STATE
-    <tt>Super+N</tt>         Blue light → $BL_ICON
-    <tt>Super+Shift+N</tt>   Blue light off
-    <tt>Super+Shift+T</tt>   Toggle touchpad
-
-    <b>═══ MALWARE LAB ═══</b>
-    <tt>Super+X</tt>         Lab menu (FLARE-VM + REMnux)
-      Start/stop/revert VMs, killswitch, snapshots
-
-    <b>═══ RESIZE ═══</b>
-    <tt>Super+Ctrl+HJKL</tt> Resize window
-    <tt>Super+Drag</tt>      Move window
-    <tt>Super+RClick</tt>    Resize window"
+        INFO="${keymap.pango}"
 
         ${pkgs.libnotify}/bin/notify-send -t 20000 "⌨ Hyprland Shortcuts" "$INFO" -i "input-keyboard"
   '';
@@ -1124,8 +1052,15 @@ let
     hyprctl eval "hl.dispatch(hl.dsp.focus({ window = 'address:$WIN' }))" >/dev/null 2>&1 || true
   '';
 
+  # Single-word command so hypr-current-workspace-launch keeps its focus logic
+  # (it execs directly when given more than one argument). The scope puts
+  # Ferdium under app-ferdium.slice (memory caps in system/performance.nix).
+  ferdium-scoped = pkgs.writeShellScriptBin "ferdium-scoped" ''
+    exec ${pkgs.systemd}/bin/systemd-run --user --quiet --scope --slice=app-ferdium.slice ferdium "$@"
+  '';
+
   ferdium-current-workspace = pkgs.writeShellScriptBin "ferdium-current-workspace" ''
-    exec ${hypr-current-workspace-launch}/bin/hypr-current-workspace-launch '^(ferdium|Ferdium)$' ferdium "$@"
+    exec ${hypr-current-workspace-launch}/bin/hypr-current-workspace-launch '^(ferdium|Ferdium)$' ${ferdium-scoped}/bin/ferdium-scoped "$@"
   '';
 
   vesktop-current-workspace = pkgs.writeShellScriptBin "vesktop-current-workspace" ''
@@ -1156,24 +1091,315 @@ let
     exec ${hypr-current-workspace-launch}/bin/hypr-current-workspace-launch '^(rustdesk|RustDesk)$' rustdesk "$@"
   '';
 
-  # Voice dictation into the focused window - one toggle key.
-  # First press starts recording, second press stops and transcribes locally
-  # with whisper.cpp (multilingual, auto language), then routes the result:
-  #   "send"        -> press Enter
-  #   "delete"      -> clear the input line (Ctrl+U)
-  #   anything else -> typed into the focused window
+  # Voice: every transcribed utterance lands here. Gemini Flash-Lite decides
+  # whether it is an instruction (mapped to actions from the fixed allowlist
+  # below and executed here) or text to write (typed into the focused
+  # window). Every action is a case entry; the model can only pick from that
+  # list, so a misheard sentence cannot run anything else. Shutdown, reboot,
+  # suspend and file operations are deliberately not offered.
+  # Every request and the raw plan Gemini returned are appended to
+  # ~/.local/state/voice-terminal/<date>.log (kept 7 days, see default.nix).
+  voice-command = pkgs.writeShellScriptBin "voice-command" ''
+    NOTIFY="${pkgs.libnotify}/bin/notify-send"
+    CURL="${pkgs.curl}/bin/curl"
+    JQ="${pkgs.jq}/bin/jq"
+    WTYPE="${pkgs.wtype}/bin/wtype"
+    HYPRCTL="${hyprlandPkg}/bin/hyprctl"
+    KEY_FILE="$HOME/.config/sops-nix/secrets/gemini_api_key"
+    API="https://generativelanguage.googleapis.com/v1beta/interactions"
+    ICON="audio-input-microphone"
+
+    REQUEST="$*"
+    [ -n "$REQUEST" ] || exit 0
+    LOG_DIR="$HOME/.local/state/voice-terminal"
+    mkdir -p "$LOG_DIR"
+    LOG="$LOG_DIR/$(${pkgs.coreutils}/bin/date +%F).log"
+    log() { printf '%s command: %s\n' "$(${pkgs.coreutils}/bin/date '+%H:%M:%S')" "$*" >> "$LOG"; }
+    log "request: $REQUEST"
+    T0=$(${pkgs.coreutils}/bin/date +%s%N)
+
+    read -r -d "" ACTIONS <<'EOF'
+    launch_brave: go to the Brave web browser (opens it if needed)
+    launch_vscode: go to VS Code, the code editor (opens it if needed)
+    launch_terminal: go to the terminal, Ghostty (opens one if none is open)
+    launch_terminal_new: open a new terminal window even if one is open
+    terminal_in_project (arg: project or folder name as spoken): open a terminal directly inside that project folder
+    terminal_run (arg: the command, e.g. "ls", "git status", "df -h"): run a harmless read-only shell command in the terminal; only ls, ll, la, tree, pwd, cat, head, tail, git status/log/diff/branch, df, free, uptime, date, btop, htop, keys are allowed
+    launch_files: go to the file manager Nemo (opens it if needed)
+    launch_audio_panel: go to the audio/sound control panel (opens it if needed)
+    launch_notes: open a quick note
+    launch_ferdium: go to Ferdium, the messaging app that hosts WhatsApp, Messenger, Slack, Discord web and similar chats (opens it if needed)
+    ferdium_service (arg: number 1-9): after launch_ferdium, select the Nth chat service tab ($FERDIUM_SERVICES)
+    whatsapp_chat (arg: contact or group name as spoken): after launch_ferdium (and ferdium_service when a number was given), open the conversation with that person; use it for "va dans la conversation de X", "réponds à X", "écris à X"
+    (to write a message in the open chat, add type_text with the dictated text afterwards: it is written, not sent)
+    launch_spotify | launch_telegram | launch_discord | launch_keepassxc | launch_joplin: go to that app (opens it if needed)
+    open_url (arg: full https URL): open a website in the browser
+    web_search (arg: the search query): search the web
+    type_text (arg: the text): write the given text where the cursor is, in whatever app is focused (browser, editor, chat, terminal). Any "écris ...", "write ...", "escreve ...", "dis-lui ...", "réponds ..." followed by words means type_text with exactly those words; if the user says "écris" with nothing after it, ask what to write instead
+    window_close, window_fullscreen, window_float: act on the focused window
+    workspace (arg: number 1-10; also called espace, bureau, desktop, ecra, area de trabalho): switch to that workspace
+    move_to_workspace (arg: number 1-10): move the focused window to that workspace
+    scratchpad_toggle: show or hide the scratchpad (special workspace)
+    media_play_pause, media_next, media_previous, media_stop
+    volume_up, volume_down, volume_mute, mic_mute, brightness_up, brightness_down
+    screenshot_area, screenshot_full, lock_screen, clipboard_history, keyboard_layout_next
+    bluelight_toggle, bluelight_off, battery_mode_toggle, performance_mode_cycle, touchpad_toggle, wifi_reconnect
+    theme_day, theme_night, youtube_pip, twitch_pip
+    EOF
+    FERDIUM_SERVICES="${voiceFerdiumServices}"
+    ACTIONS="''${ACTIONS//\$FERDIUM_SERVICES/$FERDIUM_SERVICES}"
+    SYSTEM="You receive what the user just said to a Linux laptop (French, Portuguese or English) and decide what to do.
+    If it is an instruction to the computer (open, go to, close, search, type, run, switch, lock, play, volume, brightness...), return the actions from the list below, in execution order, several if needed, and an empty dictation.
+    If it is not an instruction to the computer, it is text the user wants written where the cursor is (a message, a note, a greeting, a question to someone, any sentence): return no actions and put the exact text, cleaned of fillers, in dictation. You are not a chatbot: never answer or converse, never put a reply of your own in dictation.
+    If it is an instruction that matches nothing in the list, or asks to shut down, reboot, delete or destroy anything, return no actions and an empty dictation, and explain briefly in reply.
+    Reply in the language of the request, max 8 words. Actions:
+    $ACTIONS"
+    SCHEMA='{"type":"object","properties":{"actions":{"type":"array","items":{"type":"object","properties":{"action":{"type":"string"},"arg":{"type":"string"}},"required":["action"]}},"dictation":{"type":"string"},"reply":{"type":"string"}},"required":["actions","dictation","reply"]}'
+
+    RESP=$(mktemp)
+    $JQ -n --arg sys "$SYSTEM" --arg u "$REQUEST" --argjson schema "$SCHEMA" \
+      '{model: "gemini-3.5-flash-lite", system_instruction: $sys, input: $u,
+        generation_config: {temperature: 0, thinking_level: "minimal"},
+        response_format: {type: "text", mime_type: "application/json", schema: $schema}}' \
+      | $CURL -sS -m 30 -o "$RESP" -w '%{http_code}' -X POST "$API" \
+          -H "x-goog-api-key: $(cat "$KEY_FILE" 2>/dev/null)" \
+          -H "Content-Type: application/json" --data-binary @- > "$RESP.code"
+    HTTP=$(cat "$RESP.code"); rm -f "$RESP.code"
+    log "gemini http=$HTTP in $(( ($(${pkgs.coreutils}/bin/date +%s%N) - T0) / 1000000 ))ms"
+    if [ "$HTTP" != "200" ]; then
+      ERR=$($JQ -r '.error.message // empty' "$RESP" 2>/dev/null | cut -c1-120)
+      rm -f "$RESP"
+      log "error: $ERR"
+      $NOTIFY -u critical -t 5000 "Voice command" "Request failed (HTTP ''${HTTP:-0}) ''${ERR:+: $ERR}" -i "$ICON"
+      exit 1
+    fi
+    PLAN=$($JQ -r '[.steps[] | select(.type == "model_output") | .content[] | select(.type == "text") | .text] | join("")' "$RESP" 2>/dev/null)
+    rm -f "$RESP"
+    log "plan: $(printf '%s' "$PLAN" | $JQ -c . 2>/dev/null || printf '%s' "$PLAN" | head -c 300)"
+    if ! printf '%s' "$PLAN" | $JQ -e '.actions' >/dev/null 2>&1; then
+      $NOTIFY -t 4000 "Voice command" "Could not understand: $REQUEST" -i "$ICON"
+      exit 1
+    fi
+    REPLY=$(printf '%s' "$PLAN" | $JQ -r '.reply // empty')
+    DICTATION=$(printf '%s' "$PLAN" | $JQ -r '.dictation // empty')
+    COUNT=$(printf '%s' "$PLAN" | $JQ -r '.actions | length')
+
+    hypr() { $HYPRCTL eval "hl.dispatch($1)" >/dev/null 2>&1; }
+    is_ws() { case "$1" in [1-9]|10) return 0 ;; *) return 1 ;; esac; }
+    # project_dir <name>: newest folder matching the spoken name under the
+    # fixed roots below (case-insensitive, spaces/dashes/underscores ignored).
+    # The model only supplies a name; nothing it returns is run as a command.
+    project_dir() {
+      local want
+      want=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -d ' _-')
+      for root in "$HOME/codes" "$HOME/dotfiles" "$HOME/Documents"; do
+        [ -d "$root" ] || continue
+        ${pkgs.findutils}/bin/find "$root" -mindepth 1 -maxdepth 2 -type d -not -path '*/.*' -not -path '*/node_modules*' -printf '%T@ %p\n' 2>/dev/null
+      done | sort -rn | ${pkgs.gawk}/bin/awk -v want="$want" '
+        { dir = $2; name = tolower(dir); sub(/.*\//, "", name); gsub(/[ _-]/, "", name)
+          if (name == want) { print dir; found = 1; exit }
+          if (prefix == "" && index(name, want) == 1) prefix = dir }
+        END { if (!found && prefix != "") print prefix }'
+    }
+
+    # type_into_focus <text>: terminals take wtype keystrokes fine, but
+    # Chromium apps (Ferdium, Brave, VS Code) drop most of them ("bonjour je
+    # suis content" came out as "s"), so paste through the clipboard there
+    # and restore the previous clipboard afterwards.
+    type_into_focus() {
+      local text="$1" cls prev
+      cls=$($HYPRCTL activewindow -j 2>/dev/null | $JQ -r '.class // ""')
+      case "$cls" in
+        com.mitchellh.ghostty|ghostty|Alacritty|kitty|foot)
+          printf '%s' "$text" | $WTYPE - ;;
+        *)
+          prev=$(${pkgs.wl-clipboard}/bin/wl-paste -n 2>/dev/null || true)
+          printf '%s' "$text" | ${pkgs.wl-clipboard}/bin/wl-copy
+          sleep 0.15
+          $WTYPE -M ctrl -k v -m ctrl
+          sleep 0.4
+          if [ -n "$prev" ]; then printf '%s' "$prev" | ${pkgs.wl-clipboard}/bin/wl-copy; else ${pkgs.wl-clipboard}/bin/wl-copy --clear; fi ;;
+      esac
+    }
+
+    # whatsapp_chat <name>: WhatsApp Web shortcuts inside Ferdium. Ctrl+Alt+/
+    # focuses the chat search, the name is pasted, Enter opens the first
+    # match and leaves the cursor in the message box.
+    open_whatsapp_chat() {
+      $WTYPE -M ctrl -M alt -k slash -m alt -m ctrl
+      sleep 0.6
+      type_into_focus "$1"
+      sleep 1.2
+      $WTYPE -k Return
+      sleep 0.6
+    }
+
+    # terminal_run: only read-only commands, no shell metacharacters. The
+    # command is typed into the focused terminal (focusing or opening one
+    # first) and sent with Enter; nothing is executed by this script itself.
+    TERMINAL_RE='^(com\.mitchellh\.ghostty|ghostty)$'
+    run_in_terminal() {
+      local cmd="$1" first
+      case "$cmd" in *[\;\|\&\`\$\>\<\(\)\{\}\\]*|*'\n'*) log "terminal_run refused (metacharacters): $cmd"; return 1 ;; esac
+      first=''${cmd%% *}
+      case "$first" in
+        ls|ll|la|tree|pwd|cat|head|tail|df|free|uptime|date|btop|htop|keys) ;;
+        git) case "$cmd" in "git status"*|"git log"*|"git diff"*|"git branch"*) ;; *) log "terminal_run refused: $cmd"; return 1 ;; esac ;;
+        *) log "terminal_run refused: $cmd"; return 1 ;;
+      esac
+      if ! $HYPRCTL activewindow -j 2>/dev/null | $JQ -e --arg re "$TERMINAL_RE" '(.class // "") | test($re)' >/dev/null; then
+        go "$TERMINAL_RE" ghostty
+        sleep 1.5
+      fi
+      log "terminal_run: $cmd"
+      printf '%s' "$cmd" | $WTYPE -
+      $WTYPE -k Return
+    }
+
+    # go <class-regex> <command...>: focus the most recently used window of
+    # that app (Hyprland switches to its workspace), or launch it.
+    go() {
+      local re="$1" win
+      shift
+      win=$($HYPRCTL clients -j 2>/dev/null | $JQ -r --arg re "$re" '
+        [ .[] | select(((.class // "") | test($re)) or ((.initialClass // "") | test($re)))
+              | select((.mapped // true) == true) ]
+        | sort_by(if ((.focusHistoryID // 999999) < 0) then 999999 else (.focusHistoryID // 999999) end)
+        | .[0].address // empty')
+      if [ -n "$win" ]; then
+        log "focus: existing window $re"
+        hypr "hl.dsp.focus({ window = 'address:$win' })"
+      else
+        log "launch: $1"
+        "$@" >/dev/null 2>&1 &
+      fi
+    }
+
+    if [ "$COUNT" -eq 0 ]; then
+      if [ -n "$DICTATION" ]; then
+        log "typed: $DICTATION"
+        type_into_focus "$DICTATION"
+        $NOTIFY -t 2500 "Voice" "Typed: $DICTATION" -i "$ICON"
+      else
+        $NOTIFY -t 4000 "Voice" "''${REPLY:-Nothing to do}" -i "$ICON"
+      fi
+      exit 0
+    fi
+
+    i=0
+    while [ "$i" -lt "$COUNT" ]; do
+      ACTION=$(printf '%s' "$PLAN" | $JQ -r ".actions[$i].action")
+      ARG=$(printf '%s' "$PLAN" | $JQ -r ".actions[$i].arg // empty")
+      i=$((i + 1))
+      log "run: $ACTION ''${ARG:+($ARG)}"
+      case "$ACTION" in
+        launch_brave)        go '^(brave-browser|Brave-browser)$' brave ;;
+        launch_vscode)       go '^(code|Code|code-url-handler)$' code ;;
+        launch_terminal)     go '^(com\.mitchellh\.ghostty|ghostty)$' ghostty ;;
+        launch_terminal_new) ghostty >/dev/null 2>&1 & ;;
+        terminal_run)        [ -n "$ARG" ] && run_in_terminal "$ARG" ;;
+        terminal_in_project)
+          DIR=$(project_dir "$ARG")
+          if [ -n "$DIR" ]; then
+            log "terminal in: $DIR"
+            ghostty --working-directory="$DIR" >/dev/null 2>&1 &
+          else
+            log "project not found: $ARG"
+            $NOTIFY -t 4000 "Voice command" "No project folder named \"$ARG\" under ~/codes, ~/dotfiles or ~/Documents" -i "$ICON"
+          fi ;;
+        launch_files)        go '^(nemo|Nemo)$' nemo ;;
+        launch_audio_panel)  go '^(hyprpwcenter)$' hyprpwcenter ;;
+        launch_notes)        ${quick-notes}/bin/quick-notes >/dev/null 2>&1 & ;;
+        launch_spotify)      go '^(spotify|Spotify)$' spotify ;;
+        launch_telegram)     go '^(telegram-desktop|org\.telegram\.desktop|TelegramDesktop|Telegram)$' Telegram ;;
+        launch_ferdium)      go '^(ferdium|Ferdium)$' ${ferdium-scoped}/bin/ferdium-scoped ;;
+        ferdium_service)
+          case "$ARG" in
+            [1-9]) $WTYPE -M ctrl -k "$ARG" -m ctrl; sleep 0.8 ;;
+          esac ;;
+        launch_discord)      go '^(vesktop|Vesktop)$' vesktop ;;
+        launch_keepassxc)    go '^(org\.keepassxc\.KeePassXC|keepassxc|KeePassXC)$' keepassxc ;;
+        launch_joplin)       go '^(@joplin/app-desktop|joplin|Joplin|joplin-desktop)$' joplin-desktop ;;
+        open_url)
+          case "$ARG" in
+            https://[A-Za-z0-9]*) printf '%s' "$ARG" | ${pkgs.gnugrep}/bin/grep -qE '^https://[A-Za-z0-9./_%+=&?#:-]+$' && { brave "$ARG" >/dev/null 2>&1 & } ;;
+          esac ;;
+        web_search)
+          [ -n "$ARG" ] && { brave "https://search.brave.com/search?q=$(printf '%s' "$ARG" | $JQ -sRr '@uri')" >/dev/null 2>&1 & } ;;
+        type_text)           [ -n "$ARG" ] && type_into_focus "$ARG" ;;
+        whatsapp_chat)       [ -n "$ARG" ] && { log "whatsapp chat: $ARG"; open_whatsapp_chat "$ARG"; } ;;
+        window_close)        hypr 'hl.dsp.window.close()' ;;
+        window_fullscreen)   hypr 'hl.dsp.window.fullscreen({ mode = "fullscreen" })' ;;
+        window_float)        hypr 'hl.dsp.window.float({ action = "toggle" })' ;;
+        workspace)           is_ws "$ARG" && hypr "hl.dsp.focus({ workspace = $ARG })" ;;
+        move_to_workspace)   is_ws "$ARG" && hypr "hl.dsp.window.move({ workspace = $ARG })" ;;
+        scratchpad_toggle)   hypr 'hl.dsp.workspace.toggle_special("magic")' ;;
+        media_play_pause)    ${pkgs.playerctl}/bin/playerctl play-pause ;;
+        media_next)          ${pkgs.playerctl}/bin/playerctl next ;;
+        media_previous)      ${pkgs.playerctl}/bin/playerctl previous ;;
+        media_stop)          ${pkgs.playerctl}/bin/playerctl stop ;;
+        volume_up)           swayosd-client --output-volume raise ;;
+        volume_down)         swayosd-client --output-volume lower ;;
+        volume_mute)         swayosd-client --output-volume mute-toggle ;;
+        mic_mute)            swayosd-client --input-volume mute-toggle ;;
+        brightness_up)       "$HOME/.config/waybar/scripts/brightness-sync.sh" raise ;;
+        brightness_down)     "$HOME/.config/waybar/scripts/brightness-sync.sh" lower ;;
+        screenshot_area)     grimblast --freeze copy area ;;
+        screenshot_full)     grimblast --freeze copy output ;;
+        lock_screen)         ${pkgs.systemd}/bin/loginctl lock-session ;;
+        clipboard_history)   sh -c 'cliphist list | wofi --dmenu | cliphist decode | wl-copy' >/dev/null 2>&1 & ;;
+        keyboard_layout_next) $HYPRCTL switchxkblayout all next >/dev/null 2>&1 ;;
+        bluelight_toggle)    ${bluelight-toggle}/bin/bluelight-toggle ;;
+        bluelight_off)       ${bluelight-off}/bin/bluelight-off ;;
+        battery_mode_toggle) ${battery-mode}/bin/battery-mode ;;
+        performance_mode_cycle) ${perf-mode}/bin/perf-mode ;;
+        touchpad_toggle)     ${touchpad-toggle}/bin/touchpad-toggle ;;
+        wifi_reconnect)      ${wifi-manage}/bin/wifi-manage reconnect ;;
+        theme_day)           ${pkgs.systemd}/bin/systemctl --user start runtime-theme-day.service ;;
+        theme_night)         ${pkgs.systemd}/bin/systemctl --user start runtime-theme-night.service ;;
+        youtube_pip)         ${youtube-toggle}/bin/youtube-toggle ;;
+        twitch_pip)          ${twitch-toggle}/bin/twitch-toggle ;;
+        *)                   $NOTIFY -t 3000 "Voice command" "Unknown action ignored: $ACTION" -i "$ICON" ;;
+      esac
+      # Give a freshly launched app time to map before the next window action
+      case "$ACTION" in launch_*) [ "$i" -lt "$COUNT" ] && sleep 1.5 ;; esac
+    done
+    $NOTIFY -t 3000 "Voice command" "''${REPLY:-Done}" -i "$ICON"
+  '';
+
+  # Voice dictation: one Copilot key press, speak, done. sox records while
+  # a small RMS voice-activity loop watches the level (starts on speech,
+  # stops after 2.5 s of silence, 60 s cap), the clip goes to Gemini 3.5
+  # Transcribe and the text is typed into the focused window. A second press
+  # stops the recording early. Language is auto-detected per utterance among
+  # French, Portuguese and English (a one-word clip was once guessed as
+  # Korean without the hint); "smart"
+  # mode drops fillers and formats numbers. Requires the gemini_api_key sops
+  # secret (paid tier: audio is not used for training).
+  # The internal microphone has a large DC offset (about -25 % full scale
+  # measured 2026-09-05), which defeats silence detection and wastes
+  # headroom; the highpass filter removes it before both steps.
+  # Saying only "send" presses Enter, "delete" clears the line. Everything
+  # else goes to voice-command, which runs it as an instruction or types it.
+  # Everything heard and done is appended to ~/.local/state/voice-terminal/<date>.log.
   voice-terminal = pkgs.writeShellScriptBin "voice-terminal" ''
     WTYPE="${pkgs.wtype}/bin/wtype"
     NOTIFY="${pkgs.libnotify}/bin/notify-send"
-    WHISPER="${pkgs.whisper-cpp.override { vulkanSupport = true; }}/bin/whisper-cli"
-    PW_RECORD="${pkgs.pipewire}/bin/pw-record"
+    REC="${pkgs.sox}/bin/rec"
     CURL="${pkgs.curl}/bin/curl"
+    JQ="${pkgs.jq}/bin/jq"
 
     RUN_DIR="''${XDG_RUNTIME_DIR:-/tmp}/voice-terminal"
     mkdir -p "$RUN_DIR"
     PIDFILE="$RUN_DIR/record.pid"
     WAV="$RUN_DIR/record.wav"
     STATEFILE="$RUN_DIR/state"
+    KEY_FILE="$HOME/.config/sops-nix/secrets/gemini_api_key"
+    API="https://generativelanguage.googleapis.com/v1beta/interactions"
+    LOG_DIR="$HOME/.local/state/voice-terminal"
+    mkdir -p "$LOG_DIR"
+    LOG="$LOG_DIR/$(${pkgs.coreutils}/bin/date +%F).log"
+    log() { printf '%s %s\n' "$(${pkgs.coreutils}/bin/date '+%H:%M:%S')" "$*" >> "$LOG"; }
 
     # Waybar indicator (custom/voice, signal 6)
     set_state() {
@@ -1185,114 +1411,184 @@ let
       ${pkgs.procps}/bin/pkill -RTMIN+6 waybar 2>/dev/null || true
     }
 
-    MODEL_DIR="$HOME/.local/share/voice-terminal"
-    # large-v3-turbo: same multilingual auto-detection as full v3, smaller and
-    # faster to load (the per-dictation cost). q5_0 measured identical to q8_0
-    # on French dictation. Earlier French misdetections were traced to a dead
-    # headset mic feeding noise, not to the model.
-    MODEL="$MODEL_DIR/ggml-large-v3-turbo-q5_0.bin"
-    MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"
-
+    # ── Second press while recording: stop early, the first process continues ──
     if [ -f "$PIDFILE" ]; then
-      # ── Stop recording and transcribe ──
-      PID=$(cat "$PIDFILE")
-      rm -f "$PIDFILE"
-      if kill -INT "$PID" 2>/dev/null; then
-        for _ in 1 2 3 4 5 6 7 8 9 10; do
-          kill -0 "$PID" 2>/dev/null || break
-          sleep 0.1
-        done
-        kill -KILL "$PID" 2>/dev/null || true
-      fi
-
-      # < 0.5s of 16kHz s16 mono audio = nothing was said
-      if [ ! -s "$WAV" ] || [ "$(stat -c %s "$WAV")" -lt 16000 ]; then
-        rm -f "$WAV"
-        clear_state
-        $NOTIFY -t 2000 "Voice Terminal" "Nothing recorded" -i "audio-input-microphone"
-        exit 0
-      fi
-
-      set_state "transcribing"
-      $NOTIFY -t 1500 "Voice Terminal" "Transcribing..." -i "audio-input-microphone"
-      # Language forced via voice-lang (fr/en/...), defaults to auto-detection
-      VLANG=$(cat "$MODEL_DIR/lang" 2>/dev/null || echo auto)
-      TEXT=$($WHISPER -m "$MODEL" -f "$WAV" -l "$VLANG" -t 8 -np -nt 2>/dev/null \
-        | tr '\n' ' ' | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-      rm -f "$WAV"
-      clear_state
-      if [ -z "$TEXT" ]; then
-        $NOTIFY -t 2000 "Voice Terminal" "Heard nothing" -i "audio-input-microphone"
-        exit 0
-      fi
-
-      # Command matching is case/punctuation-insensitive
-      LOWER=$(printf '%s' "$TEXT" | tr '[:upper:]' '[:lower:]' | tr -d '.,!?')
-      set -- $LOWER
-      CMD="''${1:-}"
-
-      case "$CMD" in
-        send)
-          $WTYPE -k Return
-          ;;
-        delete)
-          $WTYPE -M ctrl -k u -m ctrl
-          ;;
-        *)
-          printf '%s' "$TEXT" | $WTYPE -
-          ;;
-      esac
-    else
-      # ── Start recording ──
-      if [ ! -f "$MODEL" ]; then
-        mkdir -p "$MODEL_DIR"
-        # flock: repeated key presses must not start concurrent downloads
-        exec 9> "$MODEL_DIR/.download.lock"
-        if ! ${pkgs.util-linux}/bin/flock -n 9; then
-          $NOTIFY -t 3000 "Voice Terminal" "Model download already in progress..." -i "audio-input-microphone"
-          exit 0
-        fi
-        set_state "downloading"
-        $NOTIFY -t 5000 "Voice Terminal" "Downloading Whisper model (574 MB, one time)..." -i "audio-input-microphone"
-        if $CURL -fsSL -o "$MODEL.part" "$MODEL_URL"; then
-          mv "$MODEL.part" "$MODEL"
-          clear_state
-          $NOTIFY -t 4000 "Voice Terminal" "Model ready - press the Copilot key to dictate" -i "audio-input-microphone"
-        else
-          rm -f "$MODEL.part"
-          clear_state
-          $NOTIFY -u critical "Voice Terminal" "Model download failed" -i "audio-input-microphone"
-        fi
-        exit 0
-      fi
-      rm -f "$WAV"
-      $PW_RECORD --rate 16000 --channels 1 --format s16 "$WAV" &
-      echo $! > "$PIDFILE"
-      set_state "recording"
-      $NOTIFY -t 2000 "Voice Terminal" "Recording... press the Copilot key to stop" -i "audio-input-microphone"
-    fi
-  '';
-
-  # Switch the voice-terminal transcription language: voice-lang fr|en|auto|<code>
-  # No argument prints the current setting. "auto" (default) detects per clip.
-  voice-lang = pkgs.writeShellScriptBin "voice-lang" ''
-    NOTIFY="${pkgs.libnotify}/bin/notify-send"
-    LANG_FILE="$HOME/.local/share/voice-terminal/lang"
-
-    if [ -z "''${1:-}" ]; then
-      echo "voice-lang: $(cat "$LANG_FILE" 2>/dev/null || echo auto)"
+      # Only mark: the recording loop drains the capture pipeline before it
+      # stops, otherwise the last second of speech is lost (see below).
+      touch "$RUN_DIR/manual-stop"
       exit 0
     fi
 
-    case "$1" in
-      auto|[a-z][a-z]) ;;
-      *) echo "usage: voice-lang [auto|fr|en|<iso code>]"; exit 1 ;;
-    esac
+    if [ ! -s "$KEY_FILE" ]; then
+      $NOTIFY -u critical -t 5000 "Voice" "No Gemini API key: add gemini_api_key with the 'secrets' command, then rebuild" -i "audio-input-microphone"
+      exit 1
+    fi
 
-    mkdir -p "$(dirname "$LANG_FILE")"
-    echo "$1" > "$LANG_FILE"
-    $NOTIFY -t 2000 "Voice Terminal" "Language: $1" -i "audio-input-microphone"
-    echo "voice-lang: $1"
+    # ── Pause whatever is playing so the microphone only hears you ──
+    PLAYERCTL="${pkgs.playerctl}/bin/playerctl"
+    PAUSED=""
+    for player in $($PLAYERCTL -l 2>/dev/null); do
+      if [ "$($PLAYERCTL -p "$player" status 2>/dev/null)" = "Playing" ]; then
+        $PLAYERCTL -p "$player" pause 2>/dev/null && PAUSED="$PAUSED $player"
+      fi
+    done
+    # Players without MPRIS (games, calls, some web pages) cannot be paused:
+    # mute the speakers while listening so the microphone only hears you.
+    WPCTL="${pkgs.wireplumber}/bin/wpctl"
+    WAS_MUTED=0
+    $WPCTL get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q MUTED && WAS_MUTED=1
+    resume_players() {
+      [ "$WAS_MUTED" -eq 0 ] && $WPCTL set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null
+      for player in $PAUSED; do $PLAYERCTL -p "$player" play 2>/dev/null; done
+    }
+    [ -n "$PAUSED" ] && log "paused:$PAUSED"
+
+    # ── Record until silence ──
+    # The internal microphone is quiet (speech RMS 1-3 %, room noise 0.2-0.3 %
+    # after the highpass, measured 2026-09-05) and its ADC gain controls do
+    # not apply to it, so sox's per-sample silence effect misfires. Instead:
+    # record raw, and every 0.25 s measure the RMS of the last window after a
+    # highpass over the whole file (removes the DC offset without the step
+    # transient a per-window filter would add). Speech = window above
+    # SPEECH_ON; stop after SILENCE_S of windows below SPEECH_OFF once speech
+    # was heard. Second key press stops early. Gives up after MAX_WAIT_S.
+    RAW="$RUN_DIR/record.raw"
+    # Levels measured 2026-09-05 on this microphone (after the highpass):
+    # room noise 0.002-0.003 RMS, speech 0.005-0.03. Windows are 0.5 s so a
+    # soft syllable between two louder ones does not read as silence.
+    SPEECH_ON=0.006
+    SPEECH_OFF=0.0035
+    # Thinking pauses inside a request ("ordi ... va sur ... brave") run
+    # 1.5-2 s; 1.5 s cut sentences after the first words.
+    SILENCE_S=2.5
+    MAX_WAIT_S=45
+    MAX_TOTAL_S=60
+    SOX="${pkgs.sox}/bin/sox"
+    RAWFMT="-t raw -r 16000 -c 1 -b 16 -e signed"
+    rm -f "$RAW" "$WAV" "$RUN_DIR/manual-stop"
+    # --buffer 4096: sox otherwise flushes 0.5 s blocks about 1 s late, so
+    # the level loop and an early stop would miss the last second of speech.
+    ${pkgs.coreutils}/bin/timeout -s INT "$MAX_TOTAL_S" "$REC" -q --buffer 4096 $RAWFMT "$RAW" 2>/dev/null &
+    REC_PID=$!
+    echo "$REC_PID" > "$PIDFILE"
+    set_state "recording"
+    log "start: listening"
+    $NOTIFY -t 1500 "Voice" "Listening..." -i "audio-input-microphone"
+    # Mute the speakers so the microphone only hears you (unmuted in resume_players)
+    [ "$WAS_MUTED" -eq 0 ] && $WPCTL set-mute @DEFAULT_AUDIO_SINK@ 1 2>/dev/null
+
+    started=0
+    silent=0
+    elapsed=0
+    reason="silence"
+    while kill -0 "$REC_PID" 2>/dev/null; do
+      sleep 0.25
+      elapsed=$(${pkgs.gawk}/bin/awk -v e="$elapsed" 'BEGIN{print e + 0.25}')
+      if [ -f "$RUN_DIR/manual-stop" ]; then
+        # The pulse capture path delivers audio about a second late; an
+        # immediate stop dropped the end of every sentence ("ouvre un
+        # nouveau terminal et" lost "va dans booth", 2026-09-05 log).
+        sleep 1.5
+        kill -INT "$REC_PID" 2>/dev/null
+        break
+      fi
+      # Skip the first half second: the highpass settles on the DC offset there
+      [ "$(stat -c %s "$RAW" 2>/dev/null || echo 0)" -ge 16000 ] || continue
+      rms=$($SOX $RAWFMT "$RAW" -n highpass 100 trim -0.5 stat 2>&1 | ${pkgs.gawk}/bin/awk '/RMS +amplitude/ {print $3}')
+      [ -n "$rms" ] || continue
+      if [ "$started" -eq 0 ]; then
+        if ${pkgs.gawk}/bin/awk -v r="$rms" -v t="$SPEECH_ON" 'BEGIN{exit !(r > t)}'; then
+          started=1
+          log "speech: detected at ''${elapsed}s (rms $rms)"
+        elif ${pkgs.gawk}/bin/awk -v e="$elapsed" -v m="$MAX_WAIT_S" 'BEGIN{exit !(e >= m)}'; then
+          reason="timeout"
+          kill -INT "$REC_PID" 2>/dev/null
+        fi
+      elif ${pkgs.gawk}/bin/awk -v r="$rms" -v t="$SPEECH_OFF" 'BEGIN{exit !(r < t)}'; then
+        silent=$(${pkgs.gawk}/bin/awk -v s="$silent" 'BEGIN{print s + 0.25}')
+        if ${pkgs.gawk}/bin/awk -v s="$silent" -v m="$SILENCE_S" 'BEGIN{exit !(s >= m)}'; then
+          kill -INT "$REC_PID" 2>/dev/null
+        fi
+      else
+        silent=0
+      fi
+    done
+    wait "$REC_PID" 2>/dev/null
+    rm -f "$PIDFILE"
+    resume_players
+    [ -f "$RUN_DIR/manual-stop" ] && reason="key press"
+    rm -f "$RUN_DIR/manual-stop"
+
+    # Decide on the whole clip, not on the live loop: an early key press can
+    # stop the recorder before the loop has seen the last second of speech.
+    RAW_BYTES=$(stat -c %s "$RAW" 2>/dev/null || echo 0)
+    PEAK=0
+    [ "$RAW_BYTES" -ge 16000 ] && PEAK=$($SOX $RAWFMT "$RAW" -n highpass 100 trim 0.3 stat 2>&1 | ${pkgs.gawk}/bin/awk '/Maximum amplitude/ {print $3}')
+    if [ "$RAW_BYTES" -lt 16000 ] || ! ${pkgs.gawk}/bin/awk -v p="''${PEAK:-0}" 'BEGIN{exit !(p > 0.03)}'; then
+      [ "$RAW_BYTES" -gt 0 ] && $SOX $RAWFMT "$RAW" "$LOG_DIR/last.wav" highpass 100 2>/dev/null
+      rm -f "$RAW"
+      clear_state
+      log "stop ($reason): no speech in $(( RAW_BYTES / 32000 ))s, peak ''${PEAK:-0} (clip kept in $LOG_DIR/last.wav)"
+      $NOTIFY -t 2000 "Voice" "Nothing recorded" -i "audio-input-microphone"
+      exit 0
+    fi
+    # Highpass removes the microphone's DC offset before sending; keep a copy
+    $SOX $RAWFMT "$RAW" "$WAV" highpass 100 2>/dev/null
+    rm -f "$RAW"
+    cp -f "$WAV" "$LOG_DIR/last.wav" 2>/dev/null
+    log "stop ($reason): $(( RAW_BYTES / 32000 ))s recorded, peak $PEAK"
+
+    set_state "transcribing"
+    T0=$(${pkgs.coreutils}/bin/date +%s%N)
+    REQ="$RUN_DIR/request.json"
+    RESP="$RUN_DIR/response.json"
+    ${pkgs.coreutils}/bin/base64 -w0 "$WAV" > "$RUN_DIR/audio.b64"
+    $JQ -n --rawfile audio "$RUN_DIR/audio.b64" \
+      '{model: "gemini-3.5-transcribe",
+        input: [{type: "audio", data: $audio, mime_type: "audio/wav"}],
+        generation_config: {transcription_config: {mode: "smart", language_codes: ["fr-FR", "pt-PT", "en-US"]}}}' > "$REQ"
+    HTTP=$($CURL -sS -m 60 -o "$RESP" -w '%{http_code}' -X POST "$API" \
+      -H "x-goog-api-key: $(cat "$KEY_FILE" 2>/dev/null)" \
+      -H "Content-Type: application/json" --data-binary @"$REQ")
+    rm -f "$WAV" "$REQ" "$RUN_DIR/audio.b64"
+    clear_state
+    log "transcribe http=$HTTP in $(( ($(${pkgs.coreutils}/bin/date +%s%N) - T0) / 1000000 ))ms"
+
+    if [ "$HTTP" != "200" ]; then
+      ERR=$($JQ -r '.error.message // empty' "$RESP" 2>/dev/null | cut -c1-120)
+      rm -f "$RESP"
+      log "error: $ERR"
+      $NOTIFY -u critical -t 5000 "Voice" "Transcription failed (HTTP ''${HTTP:-0}) ''${ERR:+: $ERR}" -i "audio-input-microphone"
+      exit 1
+    fi
+    TEXT=$($JQ -r '[.steps[]?.content[]? | select(.type == "text") | .text] | join(" ")' "$RESP" 2>/dev/null \
+      | tr '\n' ' ' | ${pkgs.gnused}/bin/sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+    rm -f "$RESP"
+    log "text: $TEXT"
+    if [ -z "$TEXT" ]; then
+      $NOTIFY -t 2000 "Voice" "Heard nothing" -i "audio-input-microphone"
+      exit 0
+    fi
+
+    # Command matching is case/punctuation-insensitive
+    LOWER=$(printf '%s' "$TEXT" | tr '[:upper:]' '[:lower:]' | tr -d '.,!?')
+    set -- $LOWER
+    CMD="''${1:-}"
+
+    case "$CMD" in
+      send)
+        log "action: Enter"
+        $WTYPE -k Return
+        ;;
+      delete)
+        log "action: clear line"
+        $WTYPE -M ctrl -k u -m ctrl
+        ;;
+      *)
+        # voice-command decides: instruction -> actions, otherwise typed
+        exec ${voice-command}/bin/voice-command "$TEXT"
+        ;;
+    esac
   '';
 in
 {
@@ -1327,6 +1623,6 @@ in
     bruno-current-workspace
     rustdesk-current-workspace
     voice-terminal
-    voice-lang
+    voice-command
     ;
 }

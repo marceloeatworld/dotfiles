@@ -1,6 +1,6 @@
 # Security tools system configuration
 # ALL security tools consolidated here (packages + permissions)
-# Home module (programs/security-tools.nix) contains only aliases and documentation
+# Home module (programs/security-packages.nix) contains only aliases and documentation
 { pkgs, lib, ... }:
 
 {
@@ -124,7 +124,6 @@
     # ============================================
     seclists       # Security lists for security testing
     crunch         # Wordlist generator
-    # Tools that previously required unstable (now all from same pkgs)
     hcxtools       # Convert captures to hashcat format
     hcxdumptool    # Capture PMKID without handshake
     bettercap      # Modern MITM framework

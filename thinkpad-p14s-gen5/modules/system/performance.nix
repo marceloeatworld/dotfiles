@@ -91,6 +91,18 @@ in
         MemorySwapMax = "8G";
       };
     };
+    # Ferdium: 4 always-loaded web apps (WhatsApp x2, Telegram, WeChat) with
+    # per-service hibernation off. Launched via ferdium-current-workspace
+    # (hyprland/scripts.nix), which places it here instead of the Hyprland
+    # session unit, so a runaway tab is throttled/killed on its own.
+    "app-ferdium" = {
+      description = "Memory-limited slice for Ferdium";
+      sliceConfig = {
+        MemoryHigh = "3G";
+        MemoryMax = "5G";
+        MemorySwapMax = "2G";
+      };
+    };
   };
 
   # ===========================================
@@ -131,7 +143,11 @@ in
   services.earlyoom = {
     enable = true;
     freeMemThreshold = 5; # Trigger at 5% free RAM
-    freeSwapThreshold = 10; # Trigger at 10% free swap
+    # earlyoom only acts when BOTH thresholds are hit. With 20 GB of zram the
+    # old 10% swap threshold (2 GB free) was reached only after minutes of
+    # thrashing, and on 2026-09-05 the kernel OOM killer fired first while
+    # earlyoom was still "selecting victim". Act once half the swap is gone.
+    freeSwapThreshold = 50; # Trigger at 50% free swap
     enableNotifications = true; # Desktop notifications when killing
     extraArgs = [
       # earlyoom matches the kernel comm (15 chars); NixOS wrappers rename
@@ -139,7 +155,10 @@ in
       "--avoid"
       "^(\\.?Hyprland(-wrapp.*)?|\\.?waybar(-wrapped)?|pipewire(-pulse)?|wireplumber|qemu.*)$" # Never kill these
       "--prefer"
-      "^(\\.?brave(-wrapped)?|chromium|firefox|chrome)$" # Kill browsers first (not generic 'electron' to protect vesktop/joplin)
+      # Batch image tools before browsers: a parallel magick fan-out (190 procs,
+      # ~16 GB) OOM-killed the whole session on 2026-08-13 while earlyoom was
+      # busy killing brave renderers that were not the actual memory hogs.
+      "^(magick|convert|mogrify|\\.?brave(-wrapped)?|chromium|firefox|chrome)$" # (not generic 'electron' to protect vesktop/joplin)
     ];
   };
 

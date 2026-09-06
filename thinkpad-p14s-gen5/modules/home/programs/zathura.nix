@@ -1,12 +1,15 @@
 # Zathura PDF reader configuration
-{ config, ... }:
+{ config, pkgs, lib, ... }:
 
 let
   theme = config.theme;
+  desktopFilesOnly = import ../lib/desktop-files-only.nix { inherit pkgs lib; };
 in
 {
   programs.zathura = {
     enable = true;
+    # Desktop files only: the binary is the firejail wrapper from security.nix.
+    package = desktopFilesOnly pkgs.zathura;
 
     options = {
       # General settings

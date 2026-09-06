@@ -8,14 +8,14 @@ Personal NixOS configuration with Hyprland and themeable UI.
 - **Hardware:** Lenovo ThinkPad P14s Gen 5
 - **CPU:** AMD Ryzen 7 PRO 8840HS (Zen 4)
 - **GPU:** Radeon 780M (RDNA 3)
-- **RAM:** 32GB + zram (zstd, 75% / ~24GB)
+- **RAM:** 32GB (27GiB usable after the iGPU carveout) + zram (zstd, 75% / 20GB)
 - **Storage:** 1TB NVMe (LUKS + Btrfs, 7 subvolumes)
-- **Kernel:** `linuxPackages_latest` (currently 7.1.3)
-- **NixOS:** `nixos-unstable` (currently 26.11.20260708)
+- **Kernel:** `linuxPackages_latest` (currently 7.2.x)
+- **NixOS:** `nixos-unstable` (currently 26.11.20260904)
 - **State versions:** NixOS/Home Manager 25.05
 - **WM:** Hyprland (Wayland) via UWSM
 - **Terminal:** Ghostty + Alacritty (backup)
-- **Launcher:** Hyprlauncher (daemon mode)
+- **Launcher:** Wofi (drun); hyprlauncher installed but its daemon is disabled
 - **Theme:** 7 themes (Ristretto default, Neobrutalist, Neobrutalist Light, Nord, Tokyo Night, Catppuccin, Paper)
 
 ## Quick Start
@@ -38,9 +38,9 @@ nix flake update
 
 ```
 .
-├── flake.nix                 # Main flake (nixos-unstable / 26.11 snapshot + 9 overlays)
-├── flake.lock                # Locked inputs (current system: 26.11.20260708)
-├── overlays/                 # Custom package overlays (9)
+├── flake.nix                 # Main flake (nixos-unstable / 26.11 snapshot + 10 overlays)
+├── flake.lock                # Locked inputs (current system: 26.11.20260904)
+├── overlays/                 # Custom package overlays (10)
 │   ├── vscode-latest.nix     # VS Code from Microsoft CDN
 │   ├── claude-code-latest.nix # Claude Code from npm
 │   ├── llama-cpp-latest.nix  # llama.cpp with ROCm + native CPU opts
@@ -48,15 +48,16 @@ nix flake update
 │   ├── forgecode-latest.nix  # ForgeCode from GitHub (musl static)
 │   ├── codex-latest.nix      # Codex from GitHub releases (OpenAI, Rust musl)
 │   ├── runpodctl-latest.nix  # RunPod CLI from GitHub (Go)
-│   ├── pnpm-latest.nix       # pnpm static binary from GitHub releases
-│   └── waybar-latest.nix     # Waybar master pin for Hyprland Lua IPC fix
+│   ├── pnpm-latest.nix       # pnpm npm tarball wrapped on system Node 22 (v10.x pin)
+│   ├── waybar-latest.nix     # Waybar master pin for Hyprland Lua IPC fix
+│   └── yaru-theme.nix        # Yaru GTK/icon theme (dropped from nixpkgs 2026-07)
 ├── assets/icons/             # Local webapp icons
 ├── hosts/thinkpad/
 │   ├── configuration.nix     # System config (hostname, packages, nix settings)
 │   ├── hardware-configuration.nix
 │   └── disko-config.nix      # LUKS + Btrfs (7 subvolumes)
 └── modules/
-    ├── system/               # 20 system modules
+    ├── system/               # System modules
     │   ├── boot.nix          # systemd-boot, latest kernel, AMD boot params
     │   ├── networking.nix    # NetworkManager, dnscrypt-proxy2, Bluetooth
     │   ├── hyprland.nix      # Hyprland system config, XDG portal, suspend/resume fix
@@ -73,31 +74,39 @@ nix flake update
     │   ├── fonts.nix         # System fonts (Inter, Liberation, Nerd Fonts)
     │   ├── vpn-dns-switch.nix # Auto DNS switching (dnscrypt ↔ VPN DNS) + captive portal
     │   ├── ddcutil.nix       # DDC/CI for external monitor brightness
-    │   ├── flatpak.nix       # Flatpak support
+    │   ├── sunxi-fel.nix     # Allwinner FEL USB access (PocketCHIP)
+    │   ├── smartcard.nix     # pcscd for the Cartao de Cidadao reader
+    │   ├── scanner.nix       # SANE + scan-doc/scan-photo (Canon LiDE 400)
     │   ├── performance.nix   # zram, ananicy-cpp, earlyoom, GameMode, sysctl tuning
     │   └── nh.nix            # NH (Nix Helper) config
     └── home/                 # Home Manager modules
-        ├── home.nix          # Root config, imports 48 local modules + sops-nix
-        ├── programs/         # 33 program modules
+        ├── home.nix          # Root config, imports the modules below + sops-nix
+        ├── programs/         # Program modules
         │   ├── hyprland/     # Lua WM config split into monitors, keybinds, rules, scripts, etc.
         │   ├── terminal.nix  # Ghostty + Alacritty
-        │   ├── shell.nix     # Zsh, Starship, aliases, auto-update functions
+        │   ├── shell.nix     # Zsh, Starship, aliases
+        │   ├── overlay-updates.nix # update-* overlay helper functions
+        │   ├── keys.nix      # Terminal keybindings cheatsheet (`keys`)
+        │   ├── wofi.nix      # Wofi launcher / dmenu picker
         │   ├── git.nix       # Git + delta + lazygit
         │   ├── nvim.nix      # Neovim (50+ plugins, LSP, Copilot)
-        │   ├── development.nix # VS Code, C++, Node, Python, Go, Rust, .NET
+        │   ├── development.nix # C++, Node, Python, Go, Rust, .NET
+        │   ├── vscode.nix    # VS Code package, wrapper and UI settings
         │   ├── claude-code.nix # Claude Code AI assistant config
         │   ├── ai-skills.nix  # AI agent skills & commands (plan, verify, blueprint)
         │   ├── opencode.nix  # OpenCode AI coding agent config
         │   ├── forgecode.nix # ForgeCode AI coding harness (Rust, ZSH)
         │   ├── codex.nix     # Codex AI coding agent (OpenAI, Rust musl static)
-        │   ├── kali-redteam.nix # Kali Linux headless container
+        │   ├── kali-redteam.nix # Kali Linux headless container (Podman)
         │   ├── vpn.nix       # VPN manager (country-code WireGuard switching)
-        │   ├── webapps.nix   # Brave web apps (YouTube, Twitch, ChatGPT, GitHub, Proton)
+        │   ├── webapps.nix   # Brave web apps (YouTube, Twitch, ChatGPT, GitHub, Claude, Proton)
+        │   ├── geforce-now.nix # GeForce NOW cloud gaming (dedicated Chromium)
+        │   ├── autenticacao-gov.nix # Cartao de Cidadao auth (jailed plugin + Brave window)
         │   ├── xfeed/        # Removable X timeline panel (Super+R)
         │   ├── jailed-agents.nix # Opt-in sandboxed AI agent wrappers (jail.nix)
         │   ├── desktop-apps.nix # Desktop entries
         │   ├── media.nix     # Media tools (swayimg, PhotoGIMP, Flowblade)
-        │   ├── nemo.nix      # Nemo file manager + 18 custom actions
+        │   ├── nemo.nix      # Nemo file manager + 19 custom actions
         │   ├── hyprlauncher.nix # App launcher config
         │   ├── btop.nix      # System monitor
         │   ├── fastfetch.nix # System info
@@ -116,9 +125,11 @@ nix flake update
         │   └── mic-jack-autoswitch.nix # Mic auto-switch on jack plug/unplug
         └── config/
             ├── theme.nix     # 7 themes (colors + fonts, read from current-theme)
+            ├── runtime-theme.nix # Runtime day/night theme switcher (no rebuild)
+            ├── bat.nix       # Bat (cat replacement) + themed tmTheme
             ├── secrets.nix   # sops-nix API keys decryption
-            ├── gtk.nix       # Adwaita-dark, Yaru-yellow icons, Bibata cursor
-            ├── qt.nix        # Kvantum (KvArcDark)
+            ├── gtk.nix       # Yaru GTK/icon variant per theme, Bibata cursor
+            ├── qt.nix        # Kvantum (per-theme generated variant)
             ├── fontconfig.nix # Font fallbacks
             ├── webapp-icons.nix # Custom webapp icons
             ├── hyprpaper.nix # Wallpaper
@@ -128,7 +139,7 @@ nix flake update
 ## Features
 
 - **Hyprland 0.55+** - Tiling Wayland compositor via UWSM, Lua config, official Hyprland flake, and Mesa matched to the Hyprland input
-- **Hypr Ecosystem** - hyprlock, hypridle, hyprpaper, hyprlauncher, hyprsunset, hyprpicker, hyprpwcenter, hyprsysteminfo, hyprfreeze, grimblast, hyprshutdown, hyprprop, hyprmon, hyprcursor
+- **Hypr Ecosystem** - hyprlock, hypridle, hyprpaper, hyprlauncher, hyprsunset, hyprpicker, hyprpwcenter, hyprsysteminfo, wl-freeze, grimblast, hyprshutdown, hyprprop, hyprmon, hyprcursor
 - **7 Themes** - Switch with `theme-selector` (Ristretto, Neobrutalist, Neobrutalist Light, Nord, Tokyo Night, Catppuccin, Paper)
 - **Ferdium** - Multi-account messaging workspace for WhatsApp and WhatsApp Business in one window
 - **Firejail** - 17 wrapped apps plus dedicated Brave/Brave-HW profiles (Wireshark, KeePassXC, LibreOffice, Ghidra, etc.)
@@ -136,7 +147,7 @@ nix flake update
 - **AppArmor** - Mandatory access control enabled
 - **Ghostty** - GPU-accelerated terminal with splits and tabs
 - **Bitcoin Wallet Monitor** - Privacy-focused zpub derivation, Waybar integration
-- **DNS Privacy** - AdGuard + Mullvad + Quad9 via dnscrypt-proxy2 (DNSSEC)
+- **DNS Privacy** - AdGuard + Mullvad via dnscrypt-proxy (DNSSEC)
 - **VPN Integration** - Auto DNS switching (dnscrypt ↔ Proton VPN WireGuard) + captive portal detection
 - **Local LLM** - llama.cpp with ROCm (Qwythos 9B, Gemma 4 12B Coder, Qwopus3.6 27B Coder, Devstral Small, plus GLM-OCR vision), started on demand with `llm local`
 - **AI Agents** - Claude Code, ForgeCode, OpenCode, Codex
@@ -151,6 +162,9 @@ nix flake update
 
 ## Keybindings
 
+`keys` in a terminal and `SUPER + F1` show the maintained list, generated from
+`modules/home/programs/hyprland/keymap.nix`. The tables below are a summary.
+
 ### Hyprland (Window Manager)
 
 **Applications**
@@ -160,16 +174,16 @@ nix flake update
 | `SUPER + B` | Brave browser |
 | `SUPER + E` | Nemo file manager |
 | `SUPER + A` | Audio control (hyprpwcenter) |
-| `SUPER + D` | Hyprlauncher |
-| `SUPER + Shift + D` | Quick actions menu |
+| `SUPER + D` | App launcher (wofi drun) |
 | `SUPER + V` | Clipboard history (cliphist + wofi) |
 | `SUPER + Shift + V` | Clear clipboard |
 | `SUPER + Y` | YouTube PiP toggle (launch/show/hide) |
 | `SUPER + U` | Twitch PiP toggle (launch/show/hide) |
+| `SUPER + R` | XFeed panel toggle (show/hide) |
 | `SUPER + O` | Quick notes (floating nvim) |
 | `SUPER + X` | Malware analysis lab menu |
 | `SUPER + F1` | Keybindings cheatsheet |
-| `Copilot key` | Voice dictation (whisper.cpp, press to record, press again to transcribe) |
+| `Copilot key` | Voice: press once, speak, it stops on silence. Gemini transcribes (FR/PT/EN auto) and Flash-Lite decides: an instruction runs from a fixed action allowlist (apps, windows, workspaces, media, volume, screenshots, lock, theme, read-only terminal commands), anything else is typed into the focused window |
 
 **Copilot key trick** (between AltGr and right Ctrl): the firmware sends a hardwired
 chord (`LShift down, LMeta down, F23 down/up`, then releases), not a single scancode.
@@ -203,6 +217,8 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | `SUPER + ALT + H/L` | Move window to prev/next workspace |
 | `SUPER + Ctrl + 1-5` | Focus workspace on current monitor |
 | `SUPER + Ctrl + M` | Move current workspace to next monitor |
+| `SUPER + Shift + P` | Toggle laptop screen (eDP-1) |
+| `SUPER + Scroll` | Cycle existing workspaces |
 | `SUPER + Shift + Tab` | Swap active workspaces between laptop and HDMI monitors |
 
 **Groups**
@@ -242,7 +258,7 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | `SUPER + Shift + C` | Window inspector (hyprprop) |
 | `SUPER + I` | System info (hyprsysteminfo) |
 | `SUPER + Shift + I` | System info (detailed panel) |
-| `SUPER + Z` | Freeze/unfreeze window (hyprfreeze) |
+| `SUPER + Z` | Freeze/unfreeze window (wl-freeze) |
 | `SUPER + N` | Blue light filter cycle (8 levels: 5500K → 1000K, then off) |
 | `SUPER + Shift + N` | Blue light off |
 | `SUPER + M` | Battery charge mode (Conservation ↔ Full) |
@@ -287,7 +303,7 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | `Ctrl+Shift+E` | Equalize splits |
 | `Ctrl+Shift+C/V` | Copy/Paste |
 | `Ctrl+Shift+=/-/0` | Font size +/-/reset |
-| `Ctrl+Shift+1-5` | Go to tab 1-5 |
+| `Ctrl+Shift+1-9` | Go to tab 1-9 |
 | Mouse select | Auto-copy to clipboard |
 
 ---
@@ -298,7 +314,8 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | Alias | Command |
 |-------|---------|
 | `rebuild` | `cd "$(dotfiles-flake-dir)" && nh os switch .` |
-| `update` | update flake inputs (including the matched Hyprland/Mesa/portal stack), overlays and skills; validate, build, then switch |
+| `update` | selective `nix flake update` (skips the Hyprland stack + nixpkgs-llama), `update-overlays`, `nix flake check`, then `nh os switch .` |
+| `update-hyprland` | update hyprland/hyprshutdown inputs, then `nh os switch .` (run deliberately, e.g. weekly) |
 | `update-apps` | `update-overlays`, then `nh os switch .` when something changed |
 | `clean` | `nh clean all --keep 3` |
 | `secrets` | `sops "$(dotfiles-flake-dir)/sops/api-keys.yaml"` |
@@ -338,7 +355,7 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | `update-forgecode` | Check/update ForgeCode from GitHub releases |
 | `update-codex` | Check/update Codex from GitHub releases |
 | `update-runpodctl` | Check/update RunPod CLI from GitHub (Go) |
-| `update-pnpm` | Check/update pnpm static binary from GitHub releases |
+| `update-pnpm` | Check/update pnpm (npm tarball, v10.x only) |
 | `update-skills` | Update all agent skill repos |
 | `update-llama` | Check/update llama.cpp from GitHub releases (separate, long build) |
 | `update-overlays` | Update quick overlays + agent skills (`update-llama` and Waybar are manual pins) |
@@ -389,7 +406,6 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | Command | Action |
 |---------|--------|
 | `/plan` | Create implementation plan (waits for confirmation before coding) |
-| `/blueprint <project> "objective"` | Multi-session/multi-PR construction plan with cold-start steps |
 | `/checkpoint create <name>` | Create named git checkpoint |
 | `/checkpoint verify <name>` | Compare current state to checkpoint |
 | `/checkpoint list` | Show all checkpoints |
@@ -435,7 +451,7 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | Key | Action |
 |-----|--------|
 | `i` | Insert mode |
-| `Ctrl c` | Back to Normal mode |
+| `jk` / `Esc` | Back to Normal mode |
 | `Space w` | Save file |
 | `Space q` | Quit |
 
@@ -467,7 +483,7 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | `Space g n` | Neogit |
 | `Space g d` | Diff view |
 
-**LSP Servers:** nil (Nix), lua_ls, pyright, rust_analyzer, ts_ls, gopls, clangd
+**LSP Servers:** nil (Nix), lua_ls, pyright, rust_analyzer, gopls, clangd, yamlls, marksman, html/css/json, bashls (ts_ls opt-in via `vts`)
 
 **AI:** GitHub Copilot (auto-trigger, Tab to accept)
 
@@ -475,18 +491,17 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 
 ## DNS Configuration
 
-| Provider | Location | Features |
-|----------|----------|----------|
-| **AdGuard** | Cyprus | Ads + trackers + malware blocking |
-| **Mullvad** | Sweden | Aggressive ad-blocking |
-| **Quad9** | Europe | Malware + phishing blocking |
+| Provider | Features |
+|----------|----------|
+| **AdGuard** | Ads + trackers + malware blocking |
+| **Mullvad** | Ads + trackers (public blocklist configuration) |
 
-All encrypted via DNSCrypt + DoH with DNSSEC enabled.
+Both encrypted (DNSCrypt / DoH) with DNSSEC required.
 
 **Automatic VPN DNS switching:**
-| Status | DNS | dnscrypt-proxy2 |
-|--------|-----|-----------------|
-| VPN OFF | AdGuard/Mullvad/Quad9 | Active |
+| Status | DNS | dnscrypt-proxy |
+|--------|-----|----------------|
+| VPN OFF | AdGuard/Mullvad | Active |
 | VPN ON | Proton VPN DNS | Stopped |
 
 Captive portal detection (hotel/airport WiFi) is automatic. Manual bypass: `captive-on` / `captive-off`.
@@ -613,11 +628,11 @@ Aliases: `nmap-quick`, `nmap-full`, `nmap-vuln`, `wifite-auto`, `hashcat-gpu`, e
 | Service | Description |
 |---------|-------------|
 | **llama-cpp / llama-cpp-ocr** | Local LLM/OCR API units, available but not started at boot |
-| **dnscrypt-proxy** | Encrypted DNS (AdGuard, Mullvad, Quad9) |
+| **dnscrypt-proxy** | Encrypted DNS (AdGuard, Mullvad) |
 | **TLP** | Power management (conservation: 55-60%) |
 | **btrbk** | Btrfs snapshots hourly, 24 hourly + 3 daily retained |
 | **ananicy-cpp** | Process priority optimization (CachyOS rules) |
-| **earlyoom** | OOM prevention (5% RAM threshold) |
+| **earlyoom** | OOM prevention (5% RAM and 50% zram free thresholds) |
 | **Podman** | Container runtime (Docker compatible) |
 | **libvirtd** | KVM/QEMU virtualization (swtpm for TPM2) |
 | **BitBox Bridge** | Hardware wallet bridge |
@@ -628,15 +643,16 @@ Aliases: `nmap-quick`, `nmap-full`, `nmap-vuln`, `wifite-auto`, `hashcat-gpu`, e
 
 | Overlay | Package | Current Version |
 |---------|---------|-----------------|
-| vscode-latest.nix | VS Code | 1.127.0 |
-| claude-code-latest.nix | Claude Code | 2.1.207 |
-| llama-cpp-latest.nix | llama.cpp (ROCm + NATIVE) | b9913 |
-| opencode-latest.nix | OpenCode (Bun SEA) | 1.17.18 |
-| forgecode-latest.nix | ForgeCode (musl static) | 2.13.16 |
-| codex-latest.nix | Codex (OpenAI, Rust musl) | 0.144.1 |
-| runpodctl-latest.nix | RunPod CLI (Go) | 2.6.1 |
+| vscode-latest.nix | VS Code | 1.136.1 |
+| claude-code-latest.nix | Claude Code | 2.1.261 |
+| llama-cpp-latest.nix | llama.cpp (ROCm + NATIVE) | b10819 |
+| opencode-latest.nix | OpenCode (Bun SEA) | 1.18.29 |
+| forgecode-latest.nix | ForgeCode (musl static) | 2.13.21 |
+| codex-latest.nix | Codex (OpenAI, Rust musl) | 0.153.4 |
+| runpodctl-latest.nix | RunPod CLI (Go) | 2.12.0 |
 | pnpm-latest.nix | pnpm | 10.34.5 |
 | waybar-latest.nix | Waybar | 0.15.0-unstable-98b2a56 |
+| yaru-theme.nix | Yaru | 25.10.3 |
 
 ---
 

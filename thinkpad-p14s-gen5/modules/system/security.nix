@@ -23,19 +23,49 @@ let
     "--enable-smooth-scrolling"
   ];
 
-  # Daily Brave profile: keep the normal Firejail browser profile strict.
+  # Daily Brave profile: firejail's brave profile (seccomp, caps, private-dev,
+  # no ptrace, no suid) with the home whitelist disabled so uploads and the
+  # Claude Code browser extension's native host (~/.claude/chrome) work from
+  # anywhere in ~. Whitelisting also hid ~/.config/theme, so the GTK and
+  # Kvantum config links dangled inside the sandbox and Brave rendered text
+  # selections with Kvantum's fallback palette (invisible on dark pages).
+  # Credentials stay hidden: disable-common.inc blacklists ~/.ssh, ~/.aws and
+  # ~/.netrc; the sops age key, the decrypted sops-nix secrets (symlink in
+  # ~/.config plus the tmpfs target under /run/user) and the wallet zpub file
+  # are added here. `ignore` must precede the include.
   # Hardware/WebUSB access is split into the explicit brave-hw command below.
   brave-profile = pkgs.writeText "brave-strict.profile" ''
-    # Extend firejail's default brave profile
+    ignore whitelist
     include ${pkgs.firejail}/etc/firejail/brave.profile
 
-    # Keep common browser upload/download locations available without exposing
-    # the full home.
-    whitelist ''${HOME}/Downloads
-    whitelist ''${HOME}/Documents
-    whitelist ''${HOME}/Pictures
-    whitelist ''${HOME}/Videos
-    whitelist ''${HOME}/Music
+    blacklist ''${HOME}/.config/sops
+    blacklist ''${HOME}/.config/sops-nix
+    blacklist ''${RUNUSER}/secrets.d
+    blacklist ''${HOME}/.config/waybar/.env
+  '';
+
+  # The other sandboxed GUI apps keep their home whitelists, so they need
+  # ~/.config/theme explicitly: their GTK settings.ini, gtk.css imports and
+  # Kvantum config are symlinks into it (runtime-theme.nix) and dangle
+  # otherwise, leaving them on the default GTK/Kvantum look.
+  themeWhitelist = "--whitelist=~/.config/theme";
+
+  # Spotify streams into ~/.cache/spotify (2.5 GB found on 2026-09-06). Drop
+  # the stream cache once the client exits. Users/ keeps login and settings.
+  # Runs inside the jail; ~/.cache/spotify is whitelisted read-write there.
+  # Chromium's own zygote sandbox cannot be created inside a firejail jail
+  # (no new privileges, seccomp): Electron aborts with
+  # "zygote_host_impl_linux.cc: Check failed". Firejail plus AppArmor provide
+  # the confinement instead, as for every other firejail Electron profile.
+  vesktop-in-jail = pkgs.writeShellScriptBin "vesktop-in-jail" ''
+    exec ${pkgs.vesktop}/bin/vesktop --no-sandbox "$@"
+  '';
+
+  spotify-clean-exit = pkgs.writeShellScriptBin "spotify-clean-exit" ''
+    ${pkgs.spotify}/bin/spotify "$@"
+    rc=$?
+    ${pkgs.coreutils}/bin/rm -rf "$HOME/.cache/spotify/Data" "$HOME/.cache/spotify/Storage"
+    exit $rc
   '';
 
   # Custom Brave wrapper: we can't use programs.firejail.wrappedBinaries
@@ -60,7 +90,7 @@ let
       exec $SYSTEMD_RUN "$FIREJAIL" --join=brave "$BRAVE" ${brave-flags} "$@"
     else
       # Create new sandbox with full profile (whitelists, ignores, etc.)
-      exec $SYSTEMD_RUN "$FIREJAIL" --name=brave --profile=${brave-profile} "$BRAVE" ${brave-flags} "$@"
+      exec $SYSTEMD_RUN "$FIREJAIL" --name=brave --apparmor --profile=${brave-profile} "$BRAVE" ${brave-flags} "$@"
     fi
   '';
 
@@ -96,7 +126,11 @@ in
     # NOTE: brave is NOT listed here - it uses the custom brave-wrapper
     # script below (in environment.systemPackages) because wrappedBinaries
     # can't conditionally decide between --join and --profile args.
-    wrappedBinaries = {
+    # Every wrapper also confines with the generic firejail-default AppArmor
+    # profile (loaded by security.apparmor below): a second, kernel-side layer
+    # that blocks ptrace, raw mounts and most capabilities without any
+    # per-application rules to maintain.
+    wrappedBinaries = lib.mapAttrs (_: w: w // { extraArgs = [ "--apparmor" ] ++ w.extraArgs; }) {
       # Google Cloud SDK - sandboxed (cloud CLI with credentials)
       # Uses noprofile to avoid default.profile blacklists conflicting with whitelists
       gcloud = {
@@ -120,9 +154,10 @@ in
       # Vesktop (Vencord) - sandboxed Discord client
       # vesktop.profile is minimal (private-bin only), so add hardening
       vesktop = {
-        executable = "${pkgs.vesktop}/bin/vesktop";
+        executable = "${vesktop-in-jail}/bin/vesktop-in-jail";
         profile = "${pkgs.firejail}/etc/firejail/vesktop.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/.config/vesktop"
           "--whitelist=~/.cache/vesktop"
           "--caps.drop=all"
@@ -139,9 +174,10 @@ in
 
       # Spotify - sandboxed (Electron app with telemetry)
       spotify = {
-        executable = "${pkgs.spotify}/bin/spotify";
+        executable = "${spotify-clean-exit}/bin/spotify-clean-exit";
         profile = "${pkgs.firejail}/etc/firejail/spotify.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/.config/spotify"
           "--whitelist=~/.cache/spotify"
           "--whitelist=~/Music"
@@ -153,6 +189,7 @@ in
         executable = "${pkgs.vlc}/bin/vlc";
         profile = "${pkgs.firejail}/etc/firejail/vlc.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Videos"
           "--whitelist=~/Music"
           "--whitelist=~/Downloads"
@@ -164,6 +201,7 @@ in
         executable = "${pkgs.transmission_4-gtk}/bin/transmission-gtk";
         profile = "${pkgs.firejail}/etc/firejail/transmission-gtk.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Downloads"
           "--whitelist=~/.config/transmission"
         ];
@@ -171,9 +209,10 @@ in
 
       # LibreOffice - sandboxed (external documents)
       libreoffice = {
-        executable = "${pkgs.libreoffice-fresh}/bin/libreoffice";
+        executable = "${pkgs.libreoffice-stable}/bin/libreoffice";
         profile = "${pkgs.firejail}/etc/firejail/libreoffice.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Documents"
           "--whitelist=~/Downloads"
           "--whitelist=~/Templates"
@@ -185,6 +224,7 @@ in
         executable = "${pkgs.gimp3}/bin/gimp";
         profile = "${pkgs.firejail}/etc/firejail/gimp.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Pictures"
           "--whitelist=~/Downloads"
           "--whitelist=~/.config/GIMP"
@@ -196,6 +236,7 @@ in
         executable = "${pkgs.inkscape}/bin/inkscape";
         profile = "${pkgs.firejail}/etc/firejail/inkscape.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Pictures"
           "--whitelist=~/Documents"
           "--whitelist=~/Downloads"
@@ -208,6 +249,7 @@ in
         executable = "${pkgs.keepassxc}/bin/keepassxc";
         profile = "${pkgs.firejail}/etc/firejail/keepassxc.profile";
         extraArgs = [
+          themeWhitelist
           # Very restrictive - only config and Documents for .kdbx files
           "--whitelist=~/.config/keepassxc"
           "--whitelist=~/Documents"
@@ -221,6 +263,7 @@ in
         executable = "${pkgs.zathura}/bin/zathura";
         profile = "${pkgs.firejail}/etc/firejail/zathura.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Documents"
           "--whitelist=~/Downloads"
           "--whitelist=~/.config/zathura"
@@ -234,6 +277,7 @@ in
         executable = "${pkgs.blender}/bin/blender";
         profile = "${pkgs.firejail}/etc/firejail/blender.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Documents"
           "--whitelist=~/Downloads"
           "--whitelist=~/Pictures"
@@ -247,6 +291,7 @@ in
         executable = "${pkgs.obs-studio}/bin/obs";
         profile = "${pkgs.firejail}/etc/firejail/obs.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Videos"
           "--whitelist=~/.config/obs-studio"
         ];
@@ -257,6 +302,7 @@ in
         executable = "${pkgs.audacity}/bin/audacity";
         profile = "${pkgs.firejail}/etc/firejail/audacity.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Music"
           "--whitelist=~/Downloads"
           "--whitelist=~/Documents"
@@ -270,6 +316,7 @@ in
         executable = "${pkgs.xournalpp}/bin/xournalpp";
         profile = "${pkgs.firejail}/etc/firejail/xournalpp.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Documents"
           "--whitelist=~/Downloads"
           "--whitelist=~/.config/xournalpp"
@@ -282,6 +329,7 @@ in
         executable = "${pkgs.joplin-desktop}/bin/joplin-desktop";
         profile = "${pkgs.firejail}/etc/firejail/default.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/.config/joplin-desktop"
           "--whitelist=~/.config/Joplin"
           "--whitelist=~/Documents"
@@ -294,6 +342,7 @@ in
         executable = "${pkgs.wireshark}/bin/wireshark";
         profile = "${pkgs.firejail}/etc/firejail/wireshark.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Downloads"
           "--whitelist=~/.config/wireshark"
           "--nosound"
@@ -306,6 +355,7 @@ in
         executable = "${pkgs.ghidra}/bin/ghidra";
         profile = "${pkgs.firejail}/etc/firejail/default.profile";
         extraArgs = [
+          themeWhitelist
           "--whitelist=~/Documents"
           "--whitelist=~/Downloads"
           "--whitelist=~/.ghidra"
@@ -321,6 +371,13 @@ in
     enable = true;
     enableSSHSupport = true;
   };
+
+  # scdaemon: go through pcscd (smartcard.nix) instead of probing USB readers
+  # with the built-in CCID driver, which logged "ccid open error: skip" on
+  # every SSH connection. Read from /etc/gnupg like gpg-agent.conf above.
+  environment.etc."gnupg/scdaemon.conf".text = ''
+    disable-ccid
+  '';
 
   # Secret Service provider for VS Code/Electron credential storage under
   # Hyprland. This avoids VS Code falling back to weaker local encryption.
@@ -346,8 +403,28 @@ in
     # sudo.fprintAuth = true;
   };
 
-  # AppArmor for additional security (optional)
-  security.apparmor.enable = true;
+  # AppArmor. Enabling it alone loads no policy (the service ran a teardown
+  # and nothing else). Load firejail's generic profile so every firejail
+  # sandbox above gets kernel-side confinement; the firejail package is added
+  # to the include path for its local/firejail-default stub.
+  security.apparmor = {
+    enable = true;
+    packages = [ pkgs.firejail ];
+    # Upstream firejail-default only allows exec from FHS paths (/bin, /lib,
+    # /opt...). On NixOS every program lives in /nix/store, so the second exec
+    # inside a jail (bin/brave -> brave-browser, spotify-clean-exit -> spotify,
+    # any makeWrapper script) was denied with "Permission denied". Allow the
+    # store; ptrace, mount, capability and sensitive-path rules still apply.
+    policies.firejail-default = {
+      state = "enforce";
+      path = pkgs.runCommand "firejail-default-apparmor" { } ''
+        ${pkgs.gnused}/bin/sed \
+          's|^#/{,run/firejail/mnt/oroot/}home/\*\* ix,$|/{,run/firejail/mnt/oroot/}nix/store/** ix,|' \
+          ${pkgs.firejail}/etc/apparmor.d/firejail-default > $out
+        ${pkgs.gnugrep}/bin/grep -q 'nix/store/\*\* ix,' $out
+      '';
+    };
+  };
 
   # Polkit rules for TLP battery threshold management
   security.polkit.adminIdentities = [ "unix-user:marcelo" ];

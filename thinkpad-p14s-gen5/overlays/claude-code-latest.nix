@@ -18,8 +18,8 @@
 { fetchurl, claude-code, patchelf, glibc, stdenv, ... }:
 
 let
-  version = "2.1.220";
-  sha256 = "sha256-JdLiyubT0dXO6vDaAug8RcFkVeRe+hqzBTldwFInrQ0=";
+  version = "2.1.261";
+  sha256 = "sha256-kKPmdenzy2E/6i/4gf5BCFJ6v7zqcH4ENOFaUkz2vI4=";
 in
 stdenv.mkDerivation {
   pname = "claude-code";

@@ -13,8 +13,8 @@
 { fetchurl, opencode, patchelf, glibc, stdenv, ... }:
 
 let
-  version = "1.18.10";
-  sha256 = "sha256-axET2nBCU/tNoStB5CNqzsufK2KUnJRfburKoVERuXY=";
+  version = "1.18.29";
+  sha256 = "sha256-6oALf/ViJrcJUhJsn8HiUXykxLVoL9nT+eh0SWl6EZQ=";
 in
 stdenv.mkDerivation {
   pname = "opencode";

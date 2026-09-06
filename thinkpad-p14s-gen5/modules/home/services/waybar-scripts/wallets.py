@@ -33,28 +33,26 @@ import json
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 CONFIG_DIR = Path.home() / ".config/waybar"
 ENV_FILE = CONFIG_DIR / ".env"
 ENV_EXAMPLE = CONFIG_DIR / ".env.example"
 
-# Cache configuration
+# Address cache: permanent, never expires (see load_cache). Prices refresh on
+# every run (waybar interval: 10 min).
 CACHE_DIR = Path.home() / ".cache/waybar-bitcoin"
 CACHE_FILE = CACHE_DIR / "wallet_cache.json"
-CACHE_DURATION = timedelta(hours=24)  # Unused: address cache never expires (see load_cache); price refreshes each run (waybar interval: 10 min)
 
-# Real gap limit: stop after finding N consecutive empty addresses
-# Increased to 50 to handle wallets with scattered transactions
-GAP_LIMIT = 50  # Extended gap limit for better coverage
+# Gap limit: stop after N consecutive empty addresses (wide, for wallets with
+# scattered transactions)
+GAP_LIMIT = 50
 
-# Maximum addresses to check per wallet (safety limit)
-# Increased to 500 to ensure we catch all addresses
+# Maximum addresses to check per chain (safety limit)
 MAX_ADDRESS_INDEX = 500
 
-# Delay between API requests to avoid rate limiting (seconds)
-# Increased to 3s to handle double chain scanning (external + change)
+# Delay between mempool.space requests (seconds); a full rescan is slow on purpose
 API_DELAY = 3.0
 
 # Lazy import for requests (imported after dependencies are installed)

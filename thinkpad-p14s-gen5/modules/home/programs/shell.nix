@@ -1,5 +1,5 @@
 # Shell configuration (ZSH with Starship prompt)
-{ pkgs, config, ... }:
+{ pkgs, config, lib, ... }:
 
 let
   theme = config.theme;
@@ -40,7 +40,6 @@ in
       strategy = [ "history" "completion" ];
     };
     syntaxHighlighting.enable = true;
-    # Extra completion packages (nmap, git, docker, systemctl, etc.)
     completionInit = ''
       # Interactive menu completion with descriptions
       zstyle ':completion:*' menu select                              # Arrow-key menu on Tab
@@ -254,61 +253,88 @@ in
     '';
   };
 
-  # Starship prompt - compact two-line style
+  # Starship prompt - two-line style with Nerd Font icons. Colors are ANSI
+  # names so the prompt follows the terminal palette of the runtime theme.
   programs.starship = {
     enable = true;
     enableZshIntegration = true;
 
     settings = {
-      # Keep the path readable and leave the command line clean.
-      format = "$nix_shell$directory$git_branch$git_status$line_break$character";
+      format = lib.concatStrings [
+        "[╭](dimmed white) "
+        "$nix_shell$hostname$directory$git_branch$git_status$cmd_duration"
+        "$line_break"
+        "[╰](dimmed white) $character"
+      ];
+      right_format = "$time";
       add_newline = false;
       command_timeout = 200;
 
       character = {
-        success_symbol = "[>](bold blue) ";
-        error_symbol = "[x](bold red) ";
+        success_symbol = "[❯](bold blue)";
+        error_symbol = "[❯](bold red)";
       };
 
       directory = {
-        format = "[$path]($style)[$read_only]($read_only_style) ";
+        format = "[󰉋 ](blue)[$path]($style)[$read_only]($read_only_style) ";
         truncation_length = 4;
         truncation_symbol = ".../";
         truncate_to_repo = true;
         home_symbol = "~";
         style = "bold blue";
-        read_only = " ro";
+        read_only = " 󰌾";
         read_only_style = "bold red";
         before_repo_root_style = "dimmed blue";
         repo_root_style = "bold yellow";
-        repo_root_format = "[$before_root_path]($before_repo_root_style)[$repo_root]($repo_root_style)[$path]($style)[$read_only]($read_only_style) ";
+        repo_root_format = "[󰉋 ](blue)[$before_root_path]($before_repo_root_style)[$repo_root]($repo_root_style)[$path]($style)[$read_only]($read_only_style) ";
       };
 
       git_branch = {
-        format = "[$branch]($style) ";
+        format = "[$symbol$branch]($style) ";
+        symbol = " ";
         style = "purple";
       };
 
+      # Counted symbols: ?2 untracked, !1 modified, +1 staged, ↑1 ahead
       git_status = {
-        format = "[$all_status]($style)";
+        format = "([$all_status$ahead_behind]($style) )";
         style = "red";
-        ahead = "+";
-        behind = "-";
-        diverged = "+-";
-        conflicted = "!";
+        ahead = "↑\${count}";
+        behind = "↓\${count}";
+        diverged = "↑\${ahead_count}↓\${behind_count}";
+        conflicted = "=\${count}";
         up_to_date = "";
-        untracked = "?";
-        modified = "*";
+        untracked = "?\${count}";
+        modified = "!\${count}";
         stashed = "";
-        staged = "+";
+        staged = "+\${count}";
         renamed = "";
         deleted = "";
       };
 
+      cmd_duration = {
+        min_time = 2000;
+        format = "[󰔟 $duration]($style) ";
+        style = "yellow";
+      };
+
+      hostname = {
+        ssh_only = true;
+        format = "[󰣀 $hostname]($style) ";
+        style = "bold green";
+      };
+
       nix_shell = {
-        symbol = "nix ";
-        format = "[$symbol]($style)";
+        symbol = "󱄅 ";
+        format = "[$symbol$state]($style) ";
         style = "cyan";
+      };
+
+      time = {
+        disabled = false;
+        format = "[$time]($style)";
+        time_format = "%H:%M";
+        style = "dimmed white";
       };
 
       package.disabled = true;
@@ -340,7 +366,7 @@ in
   programs.carapace = {
     enable = true;
     enableZshIntegration = true;
-    ignoreCase = true;
+    environment.CARAPACE_MATCH = true;
   };
 
   # Smarter searchable shell history. Ctrl+R opens Atuin; Up remains normal zsh.
@@ -414,6 +440,6 @@ in
     enable = true;
     enableZshIntegration = false; # Manual aliases in shellAliases (ls, ll, la, tree) take priority
     git = true;
-    icons = "auto"; # NixOS 25.05: icons = "auto" instead of true
+    icons = "auto";
   };
 }

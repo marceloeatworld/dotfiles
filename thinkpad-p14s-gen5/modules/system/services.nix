@@ -13,6 +13,10 @@
     ];
   };
 
+  # cupsd calls colord at startup for per-printer colour profiles; without
+  # the daemon every boot logs "CreateProfile failed: ServiceUnknown".
+  services.colord.enable = true;
+
   # Avahi for mDNS and manual/network printer discovery
   services.avahi = {
     enable = true;
@@ -113,21 +117,36 @@
     };
   };
 
-  # Alternative: auto-cpufreq (comment out TLP if using this)
-  # services.auto-cpufreq.enable = true;
-
-  # Enable laptop mode (powertop auto-tune disabled - conflicts with TLP)
+  # Suspend/resume hooks stay on; powertop auto-tune would fight TLP.
   powerManagement = {
     enable = true;
     powertop.enable = false;
   };
 
+  # dbus-broker scans every servicedir NixOS lists in session.conf and
+  # system.conf: each package's own share/dbus-1, the system-path store
+  # path, and /run/current-system/sw (the same system-path again via
+  # XDG_DATA_DIRS). The same service file is therefore found 2-3 times and
+  # dbus-broker-launch logs an error-level "Ignoring duplicate name" for
+  # every copy, on every start and reload: ~460 lines per boot, 85% of
+  # all error-level journal entries. The layout is NixOS's, not fixable
+  # here, so drop those two messages at journald level for the two
+  # dbus-broker units only.
+  systemd.services.dbus-broker.serviceConfig.LogFilterPatterns = [
+    "~Ignoring duplicate name"
+    "~is not named after the D-Bus name"
+  ];
+  systemd.user.services.dbus-broker.serviceConfig.LogFilterPatterns = [
+    "~Ignoring duplicate name"
+    "~is not named after the D-Bus name"
+  ];
+
   # Journald: cap log storage to reduce SSD wear
-  services.journald.extraConfig = ''
-    SystemMaxUse=500M
-    SystemKeepFree=1G
-    MaxFileSec=1week
-  '';
+  services.journald.settings.Journal = {
+    SystemMaxUse = "500M";
+    SystemKeepFree = "1G";
+    MaxFileSec = "1week";
+  };
 
   # SMART monitoring of the NVMe: logs health changes to the journal and
   # broadcasts a wall message on pre-failure, the only early warning the SSD
@@ -184,9 +203,6 @@
     criticalPowerAction = "PowerOff"; # Hibernation is intentionally disabled in sleep.conf.
   };
 
-  # NOTE: thermald is INTEL-ONLY, do NOT enable on AMD systems
-  # services.thermald.enable = true;
-
   # Disable XHC0 ACPI wakeup to reach deepest s2idle state
   # XHC0 is the main USB3 controller that causes spurious wakeups on Lenovo ThinkPads
   # Without this, amd_pmc reports "Last suspend didn't reach deepest state" → freeze on resume
@@ -219,7 +235,6 @@
   services.locate = {
     enable = true;
     package = pkgs.plocate;
-    # Note: localuser option removed in modern NixOS (only for findutils)
   };
 
   # BitBox Bridge - Hardware wallet communication bridge
@@ -237,6 +252,14 @@
   services.udev.packages = [
     pkgs.rtl-sdr
     pkgs.qFlipper
+    # TLP masks systemd-rfkill (it manages radio state itself), but udev's
+    # 99-systemd.rules still tags the rfkill device with
+    # SYSTEMD_WANTS=systemd-rfkill.socket, so every boot logs "Failed to
+    # enqueue SYSTEMD_WANTS job ... is masked". Clear the wants after
+    # 99-systemd.rules (rule files run in lexical order).
+    (pkgs.writeTextDir "lib/udev/rules.d/99-zz-rfkill-no-wants.rules" ''
+      SUBSYSTEM=="misc", KERNEL=="rfkill", ENV{SYSTEMD_WANTS}=""
+    '')
   ];
   boot.blacklistedKernelModules = [ "dvb_usb_rtl28xxu" ];
 }

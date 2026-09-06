@@ -14,7 +14,7 @@ _:
         mouse_refocus = true, -- Refocus window under cursor after layout/workspace changes
         focus_on_close = 2, -- After close, focus most recently used window (less jarring than next-in-layout)
         sensitivity = 0,
-        scroll_factor = 2.5, -- Faster mouse wheel scrolling
+        scroll_factor = 2.0, -- Faster mouse wheel scrolling (Hyprland 0.56 caps it at 2.0; 2.5 was rejected)
 
         touchpad = {
           natural_scroll = true,
