@@ -1,5 +1,5 @@
 # Development tools configuration
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 let
   headroomPythonPackage = "headroom-ai[proxy,mcp,code]==0.25.0";
@@ -357,6 +357,38 @@ in
       OnCalendar = "weekly";
       Persistent = true;
       RandomizedDelaySec = "1h";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
+
+  # Mirror every GitHub repository to Forgejo (git.aitek.tech) once a day:
+  # creates pull mirrors for new GitHub repos, then compares the default
+  # branch head of each mirror with GitHub and fails the unit if one lags.
+  # Tokens come from the sops secrets; the script itself is
+  # ~/forgejo_mirror_sync.py (needs only the standard library).
+  systemd.user.services.forgejo-mirror-sync = {
+    Unit.Description = "Mirror GitHub repositories to Forgejo";
+    Service = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "forgejo-mirror-sync" ''
+        set -eu
+        script="$HOME/forgejo_mirror_sync.py"
+        [ -f "$script" ] || { echo "$script not found, skipping"; exit 0; }
+        export GITHUB_PERSONAL_ACCESS_TOKEN="$(< "${config.sops.secrets.github_personal_access_token.path}")"
+        export FORGEJO_TOKEN="$(< "${config.sops.secrets.forgejo_token.path}")"
+        cd "$HOME"
+        ${pkgs.python3}/bin/python3 "$script" --yes
+        ${pkgs.python3}/bin/python3 "$script" --check
+      '';
+      Nice = 10;
+    };
+  };
+  systemd.user.timers.forgejo-mirror-sync = {
+    Unit.Description = "Daily GitHub to Forgejo mirror sync";
+    Timer = {
+      OnCalendar = "daily";
+      Persistent = true;
+      RandomizedDelaySec = "30min";
     };
     Install.WantedBy = [ "timers.target" ];
   };

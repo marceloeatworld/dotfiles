@@ -112,6 +112,7 @@ in
       # Dev platforms (MCP servers)
       github_personal_access_token = {};  # GitHub MCP
       tfe_token = {};                     # Terraform Cloud MCP
+      forgejo_token = {};                 # Forgejo API
     };
   };
 
@@ -136,10 +137,11 @@ in
       __load_sops_secret HF_TOKEN "${config.sops.secrets.hf_token.path}"
       __load_sops_secret GITHUB_PERSONAL_ACCESS_TOKEN "${config.sops.secrets.github_personal_access_token.path}"
       __load_sops_secret TFE_TOKEN "${config.sops.secrets.tfe_token.path}"
+      __load_sops_secret FORGEJO_TOKEN "${config.sops.secrets.forgejo_token.path}"
     }
 
     unload-ai-secrets() {
-      unset GEMINI_API_KEY GLM_API_KEY ZHIPU_API_KEY ZAI_API_KEY MINIMAX_API_KEY OPENAI_API_KEY OPENROUTER_API_KEY FAL_KEY HF_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN TFE_TOKEN
+      unset GEMINI_API_KEY GLM_API_KEY ZHIPU_API_KEY ZAI_API_KEY MINIMAX_API_KEY OPENAI_API_KEY OPENROUTER_API_KEY FAL_KEY HF_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN TFE_TOKEN FORGEJO_TOKEN
     }
 
     with-ai-secrets() {
