@@ -1,0 +1,21 @@
+--- a/grimblast
++++ b/grimblast
+@@ -196,7 +196,7 @@
+   local focused app_id
+   grimblast::wait
+   focused="$(hyprctl activewindow -j)" app_id=$(jq -r '.class' <<<"$focused")
+-  WINDOW=$(jq -r '.stableId' <<<"$focused")
++  GEOM=$(jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' <<<"$focused")
+   WHAT="$app_id window"
+ }
+ 
+@@ -242,7 +242,8 @@
+   choice="$(echo -n "$rects" | slurp -o "${SLURP_ARGS[@]}" -f "%x,%y %wx%h|%l")"
+ 
+   WINDOW="$(jq -r --arg c "$choice" '.[] | select("\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])|\(.stableId)" == $c) | .stableId' <<<"$windows")"
+-  [[ -z "$WINDOW" ]] && GEOM="${choice%|*}"
++  WINDOW=""
++  GEOM="${choice%|*}"
+ 
+   grimblast::wait
+ 

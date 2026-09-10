@@ -113,6 +113,11 @@ in
       github_personal_access_token = {};  # GitHub MCP
       tfe_token = {};                     # Terraform Cloud MCP
       forgejo_token = {};                 # Forgejo API
+      # Local machines
+      rdp_password = {};                  # Windows PC on the LAN (win alias)
+      vnc_password = {};                  # Mac mini Screen Sharing (mac alias)
+      mac_host = {};                      # Mac mini mDNS hostname
+      mac_user = {};                      # Mac mini SSH user (mac-mount alias)
     };
   };
 
@@ -138,10 +143,14 @@ in
       __load_sops_secret GITHUB_PERSONAL_ACCESS_TOKEN "${config.sops.secrets.github_personal_access_token.path}"
       __load_sops_secret TFE_TOKEN "${config.sops.secrets.tfe_token.path}"
       __load_sops_secret FORGEJO_TOKEN "${config.sops.secrets.forgejo_token.path}"
+      __load_sops_secret RDP_PASSWORD "${config.sops.secrets.rdp_password.path}"
+      __load_sops_secret VNC_PASSWORD "${config.sops.secrets.vnc_password.path}"
+      __load_sops_secret MAC_HOST "${config.sops.secrets.mac_host.path}"
+      __load_sops_secret MAC_USER "${config.sops.secrets.mac_user.path}"
     }
 
     unload-ai-secrets() {
-      unset GEMINI_API_KEY GLM_API_KEY ZHIPU_API_KEY ZAI_API_KEY MINIMAX_API_KEY OPENAI_API_KEY OPENROUTER_API_KEY FAL_KEY HF_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN TFE_TOKEN FORGEJO_TOKEN
+      unset GEMINI_API_KEY GLM_API_KEY ZHIPU_API_KEY ZAI_API_KEY MINIMAX_API_KEY OPENAI_API_KEY OPENROUTER_API_KEY FAL_KEY HF_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN TFE_TOKEN FORGEJO_TOKEN RDP_PASSWORD VNC_PASSWORD MAC_HOST MAC_USER
     }
 
     with-ai-secrets() {

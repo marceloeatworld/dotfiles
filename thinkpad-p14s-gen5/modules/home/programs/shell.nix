@@ -94,6 +94,17 @@ in
       # Captive portal (hotel/airport WiFi)
       captive-on = "sudo captive-portal-bypass on";
       captive-off = "sudo captive-portal-bypass off";
+      # Windows PC on the LAN (RDP). Password comes from sops (RDP_PASSWORD),
+      # $HOME is shared as a drive on Windows for file transfer.
+      win = "xfreerdp /v:192.168.1.75 /u:pop /p:\"$RDP_PASSWORD\" /cert:tofu +dynamic-resolution +clipboard /drive:home,\"$HOME\" /sound";
+      # Mac mini on the LAN (macOS Screen Sharing over VNC, resolved via mDNS).
+      # Hostname, user and passwords come from sops (MAC_HOST, MAC_USER, VNC_PASSWORD).
+      # vncviewer wants an obfuscated password file, so build it from sops on the fly.
+      # macOS offers Apple DH auth first (needs a username prompt), so force plain VncAuth.
+      mac = "vncviewer -SecurityTypes VncAuth -AlwaysCursor -CursorType System -passwd <(vncpasswd -f <<< \"$VNC_PASSWORD\") \"$MAC_HOST\"";
+      # Mac mini home folder mounted at ~/mac over SSH (Remote Login on the Mac).
+      mac-mount = "mkdir -p \"$HOME/mac\" && sshfs \"$MAC_USER@$MAC_HOST:\" \"$HOME/mac\" -o reconnect,follow_symlinks";
+      mac-umount = "fusermount3 -u \"$HOME/mac\"";
       # Google Cloud (gcloud) - switch between accounts
       gcp-me = "gcloud config configurations activate default";
       gcp-work = "gcloud config configurations activate \${GCLOUD_WORK_CONFIG:-work}";

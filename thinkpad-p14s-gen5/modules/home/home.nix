@@ -288,6 +288,8 @@ in
 
     # Windows VM dependencies
     freerdp # RDP client for Windows VM
+    tigervnc # VNC client for the Mac mini (macOS Screen Sharing)
+    sshfs # Mount the Mac mini home over SSH (mac-mount alias)
     gum # CLI styling for interactive prompts
     netcat # Network connectivity checking
 
