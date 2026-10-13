@@ -13,9 +13,10 @@
     # Disable auto-update (managed by Nix overlay)
     autoupdate = false;
 
-    # Default model (Z.AI GLM 5.2 via models.dev provider id `zai`)
-    model = "zai/glm-5.2";
-    small_model = "zai/glm-5.2";
+    # Default model: Gemini 4 Argon (models.dev provider `google`, key wired
+    # in provider.google below). Flash Lite handles titles and summaries.
+    model = "google/gemini-4-argon";
+    small_model = "google/gemini-3.5-flash-lite";
 
     # Never upload sessions to opencode.ai
     share = "disabled";
@@ -59,6 +60,11 @@
     # Current schema shape; the old type/api_url/api_key keys were legacy
     # pre-1.0 syntax silently stripped at load (provider was dead).
     provider = {
+      # Google key read from the sops secret at load time ({file:...} is
+      # opencode config substitution); the AI SDK ignores GEMINI_API_KEY.
+      google = {
+        options.apiKey = "{file:${config.sops.secrets.gemini_api_key.path}}";
+      };
       local-llm = {
         npm = "@ai-sdk/openai-compatible";
         name = "local-llm";

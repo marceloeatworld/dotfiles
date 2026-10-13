@@ -95,13 +95,20 @@ in
       captive-on = "sudo captive-portal-bypass on";
       captive-off = "sudo captive-portal-bypass off";
       # Windows PC on the LAN (RDP). Password comes from sops (RDP_PASSWORD),
-      # $HOME is shared as a drive on Windows for file transfer.
-      win = "xfreerdp /v:192.168.1.75 /u:pop /p:\"$RDP_PASSWORD\" /cert:tofu +dynamic-resolution +clipboard /drive:home,\"$HOME\" /sound";
+      # $HOME is shared as a drive on Windows for file transfer. sdl-freerdp (Wayland-native)
+      # instead of xfreerdp: 3.31.1 X11 clipboard aborts after a lock/relogon (fixed upstream in a4b4a1f4cc).
+      # No +f: sdl-freerdp 3.31.1 probes each display with a hidden 64x64 window that Hyprland
+      # never sizes, so fullscreen fails preConnect ("virtual desktop width must be 200 <= 64").
+      # Start windowed at the Dell resolution and toggle fullscreen with Ctrl+Alt+Enter.
+      # Password over stdin (/from-stdin), never in argv where ps and /proc expose it.
+      win = "printf '%s\\n' \"$RDP_PASSWORD\" | sdl-freerdp /v:192.168.1.75 /u:pop /from-stdin /cert:tofu /size:1920x1080 +dynamic-resolution +clipboard /drive:home,\"$HOME\" /sound";
       # Mac mini on the LAN (macOS Screen Sharing over VNC, resolved via mDNS).
       # Hostname, user and passwords come from sops (MAC_HOST, MAC_USER, VNC_PASSWORD).
       # vncviewer wants an obfuscated password file, so build it from sops on the fly.
       # macOS offers Apple DH auth first (needs a username prompt), so force plain VncAuth.
-      mac = "vncviewer -SecurityTypes VncAuth -AlwaysCursor -CursorType System -passwd <(vncpasswd -f <<< \"$VNC_PASSWORD\") \"$MAC_HOST\"";
+      # The Mac runs 1920x1080 like the Dell and TigerVNC cannot scale, so only a
+      # fullscreen window fits the desktop without scrollbars (Ctrl+Alt+Enter toggles).
+      mac = "vncviewer -FullScreen -SecurityTypes VncAuth -AlwaysCursor -CursorType System -passwd <(vncpasswd -f <<< \"$VNC_PASSWORD\") \"$MAC_HOST\"";
       # Mac mini home folder mounted at ~/mac over SSH (Remote Login on the Mac).
       mac-mount = "mkdir -p \"$HOME/mac\" && sshfs \"$MAC_USER@$MAC_HOST:\" \"$HOME/mac\" -o reconnect,follow_symlinks";
       mac-umount = "fusermount3 -u \"$HOME/mac\"";
@@ -118,6 +125,9 @@ in
       # claude-hr when token compression matters more than remote control.
       claude = "$HOME/.local/bin/claude";
       claude-hr = "headroom-claude";
+      # GPT-6 (Codex) second opinion: ask-gpt + on-demand review when a prompt
+      # mentions "gpt" (e.g. "verifie avec gpt"), see codex.nix / claude-code.nix
+      claude-gpt = "CLAUDE_GPT=1 $HOME/.local/bin/claude";
       # jailed-agents wrappers (opt-in sandboxed agent sessions)
       "claude-jail" = "jailed-claude-code";
       "opencode-jail" = "jailed-opencode";
@@ -389,6 +399,8 @@ in
       auto_sync = false;
       enter_accept = true;
       filter_mode = "global";
+      # ForgeCode `: <prompt>` lines are chat input, never record them
+      history_filter = [ "^: " ];
       inline_height = 18;
       search_mode = "fuzzy";
       show_help = false;

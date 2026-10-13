@@ -20,10 +20,10 @@ let
     [updates]
     auto_update = false
 
-    # Default model (Z.AI GLM 5.2)
+    # Default model (Gemini 3.8 Flash, GEMINI_API_KEY from sops via the shell)
     [session]
-    provider_id = "zai"
-    model_id = "glm-5.2"
+    provider_id = "google_ai_studio"
+    model_id = "gemini-3.8-flash"
 
     # Reasoning effort (upstream default is medium)
     [reasoning]
@@ -32,8 +32,8 @@ let
 
     # Commit-message generation model
     [commit]
-    provider_id = "zai"
-    model_id = "glm-5.2"
+    provider_id = "google_ai_studio"
+    model_id = "gemini-3.8-flash"
   '';
 
   # Docs: https://forgecode.dev/docs/permissions/
@@ -116,7 +116,11 @@ in
   # so we source the plugin and theme via initContent instead
   programs.zsh.initContent = ''
     # ForgeCode ZSH plugin + theme (`: <prompt>` integration)
-    eval "$(forge zsh plugin 2>/dev/null)"
+    # The plugin pushes every `:` line into the zsh history itself with
+    # `print -s` (which bypasses zshaddhistory hooks). Patch that call so
+    # `: <prompt>` chat lines are skipped; `:model`-style actions and normal
+    # commands are unchanged. Atuin has the matching history_filter in shell.nix.
+    eval "$(forge zsh plugin 2>/dev/null | ${pkgs.gnused}/bin/sed 's/^\( *\)print -s -- "$original_buffer"$/\1[[ "$original_buffer" == ": "* ]] || print -s -- "$original_buffer"/')"
     eval "$(forge zsh theme 2>/dev/null)"
   '';
 }

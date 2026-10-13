@@ -3,7 +3,7 @@
 # jail shape (network + tz, cwd mounted read-write, per-agent config paths),
 # without the numtide dependency stack.
 #   jailed-claude-code, jailed-opencode, jailed-codex, jailed-forgecode
-{ inputs, pkgs, ... }:
+{ config, inputs, pkgs, ... }:
 
 let
   jail = inputs.jail-nix.lib.init pkgs;
@@ -52,7 +52,9 @@ let
     pkg-config
   ];
 
-  makeJailedAgent = { name, pkg, configPaths }:
+  # secretPaths: sops secret files the agent config reads at load time.
+  # Bound read-only; bwrap follows the per-activation symlink at exec time.
+  makeJailedAgent = { name, pkg, configPaths, secretPaths ? [ ] }:
     jail name pkg (
       with jail.combinators;
       [
@@ -62,6 +64,7 @@ let
         mount-cwd
       ]
       ++ map (p: readwrite (noescape p)) configPaths
+      ++ map try-readonly secretPaths
       ++ [
         (add-pkg-deps basePackages)
         (add-pkg-deps agentExtraPkgs)
@@ -84,6 +87,8 @@ in
         "~/.local/share/opencode"
         "~/.local/state/opencode"
       ];
+      # opencode.json resolves provider.google apiKey via {file:...} (opencode.nix)
+      secretPaths = [ config.sops.secrets.gemini_api_key.path ];
     })
 
     (makeJailedAgent {
