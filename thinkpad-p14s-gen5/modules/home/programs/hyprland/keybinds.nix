@@ -27,7 +27,7 @@
     hl.bind(mod .. " + G",                   hl.dsp.group.toggle()) -- Create/dissolve window group
     hl.bind(mod .. " + bracketright",        hl.dsp.group.next()) -- Next tab in group
     hl.bind(mod .. " + bracketleft",         hl.dsp.group.prev()) -- Previous tab in group
-    hl.bind(mod .. " + SHIFT + G",           hl.dsp.group.lock_active({ action = "toggle" })) -- Lock group
+    hl.bind(mod .. " + SHIFT + G",           hl.dsp.group.lock({ action = "toggle" })) -- Lock group
     hl.bind(mod .. " + CTRL + bracketright", hl.dsp.group.move_window({ forward = true }))
     hl.bind(mod .. " + CTRL + bracketleft",  hl.dsp.group.move_window({ forward = false }))
 
