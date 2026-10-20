@@ -56,7 +56,7 @@
     sqlmap         # Automatic SQL injection and database takeover
     nikto          # Web server scanner
     dirb           # Web content scanner
-    hydra          # Network authentication cracker
+    thc-hydra      # Network authentication cracker (provides the `hydra` binary)
 
     # ============================================
     # STEGANOGRAPHY
@@ -128,6 +128,16 @@
     hcxdumptool    # Capture PMKID without handshake
     bettercap      # Modern MITM framework
     hashcat        # GPU-accelerated password cracker
+
+    # ============================================
+    # REVERSE ENGINEERING
+    # ============================================
+    # Ghidra itself is installed via the firejail wrapper in security.nix;
+    # Claude drives it headless through the reva MCP server (claude-code.nix)
+    moria          # Firmware identification and extraction (filesystems, kernels, keys)
+    binwalk        # Firmware analysis and extraction (signature scan, entropy)
+    siglens        # Static artifact/YARA analysis; Windows-only engines unavailable
+    rea            # App/binary analysis CLI and MCP server (distinct from ReVa)
   ]);
 
   # NOTE: ROCm OpenCL for hashcat GPU is configured in amd-optimizations.nix

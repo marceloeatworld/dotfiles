@@ -210,8 +210,10 @@ in
                   # dnscrypt-proxy can't resolve anything behind a captive portal
                   sleep 2  # Give the connection a moment to fully establish
 
-                  # Stop dnscrypt-proxy during the check so it doesn't interfere
-                  systemctl stop dnscrypt-proxy.service 2>/dev/null || true
+                  # Do not stop dnscrypt-proxy here: check_captive_portal swaps
+                  # resolv.conf to the network DNS for the check, and stopping the
+                  # daemon left 127.0.0.1:53 refusing queries for 30-250 s on every
+                  # rebuild (Claude Code showed "Connection refused" during that).
 
                   if check_captive_portal "$INTERFACE"; then
                     logger "VPN-DNS-SWITCH: Captive portal detected on $INTERFACE - using network DNS"

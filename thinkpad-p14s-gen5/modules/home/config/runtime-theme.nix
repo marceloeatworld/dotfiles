@@ -224,7 +224,7 @@ let
     }
 
     label {
-      font-family: "${theme.fonts.mono}";
+      font-family: "${theme.fonts.sans}";
       font-size: 12px;
       color: ${theme.colors.foreground};
       margin: 4px;
@@ -237,7 +237,7 @@ let
 
   wofiCss = theme: ''
     * {
-      font-family: "${theme.fonts.mono}", monospace;
+      font-family: "${theme.fonts.sans}", sans-serif;
       font-size: 12px;
     }
 
@@ -857,8 +857,7 @@ let
       dest="$2"
       if [ -e "$src" ]; then
         ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$dest")"
-        ${pkgs.coreutils}/bin/rm -f "$dest"
-        ${pkgs.coreutils}/bin/ln -s "$src" "$dest"
+        ${pkgs.coreutils}/bin/ln -sfn "$src" "$dest"
       fi
     }
 
@@ -916,6 +915,9 @@ let
       ${pkgs.mako}/bin/makoctl reload >/dev/null 2>&1 || \
         ${pkgs.systemd}/bin/systemctl --user restart mako.service >/dev/null 2>&1 || true
       ${pkgs.systemd}/bin/systemctl --user restart swayosd.service >/dev/null 2>&1 || true
+      # Vicinae picks its theme from the system appearance (light/dark map in
+      # vicinae.nix); force the exact runtime theme, ids match theme names.
+      ${pkgs.vicinae}/bin/vicinae theme set "$THEME_NAME" >/dev/null 2>&1 || true
       ${pkgs.alacritty}/bin/alacritty msg config -w -1 \
         "colors.primary.background=\"$C_TERM_BG\"" \
         "colors.primary.foreground=\"$C_FG\"" \
@@ -976,7 +978,9 @@ in
     Unit.Description = "Switch to the daylight runtime desktop theme";
     Service = {
       Type = "oneshot";
-      ExecStart = "${themeSwitch}/bin/theme-switch day --quiet";
+      # "auto", not "day": after a boot both Persistent timers catch up at
+      # once, so each run must pick the theme for the current time.
+      ExecStart = "${themeSwitch}/bin/theme-switch auto --quiet";
     };
   };
 
@@ -984,7 +988,9 @@ in
     Unit.Description = "Switch to the night runtime desktop theme";
     Service = {
       Type = "oneshot";
-      ExecStart = "${themeSwitch}/bin/theme-switch night --quiet";
+      # "auto", not "night": after a boot both Persistent timers catch up at
+      # once, so each run must pick the theme for the current time.
+      ExecStart = "${themeSwitch}/bin/theme-switch auto --quiet";
     };
   };
 

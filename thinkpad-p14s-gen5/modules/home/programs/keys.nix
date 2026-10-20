@@ -215,6 +215,7 @@ let
     update-forgecode Update ForgeCode overlay
     update-codex  Update Codex overlay
     update-runpodctl Update RunPod CLI overlay
+    update-arkcli Update BytePlus Ark CLI overlay
     update-pnpm   Update pnpm overlay
     update-llama  Update llama.cpp overlay + rebuild
     update-llama-cpp Alias for update-llama
@@ -439,7 +440,6 @@ let
     rtl_test               Test RTL-SDR dongle
     rtl_fm -f 98.5M -M fm  FM radio (98.5 MHz)
     rtl_tcp -a 127.0.0.1   Stream SDR over network
-    audacity               Audio analysis
   '';
 
   keysFile = pkgs.writeText "keys-cheatsheet" keysContent;

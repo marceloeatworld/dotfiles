@@ -92,7 +92,13 @@ in
     # hyprland. Pointing it at the flake package keeps nixpkgs' hyprland out of
     # the closure entirely; otherwise every nixpkgs bump drags in a second
     # Hyprland that is not on hyprland.cachix.org and must compile from source.
-    (grimblast.override { hyprland = hyprlandPackages.hyprland; })
+    # Patched to capture windows by geometry (grim -g) instead of by toplevel
+    # handle (grim -T): toplevel capture hangs forever on Hyprland 0.56
+    # (hyprwm/Hyprland#16109), so clicking a window in `area` or using `active`
+    # never returned. Drop the patch once hyprwm/Hyprland#16132 ships.
+    ((grimblast.override { hyprland = hyprlandPackages.hyprland; }).overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./grimblast-geometry-capture.patch ];
+    }))
     hyprprop # Window property inspector (click to inspect, like xprop)
     hyprmon # TUI monitor configuration (native, replaces nwg-displays)
     # ── Wayland tools ──

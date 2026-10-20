@@ -66,7 +66,7 @@ in
     padding=14
     default-timeout=4000
     ignore-timeout=false
-    font=${theme.fonts.mono} 10
+    font=${theme.fonts.sans} 10
     icons=true
     max-icon-size=32
     icon-location=left
@@ -87,6 +87,14 @@ in
     [app-name=SwayOSD]
     default-timeout=1000
     group-by=app-name
+
+    # Do Not Disturb (`dnd` script, SUPER+SHIFT+D): hide everything except
+    # critical alerts; history keeps the rest for `makoctl restore`.
+    [mode=do-not-disturb]
+    invisible=1
+
+    [mode=do-not-disturb urgency=high]
+    invisible=0
   '';
 
   # Hyprlock: clock and password in the center, keybindings on the left,
@@ -145,7 +153,7 @@ in
       text = $TIME
       color = ${fg}
       font_size = 96
-      font_family = ${theme.fonts.mono}
+      font_family = ${theme.fonts.sans}
       position = 0, 200
       halign = center
       valign = center
@@ -157,7 +165,7 @@ in
       text = cmd[update:60000] date '+%A %d %B %Y'
       color = ${dim}
       font_size = 18
-      font_family = ${theme.fonts.mono}
+      font_family = ${theme.fonts.sans}
       position = 0, 120
       halign = center
       valign = center
@@ -174,10 +182,10 @@ in
       outer_color = ${border}
       inner_color = ${bg}
       font_color = ${fg}
-      fade_on_empty = false
+      fade_on_empty = true
       placeholder_text =
       hide_input = false
-      rounding = 0
+      rounding = 10
       check_color = ${green}
       fail_color = ${red}
       fail_text = $FAIL

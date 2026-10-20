@@ -85,11 +85,20 @@
     };
   };
 
+  # Keep the local resolver alive across activations. Stopping it with
+  # NetworkManager left 127.0.0.1:53 refusing every DNS query for 30-250 s on
+  # each rebuild; a changed unit is picked up on the next dnscrypt-proxy restart.
+  systemd.services.dnscrypt-proxy.restartIfChanged = false;
+
   # Firewall
   networking.firewall = {
     enable = true;
     allowedTCPPorts = [ ];
     allowedUDPPorts = [ ];
+    # Expo / Metro bundler, so the Mac iOS Simulator can load the JS bundle over
+    # the LAN. Per interface: never through the VPN tunnel.
+    interfaces.wlp2s0.allowedTCPPorts = [ 8081 ];
+    interfaces.enp1s0f0.allowedTCPPorts = [ 8081 ];
     # Required for WireGuard VPN (prevents rpfilter from blocking return traffic)
     checkReversePath = "loose";
   };

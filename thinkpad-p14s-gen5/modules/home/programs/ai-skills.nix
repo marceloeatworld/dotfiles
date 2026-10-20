@@ -1,6 +1,9 @@
 # Centralized AI agent skills for Claude Code, ForgeCode, OpenCode, and Codex
 # First rebuild clones missing repos, subsequent rebuilds only redistribute the cache
 # Refresh with network: update-skills (shell function in overlay-updates.nix)
+# The two always-on skills (caveman, i-have-adhd) are pinned below instead:
+# they load with CLAUDE.md authority in every session, so their content must
+# not change behind a `git pull`. Bump rev and hash to update them.
 { config, pkgs, ... }:
 
 let
@@ -12,6 +15,110 @@ let
   allSkillDirs = "${claudeSkills} ${forgeSkills} ${opencodeSkills} ${codexSkills}";
 
   cache = "$HOME/.cache/ai-skills";
+
+  # Pinned sources for the always-on skills imported by the global CLAUDE.md.
+  cavemanSrc = pkgs.fetchFromGitHub {
+    owner = "JuliusBrussee";
+    repo = "caveman";
+    rev = "2fd153c67988e980fb0b2455c90832159a6a5a25"; # 2026-09-22
+    hash = "sha256-KFfU8LmNajKLZcOXOFisn4beTcg2YL+rpasr39UgSZE=";
+  };
+  nullteaSrc = pkgs.fetchFromGitHub {
+    owner = "nulltea";
+    repo = "skills";
+    rev = "c9822866e2065df4da5fe13afdb98767c580a306"; # 2026-08-05
+    hash = "sha256-jXfMG0RerboOOOwOnf6IGR3bzvS3uktbVy8KW1h48xI=";
+  };
+  # ReVa skills, pinned to the same tag as the nixpkgs mcp-reva server (7.3.1)
+  # so the tool names the skills reference match the running server.
+  revaSrc = pkgs.fetchFromGitHub {
+    owner = "cyberkaida";
+    repo = "reverse-engineering-assistant";
+    rev = "3cb3e65f354cda8d6125ecff654063436a3ab5ab"; # v7.3.1
+    hash = "sha256-eYZeyhXlGwLVa/k77Y5x2OeGo/m9fh3VauzAqB+obxw=";
+  };
+
+  # Prompt pack rather than an executable or upstream SKILL.md.
+  bugBountySrc = pkgs.fetchFromGitHub {
+    owner = "mdpsec";
+    repo = "bug-bounty-hunting-prompts";
+    rev = "5ed41580564c978417d5f0105f9c92457d77f3b5";
+    hash = "sha256-d7tZdbpb1754Z4iD1YUoDCo4MA2Bj/jDdxuQyJR/aS4=";
+  };
+  bugBountySkill = pkgs.writeText "bug-bounty-hunting-SKILL.md" ''
+    ---
+    name: bug-bounty-hunting
+    description: Adapt phase-based bug bounty prompts for an authorized target, from reconnaissance to evidence and report triage.
+    ---
+
+    # Bug bounty hunting prompts
+
+    Read [README.md](README.md) for the phase map, then
+    [ADAPTATION.md](ADAPTATION.md) before selecting a prompt from `phases/`.
+    This is a reference pack, not a scanner or a configured hunting service.
+    Resolve scope, workspace paths and required integrations for the selected
+    phase; never execute unresolved `YOUR_*` or template placeholders.
+    Load one phase at a time and preserve its evidence and handoff artifacts.
+    Follow the program's current scope and the user's requested actions.
+  '';
+  bugBountySkills = pkgs.runCommand "bug-bounty-hunting-skills" { } ''
+    mkdir -p "$out/bug-bounty-hunting"
+    cp -r ${bugBountySrc}/{README.md,ADAPTATION.md,SECURITY.md,LICENSE,phases} "$out/bug-bounty-hunting/"
+    cp ${bugBountySkill} "$out/bug-bounty-hunting/SKILL.md"
+  '';
+
+  # Keep skills at the exact CLI source revision, with their referenced assets.
+  universalModderSkills = pkgs.runCommand "universal-modder-skills" { } ''
+    cp -r ${pkgs.universal-modder.src}/skills "$out"
+    chmod -R u+w "$out"
+    for skill in "$out"/*; do
+      ln -s ${pkgs.universal-modder}/share/universal-modder/examples "$skill/examples"
+      ln -s ${pkgs.universal-modder}/share/universal-modder/knowledge "$skill/knowledge"
+      ln -s ${pkgs.universal-modder.src}/um "$skill/um"
+      substituteInPlace "$skill/SKILL.md" \
+        --replace-quiet 'skills/mod-any-game/' '../mod-any-game/'
+      cat > "$skill/NIXOS.md" <<'EOF'
+    # Local NixOS integration
+
+    `um` is installed through Nix. Do not run the upstream pip/uv installers.
+    `examples/` and `knowledge/` contain the pinned upstream support files.
+    `um kb search` and `um kb show` default to this read-only knowledge snapshot;
+    use `--root` for another corpus. For contributions, first copy `knowledge/`
+    into a writable workspace (including TEMPLATE.md) and make that copy writable,
+    then use `um kb new --root <workspace>/knowledge`.
+    `um win` requires Windows or WSL; it cannot drive this Hyprland desktop.
+    3D rendering needs Blender on PATH or BLENDER; fal calls need FAL_KEY.
+    Publishing and paid generation require the user's requested scope.
+    EOF
+    done
+    ${pkgs.python313}/bin/python - "$out" <<'PY'
+    import pathlib, sys
+    for skill in pathlib.Path(sys.argv[1]).glob('*/SKILL.md'):
+        head, body = skill.read_text().split('\n---\n', 1)
+        skill.write_text(head + '\n---\n\nRead [NIXOS.md](NIXOS.md) for the installed CLI and platform limits.\n' + body)
+    PY
+  '';
+
+  reaSkills = pkgs.runCommand "rea-skills" { } ''
+    mkdir -p "$out"
+    cp -r ${pkgs.rea.src}/skills/reverse-engineer-anything "$out/"
+    chmod -R u+w "$out"
+    # Use the packaged version; upstream setup would rewrite agent configs.
+    substituteInPlace "$out/reverse-engineer-anything/SKILL.md" \
+      --replace-fail 'npx -y rea-agents@latest' 'rea'
+    cat >> "$out/reverse-engineer-anything/SKILL.md" <<'EOF'
+
+    ## Local NixOS integration
+
+    `rea` is installed by Nix and the `rea` MCP server is configured for Claude.
+    Use the CLI in agents without that MCP registration. Manage packages and
+    registration through this flake rather than `rea setup` or its installers.
+    This is separate from ReVa (`reva` MCP). REA 4.0.1 requires exactly Ghidra
+    12.1.4 and JDK 21; the `rea` MCP wrapper in claude-code.nix provides its own
+    Ghidra 12.1.4 tree, while the GUI Ghidra and ReVa stay on nixpkgs 12.1.2.
+    Hopper needs a separate installation/license.
+    EOF
+  '';
 
   # Helper: clone a git repo if missing (no pull — refresh via `update-skills`)
   # Keeps rebuilds fast and offline-capable; existing caches are left untouched.
@@ -109,25 +216,6 @@ let
     }
   '';
 
-  # Helper: copy skill subdirs to all tool destinations
-  copySkills = ''
-    _copy_skills() {
-      local src="$1"
-      for dest in ${allSkillDirs}; do
-        $DRY_RUN_CMD mkdir -p "$dest"
-        for skill_dir in "$src/"*/; do
-          [ -d "''${skill_dir}" ] || continue
-          local name=$(${pkgs.coreutils}/bin/basename "''${skill_dir}")
-          $DRY_RUN_CMD rm -rf "$dest/''${name}"
-          $DRY_RUN_CMD cp -r "''${skill_dir}" "$dest/''${name}"
-          if [ -z "''${DRY_RUN_CMD:-}" ]; then
-            _ai_skills_record "$dest/''${name}"
-            _compact_codex_skill_descriptions "$dest/''${name}"
-          fi
-        done
-      done
-    }
-  '';
 
   # Helper: copy only selected skill subdirs from a collection.
   copyNamedSkills = ''
@@ -143,6 +231,7 @@ let
           $DRY_RUN_CMD mkdir -p "$dest"
           $DRY_RUN_CMD rm -rf "$dest/$name"
           $DRY_RUN_CMD cp -r "$skill_dir" "$dest/$name"
+          $DRY_RUN_CMD chmod -R u+w "$dest/$name"  # sources from /nix/store are read-only
           if [ -z "''${DRY_RUN_CMD:-}" ]; then
             _ai_skills_record "$dest/$name"
             _compact_codex_skill_descriptions "$dest/$name"
@@ -152,25 +241,6 @@ let
     }
   '';
 
-  # Helper: copy skills that have SKILL.md at root (RunPod-style)
-  copySkillsWithMarker = ''
-    _copy_skills_marker() {
-      local src="$1"
-      for dest in ${allSkillDirs}; do
-        $DRY_RUN_CMD mkdir -p "$dest"
-        for skill_dir in "$src/"*/; do
-          [ -f "''${skill_dir}SKILL.md" ] || continue
-          local name=$(${pkgs.coreutils}/bin/basename "''${skill_dir}")
-          $DRY_RUN_CMD rm -rf "$dest/''${name}"
-          $DRY_RUN_CMD cp -r "''${skill_dir}" "$dest/''${name}"
-          if [ -z "''${DRY_RUN_CMD:-}" ]; then
-            _ai_skills_record "$dest/''${name}"
-            _compact_codex_skill_descriptions "$dest/''${name}"
-          fi
-        done
-      done
-    }
-  '';
 
   # Helper: copy a purpose-built skill repo as a single skill payload.
   # This intentionally copies only runtime skill files, not the repository
@@ -204,199 +274,12 @@ let
     }
   '';
 
-  # Helper: copy every nested directory that contains a SKILL.md.
-  # Used for upstream repositories that are collections of skills rather than
-  # one skill repo.
-  copyNestedSkillsWithMarker = ''
-    _copy_nested_skills_marker() {
-      local src="$1"
-      [ -d "$src" ] || return 0
 
-      ${pkgs.findutils}/bin/find "$src" -name SKILL.md -type f -print0 2>/dev/null | \
-        while IFS= read -r -d "" marker; do
-          local skill_dir=$(${pkgs.coreutils}/bin/dirname "$marker")
-          local name=$(${pkgs.coreutils}/bin/basename "$skill_dir")
-
-          for dest in ${allSkillDirs}; do
-            $DRY_RUN_CMD mkdir -p "$dest"
-            $DRY_RUN_CMD rm -rf "$dest/$name"
-            $DRY_RUN_CMD cp -r "$skill_dir" "$dest/$name"
-            if [ -z "''${DRY_RUN_CMD:-}" ]; then
-              _ai_skills_record "$dest/$name"
-              _compact_codex_skill_descriptions "$dest/$name"
-            fi
-          done
-        done
-    }
-  '';
-
-  helpers = "${gitSync}\n${managedSkillLifecycle}\n${compactCodexSkillDescriptions}\n${copySkills}\n${copyNamedSkills}\n${copySkillsWithMarker}\n${copySkillRepo}\n${copyNestedSkillsWithMarker}";
+  helpers = "${gitSync}\n${managedSkillLifecycle}\n${compactCodexSkillDescriptions}\n${copyNamedSkills}\n${copySkillRepo}";
 
   # ════════════════════════════════════════════════════════════════════════
   # INLINE SKILLS (deployed as SKILL.md to all tools)
   # ════════════════════════════════════════════════════════════════════════
-
-  skillSearchFirst = ''
-    ---
-    name: search-first
-    description: Research-before-coding workflow. Search for existing tools, libraries, and patterns before writing custom code.
-    ---
-
-    # /search-first — Research Before You Code
-
-    ## Trigger
-
-    Use this skill when:
-    - Starting a new feature that likely has existing solutions
-    - Adding a dependency or integration
-    - The user asks "add X functionality" and you're about to write code
-    - Before creating a new utility, helper, or abstraction
-
-    ## Workflow
-
-    1. **NEED ANALYSIS** — Define what functionality is needed
-    2. **PARALLEL SEARCH** — Check nixpkgs, PyPI, npm, GitHub, MCP, existing skills
-    3. **EVALUATE** — Score candidates (functionality, maintenance, license, deps)
-    4. **DECIDE** — Adopt as-is / Extend-wrap / Build custom
-    5. **IMPLEMENT** — Install package or write minimal custom code
-
-    ## Decision Matrix
-
-    | Signal | Action |
-    |--------|--------|
-    | Exact match, well-maintained, MIT/Apache | **Adopt** — install and use directly |
-    | Partial match, good foundation | **Extend** — install + write thin wrapper |
-    | Multiple weak matches | **Compose** — combine 2-3 small packages |
-    | Nothing suitable found | **Build** — write custom, informed by research |
-
-    ## Anti-Patterns
-
-    - **Jumping to code**: Writing a utility without checking if one exists
-    - **Ignoring nixpkgs**: Not checking if a Nix package already provides the capability
-    - **Over-customizing**: Wrapping a library so heavily it loses its benefits
-    - **Dependency bloat**: Installing a massive package for one small feature
-  '';
-
-  skillVerificationLoop = ''
-    ---
-    name: verification-loop
-    description: "Comprehensive verification system. Run build, type check, lint, tests, and security scan after completing changes."
-    ---
-
-    # Verification Loop Skill
-
-    ## When to Use
-
-    - After completing a feature or significant code change
-    - Before creating a PR or committing
-    - After refactoring
-
-    ## Verification Phases
-
-    ### Phase 1: Build Verification
-    Detect build system and run: `nix flake check`, `pnpm run build`, `cargo build`, etc.
-    If build fails, STOP and fix before continuing.
-
-    ### Phase 2: Type Check
-    `pyright .`, `mypy .`, `pnpm dlx tsc --noEmit`, etc.
-
-    ### Phase 3: Lint Check
-    `ruff check .`, `shellcheck *.sh`, etc.
-
-    ### Phase 4: Test Suite
-    Run tests with coverage. Target: 80% minimum.
-
-    ### Phase 5: Security Scan
-    Check for hardcoded secrets, API keys, tokens in source files.
-
-    ### Phase 6: Diff Review
-    `git diff --stat` and `git diff HEAD~1 --name-only`
-
-    ## Output Format
-
-    ```
-    VERIFICATION: [PASS/FAIL]
-    Build:    [OK/FAIL]
-    Types:    [OK/X errors]
-    Lint:     [OK/X issues]
-    Tests:    [X/Y passed, Z% coverage]
-    Security: [OK/X found]
-    Ready for PR: [YES/NO]
-    ```
-  '';
-
-  skillBlueprint = ''
-    ---
-    name: blueprint
-    description: >-
-      Turn a one-line objective into a step-by-step construction plan for
-      multi-session, multi-agent engineering projects. Each step has a
-      self-contained context brief so a fresh agent can execute it cold.
-      TRIGGER when: user requests a plan, blueprint, or roadmap for a
-      complex multi-PR task.
-      DO NOT TRIGGER when: task is completable in a single PR or fewer
-      than 3 tool calls, or user says "just do it".
-    ---
-
-    # Blueprint — Construction Plan Generator
-
-    Turn a one-line objective into a step-by-step construction plan that any coding agent can execute cold.
-
-    ## When to Use
-
-    - Breaking a large feature into multiple PRs with clear dependency order
-    - Planning a refactor or migration that spans multiple sessions
-    - Coordinating parallel workstreams across sub-agents
-
-    **Do not use** for tasks completable in a single PR or fewer than 3 tool calls.
-
-    ## How It Works
-
-    1. **Research** — Pre-flight checks, reads project structure, existing plans, and memory files.
-    2. **Design** — Breaks objective into one-PR-sized steps. Assigns dependency edges, parallel/serial ordering.
-    3. **Draft** — Writes a self-contained Markdown plan file. Every step includes context brief, task list, verification commands, and exit criteria.
-    4. **Review** — Adversarial review against checklist and anti-pattern catalog.
-    5. **Register** — Saves the plan, presents summary to user.
-
-    ## Key Features
-
-    - **Cold-start execution** — Every step includes a self-contained context brief
-    - **Adversarial review gate** — Plan reviewed against completeness, dependency correctness
-    - **Parallel step detection** — Dependency graph identifies parallelizable steps
-  '';
-
-  skillSecurityScan = ''
-    ---
-    name: security-scan
-    description: Scan your AI coding agent configuration for security vulnerabilities, misconfigurations, and injection risks.
-    ---
-
-    # Security Scan Skill
-
-    ## When to Activate
-
-    - Setting up a new project
-    - After modifying settings, CLAUDE.md, or MCP configs
-    - Before committing configuration changes
-
-    ## What It Scans
-
-    | File | Checks |
-    |------|--------|
-    | CLAUDE.md | Hardcoded secrets, auto-run instructions, prompt injection |
-    | settings.json | Overly permissive allow lists, missing deny lists |
-    | MCP configs | Risky servers, hardcoded env secrets |
-    | Hooks | Command injection, data exfiltration |
-
-    ## Severity Levels
-
-    | Level | Action |
-    |-------|--------|
-    | CRITICAL | Fix immediately — hardcoded keys, unrestricted shell |
-    | HIGH | Fix before production — missing deny lists, auto-run |
-    | MEDIUM | Recommended — silent error suppression |
-    | INFO | Awareness — good practices noted |
-  '';
 
   # SKILL.md wrapper for design-md — full spec lives in spec.md / README.md
   # (synced from upstream by the activation script below)
@@ -491,6 +374,166 @@ let
         fi
       done
     }
+  '';
+
+  # ════════════════════════════════════════════════════════════════════════
+  # LOCAL SKILLS (hand-written here, distributed to every agent CLI)
+  # ════════════════════════════════════════════════════════════════════════
+
+  # seo: one skill, five workflows. SKILL.md is the router written here;
+  # four reference bodies come from Illyism/seo-skills (MIT, pinned; the
+  # linkdr, scribiz, blitz-* and other vendor or prompt-template skills are
+  # omitted) and parasite-seo is local.
+  seoSkillsSrc = pkgs.fetchFromGitHub {
+    owner = "Illyism";
+    repo = "seo-skills";
+    rev = "af48ce5953e00ca75d1cd4d440e77d0c0d61a038"; # 2026-10-06
+    hash = "sha256-sS/I8hXhQT+uXsByS4gqKA3WGZi0qvOvKoU11DuoCbw=";
+  };
+
+  seoSkillFile = pkgs.writeText "seo-SKILL.md" ''
+    ---
+    name: seo
+    description: >-
+      SEO and content marketing workflows. Use for any SEO request: run SEO
+      for a product end to end on a daily schedule ("seo autopilot"), audit
+      or rewrite page titles, title tags and H1s for CTR, refresh an existing
+      blog post that fell behind competitors with a SERP gap analysis, turn
+      commits and merged PRs into changelogs, posts and emails ("diff
+      marketing"), or rank a page fast by publishing on a high-authority
+      third-party platform ("parasite SEO", "rank on LinkedIn", Cody
+      Schneider's 38-minute workflow). Also triggers on keyword map, search
+      intent, meta description, SERP, indexing, backlinks, and AI answer
+      tracking (ChatGPT, Perplexity, AI Overviews).
+    ---
+
+    # SEO
+
+    One skill, five workflows. Pick the one that matches the request, then
+    read only that reference file.
+
+    | Request | Read |
+    | --- | --- |
+    | Run SEO for a site end to end (daily, weekly, monthly; state kept in `seo/` in the repo) | [references/seo-autopilot.md](references/seo-autopilot.md) |
+    | Audit or rewrite titles, title tags, H1s, meta titles; CTR, truncation, bulk title pass | [references/seo-title-optimization.md](references/seo-title-optimization.md) |
+    | Refresh an existing post, recover lost rankings, explain why a post fell behind | [references/blog-refresher.md](references/blog-refresher.md) |
+    | Turn commits, merged PRs or a release into a changelog, posts, emails | [references/diff-marketing.md](references/diff-marketing.md) |
+    | Rank one query fast on LinkedIn, Medium, Substack or Reddit instead of the own site | [references/parasite-seo.md](references/parasite-seo.md) |
+
+    ## Rules for every workflow
+
+    - Treat the SERP as the brief: search the query and read what ranks
+      before writing or rewriting anything.
+    - Use real data (Search Console, analytics, web search, page fetches).
+      If a source is missing, say so once and carry on. Never fill the gap
+      with a guess.
+    - Never invent a statistic, quote, customer, price, benchmark or ranking
+      result. Do not promise ranking or traffic gains.
+    - Answer the query in the first two sentences of any page, then give the
+      detail.
+    - Draft, do not ship: no emails sent, no directory submissions, no social
+      posts, no account creation. Hand the owner ready-to-paste copy.
+    - The upstream references mention LinkDR and AI SEO Tracker. Those are the
+      author's paid tools; ignore them unless the user asks for them.
+  '';
+
+  seoParasiteRef = ''
+    # Parasite SEO
+
+    Borrow the domain authority of a platform Google already trusts to rank an
+    article for one target query, fast. One article, one query. Source: Cody
+    Schneider live demo (ranked position one on Google in 38 minutes with a
+    LinkedIn article for "Facebook ads for kitchen remodeling").
+
+    Why it works: the pages on page one already show the shape of content
+    Google wants for that query. Feed that shape to the model, add something
+    only the brand can say, publish on a domain with authority, then get the
+    URL crawled quickly.
+
+    ## Workflow
+
+    1. **Pick one target query.** Long-tail, commercial intent, low to medium
+       competition. One query per article. Write it down exactly as searched.
+    2. **Research the current SERP.** Fetch the top 5 to 10 organic results
+       for the query. Extract the main body text of each page (headings,
+       sections, FAQs, word count, angle). Skip ads and the platform's own
+       pages. Save the extracts as the source material.
+    3. **Collect the brand's point of view (recommended).** For a brand,
+       get a transcript of a 20 to 30 minute conversation with the founder:
+       unique positioning, how they fit in the market, their thesis on the
+       industry, objections they hear, concrete examples. If no transcript
+       exists, ask the user for notes or a call recording. This step is what
+       makes the article more than a remix.
+    4. **Write the article.** Use the prompt below. Match the shape of what
+       ranks (sections, depth, length), but write it in the brand's voice and
+       weave the founder's point of view through it. The exact query must be
+       the title. Review the draft with the user before publishing.
+    5. **Publish on the host platform.** Default: LinkedIn article (Create a
+       post, Write article). Paste the article, set the title to the exact
+       query so it becomes the URL slug, use the intro section as the post
+       text, publish. Copy the resulting URL.
+    6. **Get it indexed.** Submit the published URL to a drip-ping indexing
+       service (the demo used Prime Indexer). Warning below.
+    7. **Verify.** Check the Google result page for the query after 30 to
+       60 minutes, then again after 24 hours. Report position and URL.
+
+    ## Writing prompt
+
+    ```
+    Write an article for the target keyword "<QUERY>" based on the following
+    source text from the pages currently ranking on Google for that query.
+
+    Requirements:
+    - Title: exactly "<QUERY>".
+    - Match the structure and depth of the ranking pages (sections, FAQs,
+      length), but do not copy sentences.
+    - Open with a short intro that can stand alone as a social post.
+    - Where the founder transcript gives a position or example, use it and
+      attribute it to <BRAND>. Do not invent claims, numbers, or quotes.
+    - Plain language, scannable headings, no filler.
+
+    Source text (ranking pages):
+    <SERP EXTRACTS>
+
+    Founder transcript (<BRAND> point of view):
+    <TRANSCRIPT OR "none">
+    ```
+
+    ## Warnings
+
+    - **Never use a drip-ping indexer on the brand's own website.** Only on
+      the third-party host page. The demo was explicit about this.
+    - **No guarantee.** The demo was one article, one query, one live test.
+      Another keyword, platform, or niche may not rank, or may rank and then
+      drop. Say so when reporting.
+    - **Platform rules.** Respect the host platform's content policy. Do not
+      mass-publish near-duplicate articles or spam several platforms with the
+      same text; that gets accounts and pages removed.
+    - **Review before publishing.** Check facts, brand claims, and anything
+      taken from the founder transcript. The model drafts, the human ships.
+
+    ## Checklist to hand back
+
+    - Target query
+    - Pages used as source (URLs)
+    - Founder context used (yes or no)
+    - Published URL
+    - Indexing submitted (yes or no, service)
+    - Google position at first check, with timestamp
+  '';
+
+  seoParasiteRefFile = pkgs.writeText "parasite-seo.md" seoParasiteRef;
+
+  seoSkills = pkgs.runCommand "seo-skills" { } ''
+    mkdir -p "$out/seo/references"
+    cp ${seoSkillFile} "$out/seo/SKILL.md"
+    cp ${seoParasiteRefFile} "$out/seo/references/parasite-seo.md"
+    # Upstream SKILL.md bodies become reference files: drop their frontmatter
+    # so only the top-level SKILL.md declares a skill.
+    for path in seo/seo-autopilot seo/seo-title-optimization seo/blog-refresher marketing/diff-marketing; do
+      awk 'seen >= 2 { print } /^---$/ { seen++ }' \
+        "${seoSkillsSrc}/$path/SKILL.md" > "$out/seo/references/$(basename "$path").md"
+    done
   '';
 
   # ════════════════════════════════════════════════════════════════════════
@@ -603,14 +646,6 @@ let
     Don't extract trivial fixes or one-time issues.
   '';
 
-  # Helper to deploy a skill to all 4 tools
-  deploySkill = name: content: {
-    ".claude/skills/${name}/SKILL.md".text = content;
-    ".forge/skills/${name}/SKILL.md".text = content;
-    ".config/opencode/skills/${name}/SKILL.md".text = content;
-    ".codex/skills/${name}/SKILL.md".text = content;
-  };
-
 in
 {
   home.file = {
@@ -681,38 +716,99 @@ in
       done
     done
     $DRY_RUN_CMD rm -rf "${cache}/supabase" "${cache}/android-re" "${cache}/mdbook" "${cache}/svelte"
+    # caveman and nulltea moved to pinned fetchFromGitHub sources (see top of file)
+    $DRY_RUN_CMD rm -rf "${cache}/caveman" "${cache}/nulltea"
+
+    # Unmanaged leftovers copied before the managed marker existed, so the
+    # prune step cannot see them: the pre-flatten fal-* skills, the fal.ai
+    # vertical production skills, and vertex-ai-api-dev (old name of the
+    # official gemini-api skill).
+    for dest in ${allSkillDirs}; do
+      for stale in \
+        "$dest"/vertex-ai-api-dev \
+        "$dest"/fal-3d "$dest"/fal-audio "$dest"/fal-generate "$dest"/fal-image-edit \
+        "$dest"/fal-kling-o3 "$dest"/fal-lip-sync "$dest"/fal-platform "$dest"/fal-realtime \
+        "$dest"/fal-restore "$dest"/fal-train "$dest"/fal-tryon "$dest"/fal-upscale \
+        "$dest"/fal-video-edit "$dest"/fal-vision \
+        "$dest"/character-design "$dest"/cinematography "$dest"/commercial \
+        "$dest"/storytelling "$dest"/marketing "$dest"/ugc "$dest"/fan-cam \
+        "$dest"/fal-gamedev "$dest"/fal-redesign "$dest"/fal-regenerate-3d; do
+        $DRY_RUN_CMD rm -rf "$stale"
+      done
+    done
 
     # ── DESIGN.md (official Google Labs source; wrapper copies README/docs/spec) ──
     _git_sync "${cache}/design-md" "https://github.com/google-labs-code/design.md"
     ${copyDesignMdSkill}
     _copy_design_md_skill "${cache}/design-md"
 
-    # ── Google (Cloud skills in skills/cloud/*/: Gemini API, BigQuery, Cloud Run, Firebase, GKE, AlloyDB, etc.) ──
-    _git_sync "${cache}/google" "https://github.com/google/skills"
-    [ -d "${cache}/google/skills/cloud" ] && _copy_skills "${cache}/google/skills/cloud"
+    # ── SEO (pinned Illyism/seo-skills references behind a local router
+    # SKILL.md, plus the local parasite-seo workflow) ──
+    _copy_named_skills "${seoSkills}" seo
 
-    # ── Cloudflare (selected skills; web-perf is intentionally omitted) ──
+    # ── Google Cloud (skills/cloud/ ships 119 skills: GKE, BigQuery, Agent
+    # Platform, Airflow, etc. Only gcloud and the Vertex/Agent Platform Gemini
+    # skill are kept) ──
+    _git_sync "${cache}/google" "https://github.com/google/skills"
+    [ -d "${cache}/google/skills/cloud" ] && _copy_named_skills "${cache}/google/skills/cloud" \
+      gcloud \
+      gemini-api
+
+    # ── Gemini Developer API (official google-gemini repo; omni-flash omitted) ──
+    _git_sync "${cache}/gemini" "https://github.com/google-gemini/gemini-skills"
+    [ -d "${cache}/gemini/skills" ] && _copy_named_skills "${cache}/gemini/skills" \
+      gemini-api-dev \
+      gemini-live-api-dev
+
+    # ── Cloudflare (selected skills; web-perf is intentionally omitted;
+    # sandbox-sdk was split upstream into sandbox-stable / sandbox-next /
+    # sandbox-migrate-to-next, only the stable SDK skill is kept) ──
     _git_sync "${cache}/cloudflare" "https://github.com/cloudflare/skills"
     [ -d "${cache}/cloudflare/skills" ] && _copy_named_skills "${cache}/cloudflare/skills" \
       agents-sdk \
       cloudflare \
       cloudflare-email-service \
       durable-objects \
-      sandbox-sdk \
+      sandbox-stable \
       workers-best-practices \
       wrangler
 
-    # ── Neon (skills in skills/*/) ──
+    # ── Cloudflare security-audit (single-skill repo, skill lives in skills/security-audit/) ──
+    _git_sync "${cache}/security-audit" "https://github.com/cloudflare/security-audit-skill"
+    [ -d "${cache}/security-audit/skills" ] && _copy_named_skills "${cache}/security-audit/skills" security-audit
+
+    # ── Neon (Postgres only; ai-gateway, functions, object-storage, egress-optimizer omitted) ──
     _git_sync "${cache}/neon" "https://github.com/neondatabase/agent-skills"
-    [ -d "${cache}/neon/skills" ] && _copy_skills "${cache}/neon/skills"
+    [ -d "${cache}/neon/skills" ] && _copy_named_skills "${cache}/neon/skills" \
+      neon \
+      neon-postgres \
+      neon-postgres-branches
 
     # ── Postgres only from pg-aiguide; Timescale/hypertable skills are omitted ──
     _git_sync "${cache}/pg-aiguide" "https://github.com/timescale/pg-aiguide"
     [ -d "${cache}/pg-aiguide/skills" ] && _copy_named_skills "${cache}/pg-aiguide/skills" postgres
 
-    # ── RunPod (SKILL.md at root of each subdir) ──
+    # ── RunPod (skills in plugins/runpod/skills/*/; flash, mcp, migrate, templates, usage, companion-clis omitted) ──
     _git_sync "${cache}/runpod" "https://github.com/runpod/skills"
-    _copy_skills_marker "${cache}/runpod"
+    [ -d "${cache}/runpod/plugins/runpod/skills" ] && _copy_named_skills "${cache}/runpod/plugins/runpod/skills" \
+      runpod \
+      runpodctl
+
+    # ── BytePlus Ark CLI (skills/arkcli-*; 26 skills upstream, only the ModelArk
+    # research/generation surface is kept; agent, deploy, train, datasets,
+    # iam, billing, plans, helper, onboard, connect omitted). Distributed here,
+    # never via `arkcli +connect`, which rewrites every agent skill dir ──
+    _git_sync "${cache}/ark-cli" "https://github.com/byteplus-sdk/ark-cli"
+    [ -d "${cache}/ark-cli/skills" ] && _copy_named_skills "${cache}/ark-cli/skills" \
+      arkcli-shared \
+      arkcli-auth \
+      arkcli-config \
+      arkcli-doctor \
+      arkcli-docs \
+      arkcli-models \
+      arkcli-pricing \
+      arkcli-gen \
+      arkcli-api-explorer
 
     # ── Hyprland (purpose-built skill repo) ──
     _git_sync "${cache}/hyprland" "https://github.com/marceloeatworld/hyprland-ai-skill"
@@ -726,13 +822,55 @@ in
     _git_sync "${cache}/img2threejs" "https://github.com/hoainho/img2threejs"
     _copy_skill_repo "${cache}/img2threejs" "img2threejs"
 
-    # ── Caveman (terse response and review/commit skills) ──
-    _git_sync "${cache}/caveman" "https://github.com/JuliusBrussee/caveman"
-    [ -d "${cache}/caveman/skills" ] && _copy_skills_marker "${cache}/caveman/skills"
+    # ── Caveman (pinned; only the terse mode, loaded every session by the global
+    # CLAUDE.md import in claude-code.nix; the repo also ships Caveman Cloud
+    # skills, generic work patterns, and commit/review skills that auto-trigger
+    # and overlap with commit-commands, code-review, and CLAUDE.md rules) ──
+    _copy_named_skills "${cavemanSrc}/skills" caveman
 
-    # ── fal.ai (skills in skills/claude.ai/*/) ──
+    # ── nulltea (pinned; skills grouped in skills/<bucket>/*/; only i-have-adhd,
+    # loaded every session by the global CLAUDE.md import in claude-code.nix) ──
+    _copy_named_skills "${nullteaSrc}/skills/productivity" i-have-adhd
+
+    # ── ReVa (pinned; reverse engineering workflows for the reva MCP server
+    # declared in claude-code.nix: triage, deep analysis, CTF, PyGhidra) ──
+    _copy_named_skills "${revaSrc}/ReVa/skills" \
+      binary-triage deep-analysis ctf-crypto ctf-pwn ctf-rev pyghidra-scripting
+
+    # Pinned prompt pack, modding toolkit and REA (distinct from ReVa).
+    _copy_named_skills "${bugBountySkills}" bug-bounty-hunting
+    _copy_named_skills "${universalModderSkills}" \
+      mod-any-game game-recon reverse-engineering fal-assets asset-pipeline \
+      game-automation showcase-video mashup-mods publish-mod share-field-notes
+    _copy_named_skills "${reaSkills}" reverse-engineer-anything
+
+    # ── fal.ai (skills in skills/*/; genmedia core + umbrellas only, the vertical
+    # production skills such as commercial, marketing, ugc, fan-cam are omitted) ──
     _git_sync "${cache}/fal-ai" "https://github.com/fal-ai-community/skills"
-    [ -d "${cache}/fal-ai/skills/claude.ai" ] && _copy_skills "${cache}/fal-ai/skills/claude.ai"
+    [ -d "${cache}/fal-ai/skills" ] && _copy_named_skills "${cache}/fal-ai/skills" \
+      genmedia \
+      genmedia-workflow \
+      model-routing \
+      fal-models-catalog \
+      fal-prompting \
+      fal-recipes \
+      fal-workflow
+
+    # ── Medusa (skills in plugins/<plugin>/skills/*/; medusa-dev and
+    # ecommerce-storefront only. learn-medusa is a tutorial and medusa-cloud
+    # needs the mcloud CLI, which is not installed. The MedusaDocs MCP server
+    # the skills mention is declared in claude-code.nix) ──
+    _git_sync "${cache}/medusa" "https://github.com/medusajs/medusa-agent-skills"
+    [ -d "${cache}/medusa/plugins/medusa-dev/skills" ] && _copy_named_skills "${cache}/medusa/plugins/medusa-dev/skills" \
+      building-with-medusa \
+      building-admin-dashboard-customizations \
+      building-storefronts \
+      creating-internal-agents \
+      db-generate \
+      db-migrate \
+      new-user
+    [ -d "${cache}/medusa/plugins/ecommerce-storefront/skills" ] && _copy_named_skills "${cache}/medusa/plugins/ecommerce-storefront/skills" \
+      storefront-best-practices
 
     # ── Vercel/React (selected skills; deploy-to-vercel/web-design omitted) ──
     _git_sync "${cache}/vercel" "https://github.com/vercel-labs/agent-skills"

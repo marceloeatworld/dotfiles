@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hours worked</title>
+<style>
+  :root { color-scheme: light dark; --fg: #1a1a1a; --muted: #6b6b6b; --line: #e3e3e3; --bg: #fff; --accent: #0b6e4f; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #ececec; --muted: #9a9a9a; --line: #333; --bg: #141414; --accent: #5bd1a5; } }
+  body { margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; max-width: 720px; margin-inline: auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 0.9rem; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 32px; }
+  .tile { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .tile .k { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile .v { font-size: 1.8rem; font-weight: 600; color: var(--accent); }
+  h2 { font-size: 1rem; margin: 28px 0 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; font-variant-numeric: tabular-nums; }
+  th { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+  td.n, th.n { text-align: right; white-space: nowrap; }
+  tr.today td { font-weight: 600; }
+  .bar { height: 6px; background: var(--accent); border-radius: 3px; opacity: 0.7; }
+  td.b { width: 40%; }
+  .err { color: #c0392b; }
+</style>
+</head>
+<body>
+<h1>Hours worked</h1>
+<p class="sub">Active time at the keyboard (not AFK). Days start at 04:00, so a late night counts with the day before. Weeks start on Monday.</p>
+<div class="tiles" id="tiles"></div>
+<h2>Days (last 31)</h2>
+<table id="days"><thead><tr><th>Day</th><th class="n">Hours</th><th class="b"></th></tr></thead><tbody></tbody></table>
+<h2>Weeks (last 12)</h2>
+<table id="weeks"><thead><tr><th>Week of</th><th class="n">Hours</th><th class="n">Per day</th></tr></thead><tbody></tbody></table>
+<h2>Months</h2>
+<table id="months"><thead><tr><th>Month</th><th class="n">Hours</th><th class="n">Per day worked</th></tr></thead><tbody></tbody></table>
+<script>
+(async function () {
+  const DAY_START_HOUR = 4;
+  const fmtH = (s) => (s / 3600).toFixed(1) + " h";
+  const pad = (n) => String(n).padStart(2, "0");
+  const key = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const workDay = (t) => { const d = new Date(t); d.setHours(d.getHours() - DAY_START_HOUR); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
+  const nextDayStart = (wd) => new Date(wd.getFullYear(), wd.getMonth(), wd.getDate() + 1, DAY_START_HOUR);
+  const monday = (d) => { const m = new Date(d); m.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return m; };
+  try {
+    const buckets = await fetch("/api/0/buckets/").then((r) => r.json());
+    const id = Object.keys(buckets).find((b) => b.startsWith("aw-watcher-afk"));
+    if (!id) throw new Error("no AFK bucket found");
+    const since = new Date(); since.setMonth(since.getMonth() - 13); since.setDate(1);
+    const events = await fetch("/api/0/buckets/" + id + "/events?limit=-1&start=" + encodeURIComponent(since.toISOString())).then((r) => r.json());
+    const days = new Map();
+    for (const e of events) {
+      if (e.data.status !== "not-afk") continue;
+      // Split a block that crosses 04:00 so each part counts for its own day.
+      let start = new Date(e.timestamp), left = e.duration;
+      while (left > 0) {
+        const wd = workDay(start);
+        const slice = Math.min(left, (nextDayStart(wd) - start) / 1000);
+        const k = key(wd);
+        days.set(k, (days.get(k) || 0) + slice);
+        start = nextDayStart(wd); left -= slice;
+      }
+    }
+    const todayD = workDay(new Date());
+    const today = key(todayD);
+    const weekStart = key(monday(todayD));
+    const monthKey = today.slice(0, 7);
+    const sum = (pred) => { let s = 0; for (const [k, v] of days) if (pred(k)) s += v; return s; };
+    const week = sum((k) => k >= weekStart);
+    const month = sum((k) => k.startsWith(monthKey));
+    const year = sum((k) => k.startsWith(today.slice(0, 4)));
+    document.getElementById("tiles").innerHTML = [["Today", days.get(today) || 0], ["This week", week], ["This month", month], ["This year", year]]
+      .map(([k, v]) => '<div class="tile"><div class="k">' + k + '</div><div class="v">' + fmtH(v) + "</div></div>").join("");
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const rows = [];
+    for (let i = 0; i < 31; i++) {
+      const d = new Date(todayD); d.setDate(todayD.getDate() - i);
+      const k = key(d); const v = days.get(k) || 0;
+      rows.push([k, dayNames[d.getDay()] + " " + k, v]);
+    }
+    const max = Math.max(1, ...rows.map((r) => r[2]));
+    document.querySelector("#days tbody").innerHTML = rows.map(([k, label, v]) =>
+      '<tr class="' + (k === today ? "today" : "") + '"><td>' + label + '</td><td class="n">' + fmtH(v) + '</td><td class="b"><div class="bar" style="width:' + (100 * v / max).toFixed(0) + '%"></div></td></tr>').join("");
+    const weeks = [];
+    for (let i = 0; i < 12; i++) {
+      const start = monday(todayD); start.setDate(start.getDate() - 7 * i);
+      const end = new Date(start); end.setDate(start.getDate() + 7);
+      const ks = key(start), ke = key(end);
+      let s = 0, n = 0; for (const [k, v] of days) if (k >= ks && k < ke) { s += v; n++; }
+      weeks.push([ks, s, n]);
+    }
+    document.querySelector("#weeks tbody").innerHTML = weeks.map(([k, s, n]) =>
+      "<tr><td>" + k + '</td><td class="n">' + fmtH(s) + '</td><td class="n">' + (n ? fmtH(s / n) : "-") + "</td></tr>").join("");
+    const months = new Map();
+    for (const [k, v] of days) { const m = k.slice(0, 7); const cur = months.get(m) || [0, 0]; months.set(m, [cur[0] + v, cur[1] + 1]); }
+    document.querySelector("#months tbody").innerHTML = [...months.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([m, [s, n]]) =>
+      "<tr><td>" + m + '</td><td class="n">' + fmtH(s) + '</td><td class="n">' + fmtH(s / n) + "</td></tr>").join("");
+  } catch (e) {
+    document.getElementById("tiles").innerHTML = '<p class="err">Could not load: ' + e.message + "</p>";
+  }
+})();
+</script>
+</body>
+</html>

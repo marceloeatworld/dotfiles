@@ -25,6 +25,7 @@ _:
     hl.window_rule({ match = { class = "^(com\\.system76\\.Popsicle|popsicle-gtk)$" },          float = true })
     hl.window_rule({ match = { class = "^(nwg-displays)$" },                                    float = true })
     hl.window_rule({ match = { class = "^(com\\.gabm\\.satty|satty)$" },                        float = true })
+    hl.window_rule({ match = { class = "^(org\\.nemo\\.Preview|nemo-preview-start|Nemo-preview)$" }, float = true, center = true }) -- Quick Look (space in Nemo)
     hl.window_rule({ match = { class = "^(confirm)$" },                                         float = true })
     hl.window_rule({ match = { class = "^(dialog)$" },                                          float = true })
     hl.window_rule({ match = { class = "^(download)$" },                                        float = true })
@@ -164,9 +165,12 @@ _:
     -- No-op if the namespace doesn't match. Inspect live names with
     -- `hyprctl layers` if a target doesn't take effect.
     --------------------------------------------------------------------------
+    -- ignore_alpha: skip (nearly) transparent pixels so rounded corners and
+    -- gaps don't get a blurred rectangular halo around the surface.
     hl.layer_rule({ match = { namespace = "^(waybar)$" },        blur = true })
-    hl.layer_rule({ match = { namespace = "^(wofi)$" },          blur = true })
-    hl.layer_rule({ match = { namespace = "^(hyprlauncher)$" },  blur = true })
-    hl.layer_rule({ match = { namespace = "^(swayosd)$" },       blur = true })
+    hl.layer_rule({ match = { namespace = "^(wofi)$" },          blur = true, ignore_alpha = 0.2 })
+    hl.layer_rule({ match = { namespace = "^(hyprlauncher)$" },  blur = true, ignore_alpha = 0.2 })
+    hl.layer_rule({ match = { namespace = "^(swayosd)$" },       blur = true, ignore_alpha = 0.2 })
+    hl.layer_rule({ match = { namespace = "^(vicinae)$" },       blur = true, ignore_alpha = 0.2 })
   '';
 }

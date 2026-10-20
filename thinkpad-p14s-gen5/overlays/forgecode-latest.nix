@@ -14,8 +14,8 @@
 { lib, fetchurl, stdenv, ... }:
 
 let
-  version = "2.13.21";
-  sha256 = "sha256-SubYbN0AHmSeG0NdmSQ9cknRaeMLJFKeNQ+d/seY8po=";
+  version = "2.14.0";
+  sha256 = "sha256-ZIMvgovwiWEyLjAiQ/NS7nwn6I12+XJXSjYox7cMsb4=";
 in
 stdenv.mkDerivation {
   pname = "forgecode";

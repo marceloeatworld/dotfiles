@@ -165,39 +165,25 @@
       }
 
       function update-codex() {
-        # Snapshot the overlay: update-binary-overlay seds version+sha256 in
-        # before the companion prefetch runs, so a companion failure must
-        # restore the file (NOT via git checkout - the overlay routinely sits
-        # modified-but-uncommitted after a successful earlier update).
-        local OVERLAY BACKUP
-        OVERLAY=$(overlay-path "overlays/codex-latest.nix") || return 1
-        BACKUP=$(mktemp)
-        cp "$OVERLAY" "$BACKUP"
         update-binary-overlay \
           "Codex" \
           "overlays/codex-latest.nix" \
           "https://api.github.com/repos/openai/codex/releases/latest" \
           ".tag_name" \
           "rust-v" \
-          "https://github.com/openai/codex/releases/download/rust-v{version}/codex-x86_64-unknown-linux-musl.tar.gz" \
+          "https://github.com/openai/codex/releases/download/rust-v{version}/codex-package-x86_64-unknown-linux-musl.tar.gz" \
           "sha256"
-        local rc=$?
-        if [[ $rc -eq 2 ]]; then
-          # Also refresh the codex-code-mode-host companion asset (same version)
-          local VERSION HASH SRI
-          VERSION=$(grep 'version = ' "$OVERLAY" | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          HASH=$(nix-prefetch-url "https://github.com/openai/codex/releases/download/rust-v$VERSION/codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz")
-          if [[ -z "$HASH" ]]; then
-            echo "⚠ Failed to download codex-code-mode-host $VERSION"
-            cp "$BACKUP" "$OVERLAY"
-            rm -f "$BACKUP"
-            return 1
-          fi
-          SRI=$(nix hash convert --hash-algo sha256 --to sri "$HASH")
-          sed -i "s|codeModeHostSha256 = \".*\"|codeModeHostSha256 = \"$SRI\"|" "$OVERLAY"
-        fi
-        rm -f "$BACKUP"
-        return $rc
+      }
+
+      function update-gemini-cli() {
+        update-binary-overlay \
+          "Gemini CLI" \
+          "overlays/gemini-cli-latest.nix" \
+          "https://registry.npmjs.org/@google/gemini-cli/latest" \
+          ".version" \
+          "" \
+          "https://registry.npmjs.org/@google/gemini-cli/-/gemini-cli-{version}.tgz" \
+          "sha256"
       }
 
       function update-runpodctl() {
@@ -208,6 +194,17 @@
           ".tag_name" \
           "v" \
           "https://github.com/runpod/runpodctl/releases/download/v{version}/runpodctl-linux-amd64" \
+          "sha256"
+      }
+
+      function update-arkcli() {
+        update-binary-overlay \
+          "BytePlus Ark CLI" \
+          "overlays/arkcli-latest.nix" \
+          "https://api.github.com/repos/byteplus-sdk/ark-cli/releases/latest" \
+          ".tag_name" \
+          "v" \
+          "https://github.com/byteplus-sdk/ark-cli/releases/download/v{version}/arkcli-{version}-linux-amd64" \
           "sha256"
       }
 
@@ -223,20 +220,24 @@
         local cloned=0
         local total=0
 
-        # Unified skill cache — one clone per repo, distributed by ai-skills.nix on rebuild
+        # Unified skill cache — one clone per repo, distributed by ai-skills.nix on rebuild.
+        # caveman and i-have-adhd are not here: pinned by rev+hash in ai-skills.nix.
         local skill_repos=(
           "$HOME/.cache/ai-skills/google|https://github.com/google/skills"
           "$HOME/.cache/ai-skills/cloudflare|https://github.com/cloudflare/skills"
+          "$HOME/.cache/ai-skills/security-audit|https://github.com/cloudflare/security-audit-skill"
           "$HOME/.cache/ai-skills/neon|https://github.com/neondatabase/agent-skills"
           "$HOME/.cache/ai-skills/pg-aiguide|https://github.com/timescale/pg-aiguide"
           "$HOME/.cache/ai-skills/runpod|https://github.com/runpod/skills"
           "$HOME/.cache/ai-skills/hyprland|https://github.com/marceloeatworld/hyprland-ai-skill"
           "$HOME/.cache/ai-skills/nixos|https://github.com/marceloeatworld/nixos-ai-skill"
-          "$HOME/.cache/ai-skills/caveman|https://github.com/JuliusBrussee/caveman"
+          "$HOME/.cache/ai-skills/gemini|https://github.com/google-gemini/gemini-skills"
           "$HOME/.cache/ai-skills/fal-ai|https://github.com/fal-ai-community/skills"
           "$HOME/.cache/ai-skills/vercel|https://github.com/vercel-labs/agent-skills"
           "$HOME/.cache/ai-skills/design-md|https://github.com/google-labs-code/design.md"
           "$HOME/.cache/ai-skills/img2threejs|https://github.com/hoainho/img2threejs"
+          "$HOME/.cache/ai-skills/ark-cli|https://github.com/byteplus-sdk/ark-cli"
+          "$HOME/.cache/ai-skills/medusa|https://github.com/medusajs/medusa-agent-skills"
         )
 
         for entry in "''${skill_repos[@]}"; do
@@ -304,7 +305,7 @@
           "sha256"
       }
 
-      # Update quick overlays (VS Code + Claude Code + OpenCode + ForgeCode + Codex + RunPod + pnpm) + agent skills
+      # Update quick overlays (VS Code + Claude Code + OpenCode + ForgeCode + Codex + Gemini CLI + RunPod + arkcli + pnpm) + agent skills
       # Returns 0 if something was updated, 1 if nothing changed
       function update-overlays() {
         local changed=0
@@ -313,7 +314,9 @@
         update-opencode; [[ $? -eq 2 ]] && changed=1
         update-forgecode; [[ $? -eq 2 ]] && changed=1
         update-codex; [[ $? -eq 2 ]] && changed=1
+        update-gemini-cli; [[ $? -eq 2 ]] && changed=1
         update-runpodctl; [[ $? -eq 2 ]] && changed=1
+        update-arkcli; [[ $? -eq 2 ]] && changed=1
         update-pnpm; [[ $? -eq 2 ]] && changed=1
         update-skills; [[ $? -eq 2 ]] && changed=1
         return $((1 - changed))

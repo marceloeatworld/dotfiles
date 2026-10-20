@@ -68,7 +68,8 @@ in
       render-loading-bg = theme.colors.background;
       render-loading-fg = theme.colors.foreground;
 
-      # Recolor (dark mode for documents) - off by default, toggle with 'i'
+      # Recolor (dark mode for documents) - off, no key toggles it.
+      # Enable for one session with ':set recolor true' if ever needed.
       recolor = false;
       recolor-darkcolor = theme.colors.foreground;
       recolor-lightcolor = theme.colors.background;
@@ -104,9 +105,6 @@ in
       d = "toggle_page_mode";
       a = "adjust_window best-fit";
       s = "adjust_window width";
-
-      # Recolor toggle (dark/light mode)
-      i = "recolor";
 
       # Fullscreen
       f = "toggle_fullscreen";

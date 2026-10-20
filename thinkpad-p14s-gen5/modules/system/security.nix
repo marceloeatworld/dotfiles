@@ -42,6 +42,12 @@ let
     blacklist ''${HOME}/.config/sops-nix
     blacklist ''${RUNUSER}/secrets.d
     blacklist ''${HOME}/.config/waybar/.env
+    # Agent and GitHub OAuth tokens (not covered by disable-*.inc). File-level
+    # for ~/.claude so the Chrome native host in ~/.claude/chrome keeps working.
+    blacklist ''${HOME}/.claude/.credentials.json
+    blacklist ''${HOME}/.codex
+    blacklist ''${HOME}/.local/share/opencode
+    blacklist ''${HOME}/.config/gh
   '';
 
   # The other sandboxed GUI apps keep their home whitelists, so they need
@@ -79,9 +85,23 @@ let
     dbus-user.talk org.freedesktop.portal.Desktop
     apparmor
   '';
+  # Links clicked in Vesktop go through xdg-open inside the jail, which
+  # resolves brave-browser.desktop to the Brave wrapper below. That wrapper
+  # cannot run there (systemd-run is denied, firejail refuses to nest), so
+  # every link silently died. This shim hands the URL to the host through
+  # the desktop portal (OpenURI), which the profile already allows, and the
+  # host side launches the real default browser. Electron finds xdg-open
+  # via PATH, so the wrapper simply puts this directory first.
+  vesktop-xdg-open = pkgs.writeShellScriptBin "xdg-open" ''
+    exec ${pkgs.glib.bin}/bin/gdbus call --session \
+      --dest org.freedesktop.portal.Desktop \
+      --object-path /org/freedesktop/portal/desktop \
+      --method org.freedesktop.portal.OpenURI.OpenURI "" "$1" "{}" >/dev/null
+  '';
   vesktop-wrapper = pkgs.writeShellScriptBin "vesktop" ''
     FIREJAIL=/run/wrappers/bin/firejail
     VESKTOP=${pkgs.vesktop}/bin/vesktop
+    export PATH=${vesktop-xdg-open}/bin:$PATH
     if "$FIREJAIL" --list 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q ":vesktop:"; then
       exec "$FIREJAIL" --join=vesktop "$VESKTOP" --no-sandbox "$@"
     else
@@ -277,6 +297,9 @@ in
           "--whitelist=~/Downloads"
           # A PDF anywhere else was invisible inside the jail (empty window).
           # Project trees, pictures and removable disks are visible read-only.
+          # Desktop and PDFs dropped at the top of $HOME are common too.
+          "--whitelist=~/Desktop"
+          "--whitelist=~/*.pdf"
           "--whitelist=~/codes"
           "--read-only=~/codes"
           "--whitelist=~/Pictures"
@@ -311,20 +334,6 @@ in
           themeWhitelist
           "--whitelist=~/Videos"
           "--whitelist=~/.config/obs-studio"
-        ];
-      };
-
-      # Audacity - sandboxed (audio editor)
-      audacity = {
-        executable = "${pkgs.audacity}/bin/audacity";
-        profile = "${pkgs.firejail}/etc/firejail/audacity.profile";
-        extraArgs = [
-          themeWhitelist
-          "--whitelist=~/Music"
-          "--whitelist=~/Downloads"
-          "--whitelist=~/Documents"
-          "--whitelist=~/.config/audacity"
-          "--whitelist=~/.audacity-data"
         ];
       };
 

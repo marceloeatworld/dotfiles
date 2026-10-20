@@ -182,10 +182,13 @@ in
     ./programs/git.nix # Git + delta diff viewer
     ./programs/vscode.nix # VS Code package, wrapper and UI settings
     ./programs/development.nix # Languages and development tools
+    ./programs/android.nix # Android SDK + tablet emulator for Expo apps
     ./programs/claude-code.nix # Claude Code AI assistant
     ./programs/opencode.nix # OpenCode AI coding agent (Z.AI GLM)
     ./programs/forgecode.nix # ForgeCode AI coding harness (Rust, ZSH integration)
     ./programs/codex.nix # Codex AI coding agent (OpenAI, Rust musl static)
+    ./programs/gemini-cli.nix # Gemini CLI + ask-gemini (Gemini 4 Argon second opinion)
+    ./programs/vicinae.nix # Vicinae launcher (Super+D) + clipboard (Super+V), themed per config.theme
     ./programs/jailed-agents.nix # Opt-in sandboxed wrappers: jailed-*
     ./programs/ai-skills.nix # Centralized skills for Claude/Forge/OpenCode/Codex
 
@@ -216,6 +219,7 @@ in
     ./services/hyprlock.nix # Screen locker
     ./services/swayosd.nix # Volume/brightness OSD
     ./services/mic-jack-autoswitch.nix # Auto-switch mic on jack plug/unplug
+    ./services/activitywatch.nix # Time tracker (aw-server-rust + awatcher)
 
     # ── Configuration ──
     ./config/theme.nix # Centralized theme system (colors + fonts)
@@ -279,6 +283,9 @@ in
     # GPU cloud
     runpodctl # RunPod CLI - manage GPU pods/serverless (v2, prebuilt binary via overlay)
 
+    # AI model APIs
+    arkcli # BytePlus Ark CLI - ModelArk models, pricing, docs, generation (prebuilt binary via overlay)
+
     # Productivity
     gnome-calculator # Calculator app
     gramps # Genealogy software (family trees)
@@ -315,7 +322,6 @@ in
     (desktopFilesOnly keepassxc) # Password manager
     (desktopFilesOnly blender) # 3D modelling
     (desktopFilesOnly obs-studio) # Screen recording
-    (desktopFilesOnly audacity) # Audio editor
     (desktopFilesOnly xournalpp) # PDF annotation
     (desktopFilesOnly joplin-desktop) # Note-taking
 

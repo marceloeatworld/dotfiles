@@ -48,6 +48,7 @@ nix flake update
 │   ├── forgecode-latest.nix  # ForgeCode from GitHub (musl static)
 │   ├── codex-latest.nix      # Codex from GitHub releases (OpenAI, Rust musl)
 │   ├── runpodctl-latest.nix  # RunPod CLI from GitHub (Go)
+│   ├── arkcli-latest.nix     # BytePlus Ark CLI from GitHub (Go)
 │   ├── pnpm-latest.nix       # pnpm npm tarball wrapped on system Node 22 (v10.x pin)
 │   ├── waybar-latest.nix     # Waybar master pin for Hyprland Lua IPC fix
 │   └── yaru-theme.nix        # Yaru GTK/icon theme (dropped from nixpkgs 2026-07)
@@ -93,7 +94,7 @@ nix flake update
         │   ├── development.nix # C++, Node, Python, Go, Rust, .NET
         │   ├── vscode.nix    # VS Code package, wrapper and UI settings
         │   ├── claude-code.nix # Claude Code AI assistant config
-        │   ├── ai-skills.nix  # AI agent skills & commands (plan, verify, blueprint)
+        │   ├── ai-skills.nix  # AI agent skills (synced from upstream) & slash commands
         │   ├── opencode.nix  # OpenCode AI coding agent config
         │   ├── forgecode.nix # ForgeCode AI coding harness (Rust, ZSH)
         │   ├── codex.nix     # Codex AI coding agent (OpenAI, Rust musl static)
@@ -174,8 +175,8 @@ nix flake update
 | `SUPER + B` | Brave browser |
 | `SUPER + E` | Nemo file manager |
 | `SUPER + A` | Audio control (hyprpwcenter) |
-| `SUPER + D` | App launcher (wofi drun) |
-| `SUPER + V` | Clipboard history (cliphist + wofi) |
+| `SUPER + D` | Launcher (Vicinae: apps, calculator, emoji, windows, files) |
+| `SUPER + V` | Clipboard history (Vicinae, with image thumbnails) |
 | `SUPER + Shift + V` | Clear clipboard |
 | `SUPER + Y` | YouTube PiP toggle (launch/show/hide) |
 | `SUPER + U` | Twitch PiP toggle (launch/show/hide) |
@@ -241,7 +242,7 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | Key | Action |
 |-----|--------|
 | `Print` | Region → clipboard |
-| `SUPER + Print` | Region → file |
+| `SUPER + Print` | Region → annotate in satty → file + clipboard |
 | `Shift + Print` | Full screen → clipboard |
 | `SUPER + Shift + Print` | Full screen → file |
 | `SUPER + Ctrl + Print` | Window → clipboard |
@@ -269,6 +270,10 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | `SUPER + Ctrl + F2` | Toggle WiFi |
 | `SUPER + F3` | Switch keyboard layout (fr/us) |
 | `SUPER + Shift + R` | Restart Waybar |
+| `SUPER + Shift + D` | Do Not Disturb toggle (critical alerts still show) |
+| `SUPER + Ctrl + D` | Do Not Disturb for 60 minutes |
+| `SUPER + ALT + R` | Resize mode: H/J/K/L or arrows, Esc exits |
+| `SUPER + ALT + T` | Jump to window by tag: B browser, C code, T terminal, M messaging, V media, A creative, D documents, S security, G gaming |
 
 **Media Keys**
 | Key | Action |
@@ -355,6 +360,7 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | `update-forgecode` | Check/update ForgeCode from GitHub releases |
 | `update-codex` | Check/update Codex from GitHub releases |
 | `update-runpodctl` | Check/update RunPod CLI from GitHub (Go) |
+| `update-arkcli` | Check/update BytePlus Ark CLI from GitHub (Go) |
 | `update-pnpm` | Check/update pnpm (npm tarball, v10.x only) |
 | `update-skills` | Update all agent skill repos |
 | `update-llama` | Check/update llama.cpp from GitHub releases (separate, long build) |
@@ -433,13 +439,56 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 |---------|--------|
 | `/learn` | Extract reusable patterns from current session to `~/.claude/skills/learned/` |
 
-**Skills (auto-loaded when relevant)**
-| Skill | Purpose |
-|-------|---------|
-| `search-first` | Research nixpkgs/PyPI/GitHub before writing custom code |
-| `verification-loop` | Build → types → lint → tests → security → diff review |
-| `blueprint` | Multi-session planning with dependency graphs |
-| `security-scan` | Audit `.claude/` config for vulnerabilities |
+**Skills (synced from upstream repos by `ai-skills.nix`, refreshed with `update-skills`)**
+
+Each repo is narrowed to a named list so only the skills actually used land in the agent prompt.
+
+| Source | Skills kept |
+|--------|-------------|
+| `marceloeatworld/hyprland-ai-skill` | `hyprland` |
+| `marceloeatworld/nixos-ai-skill` | `nixos` |
+| `google-labs-code/design.md` | `design-md` |
+| `google/skills` | `gcloud`, `gemini-api` (Vertex / Agent Platform) |
+| `google-gemini/gemini-skills` | `gemini-api-dev`, `gemini-live-api-dev` (Gemini Developer API) |
+| `cloudflare/skills` | `agents-sdk`, `cloudflare`, `cloudflare-email-service`, `durable-objects`, `sandbox-sdk`, `workers-best-practices`, `wrangler` |
+| `cloudflare/security-audit-skill` | `security-audit` |
+| `neondatabase/agent-skills` | `neon`, `neon-postgres`, `neon-postgres-branches` |
+| `timescale/pg-aiguide` | `postgres` |
+| `runpod/skills` | `runpod`, `runpodctl` |
+| `byteplus-sdk/ark-cli` | `arkcli-shared`, `arkcli-auth`, `arkcli-config`, `arkcli-doctor`, `arkcli-docs`, `arkcli-models`, `arkcli-pricing`, `arkcli-gen`, `arkcli-api-explorer` |
+| `fal-ai-community/skills` | `genmedia`, `genmedia-workflow`, `model-routing`, `fal-models-catalog`, `fal-prompting`, `fal-recipes`, `fal-workflow` |
+| `vercel-labs/agent-skills` | `composition-patterns`, `react-best-practices`, `react-native-skills`, `react-view-transitions`, `vercel-cli-with-tokens` |
+| `JuliusBrussee/caveman` | `caveman` (always on, imported by the global `CLAUDE.md`) |
+| `nulltea/skills` | `i-have-adhd` (always on, imported by the global `CLAUDE.md`) |
+| `hoainho/img2threejs` | `img2threejs` |
+| `mdpsec/bug-bounty-hunting-prompts` | `bug-bounty-hunting` wrapper with adaptation guide and phase prompts (pinned) |
+| `Illyism/seo-skills` | `seo` router with autopilot, title optimization, blog refresher and diff marketing references, plus the local parasite-seo workflow (pinned; vendor skills omitted) |
+| `rehan-remade/universal-modder` | `mod-any-game`, `game-recon`, `reverse-engineering`, `fal-assets`, `asset-pipeline`, `game-automation`, `showcase-video`, `mashup-mods`, `publish-mod`, `share-field-notes` (pinned with `um`) |
+| `morluto/rea` | `reverse-engineer-anything` (pinned with `rea`; separate from ReVa) |
+
+The new pinned sources update through their `rev` and `hash` in Nix, rather than
+`update-skills`. Run `rebuild` to install the packages and distribute the skills
+to Claude, Codex, ForgeCode and OpenCode; restart the agent to load them.
+
+- **[Universal Modder](https://github.com/rehan-remade/universal-modder):** `um --help`.
+  The packaged knowledge snapshot is available offline via `um kb search`/`show`;
+  pass `--root` to use another corpus. Write contributions in a writable workspace.
+  `um win` requires Windows/WSL; 3D rendering needs Blender, and fal generation
+  needs `FAL_KEY`. See each installed skill's `NIXOS.md` for local paths.
+- **[SigLens](https://github.com/St0rn/SigLens):** `siglens --help`.
+  Linux static analysis is packaged; AMSI, Defender and DbgHelp require Windows.
+  Rules and upstream engine examples are under `~/.local/share/siglens/`.
+  Reports are written into `./reports`; the Windows engine examples need adapting
+  before use with a Linux scanner. Packaging excludes one stale upstream test
+  for the unused `fixed_windows` helper (bytes versus KiB); the other tests run.
+- **[REA](https://github.com/morluto/rea):** `rea --help` and `rea doctor --json`.
+  Claude gets a separate `rea` MCP server. REA 4.0.1 requires exactly Ghidra 12.1.4
+  and JDK 21 for its Ghidra provider; the current Ghidra 12.1.2 remains served by
+  ReVa. Hopper is not installed. Manage installation and agent registration with
+  Nix rather than REA's upstream setup scripts.
+- **[Bug-bounty prompts](https://github.com/mdpsec/bug-bounty-hunting-prompts):**
+  use the `bug-bounty-hunting` skill. These are phase templates; read
+  `ADAPTATION.md` and supply the target scope and integrations before using them.
 
 ---
 
@@ -650,6 +699,7 @@ Aliases: `nmap-quick`, `nmap-full`, `nmap-vuln`, `wifite-auto`, `hashcat-gpu`, e
 | forgecode-latest.nix | ForgeCode (musl static) | 2.13.21 |
 | codex-latest.nix | Codex (OpenAI, Rust musl) | 0.153.4 |
 | runpodctl-latest.nix | RunPod CLI (Go) | 2.12.0 |
+| arkcli-latest.nix | BytePlus Ark CLI (Go) | 1.0.37 |
 | pnpm-latest.nix | pnpm | 10.34.5 |
 | waybar-latest.nix | Waybar | 0.15.0-unstable-98b2a56 |
 | yaru-theme.nix | Yaru | 25.10.3 |

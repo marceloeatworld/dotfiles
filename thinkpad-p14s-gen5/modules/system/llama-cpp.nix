@@ -28,7 +28,6 @@ let
     INSTALL="${pkgs.coreutils}/bin/install"
     RM="${pkgs.coreutils}/bin/rm"
     PRINTF="${pkgs.coreutils}/bin/printf"
-    BASENAME="${pkgs.coreutils}/bin/basename"
 
     user_home="''${HOME:-${config.users.users.marcelo.home}}"
     if [ -n "''${SUDO_USER:-}" ] && [ "''${SUDO_USER:-}" != "root" ]; then
@@ -77,13 +76,6 @@ let
     fi
 
     ${pkgs.coreutils}/bin/chmod 0644 "$SERVICE_DIR/active-mode"
-
-    # The service units use DynamicUser, so $SERVICE_DIR resolves through
-    # /var/lib/private (0700 root) and unprivileged tools cannot read the
-    # staged state. Mirror "MODE MODEL" in a user-readable marker next to
-    # the models for llm-switch/llm-local.
-    "$PRINTF" '%s %s\n' "$MODE" "$("$BASENAME" "$REAL_MODEL")" > "$MODELS_DIR/.llm-active"
-    ${pkgs.coreutils}/bin/chmod 0644 "$MODELS_DIR/.llm-active"
   '';
 
   # Models are copied from ~/models into /var/lib/llama-cpp by llm-model-activate.
@@ -104,14 +96,17 @@ let
     DU="${pkgs.coreutils}/bin/du"
     CUT="${pkgs.coreutils}/bin/cut"
     LN="${pkgs.coreutils}/bin/ln"
+    MV="${pkgs.coreutils}/bin/mv"
     READLINK="${pkgs.coreutils}/bin/readlink"
     BASENAME="${pkgs.coreutils}/bin/basename"
     SYSTEMCTL="/run/current-system/sw/bin/systemctl"
     ACTIVATE="${llmModelActivate}/bin/llm-model-activate"
 
-    # Staged state marker written by llm-model-activate. /var/lib/llama-cpp
+    # "MODE MODEL" marker kept by llm-switch (below) because /var/lib/llama-cpp
     # itself is unreadable here: the units use DynamicUser, so it resolves
-    # through /var/lib/private (0700 root).
+    # through /var/lib/private (0700 root). Written as the user, never by the
+    # root helper: ~/models is user-owned, so a root write there follows any
+    # symlink the user plants.
     active_mode=text
     current_name=""
     read -r active_mode current_name < "$MODELS_DIR/.llm-active" 2>/dev/null || true
@@ -236,6 +231,9 @@ let
       "$LN" -sfn "$MODELS_DIR/$target" "$USER_ACTIVE_MODEL"
       sudo "$ACTIVATE" text "$MODELS_DIR/$target"
     fi
+    # Replace by rename: an old root-owned marker cannot be overwritten in place.
+    printf '%s %s\n' "$mode" "$target" > "$MODELS_DIR/.llm-active.tmp"
+    "$MV" -f "$MODELS_DIR/.llm-active.tmp" "$MODELS_DIR/.llm-active"
 
     restart_if_running
   '';
@@ -244,7 +242,7 @@ let
     set -euo pipefail
 
     SYSTEMCTL="/run/current-system/sw/bin/systemctl"
-    # Mode comes from the user-readable marker written by llm-model-activate;
+    # Mode comes from the user-readable marker written by llm-switch;
     # /var/lib/llama-cpp/active-mode is behind /var/lib/private (0700 root).
     MODE=$(${pkgs.coreutils}/bin/cut -d' ' -f1 "$HOME/models/.llm-active" 2>/dev/null || echo text)
 

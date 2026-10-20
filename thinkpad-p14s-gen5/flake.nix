@@ -9,6 +9,14 @@
     # manually with `update-llama` when a fresh build is wanted.
     nixpkgs-llama.url = "github:NixOS/nixpkgs/549bd84d6279f9852cae6225e372cc67fb91a4c1";
 
+    # Temporary pin for joplin-desktop only. nixos-unstable b4fd65b (2026-09-29)
+    # carries a bad merge that reverted Joplin to 3.6.16 with stale yarn hashes
+    # (fetchYarnBerryDeps: "unable to find missing hash for @esbuild/aix-ppc64").
+    # This is the previous generation's nixpkgs (Joplin 3.7.18, cached). Drop
+    # the input and the overlay once nixos-unstable contains nixpkgs commit
+    # f3b35b92 (joplin-desktop 3.7.21, merged to master 2026-09-30).
+    nixpkgs-joplin.url = "github:NixOS/nixpkgs/7a0f122f5090cf4c2ade2a13a0e229d4e19ba71f";
+
     # Tracks home-manager master. nixos-unstable has rolled to 26.11, so the
     # two currently match; the release check stays disabled in
     # modules/home/home.nix because master bumps its version first at every
@@ -59,7 +67,7 @@
 
   };
 
-  outputs = { self, nixpkgs, nixpkgs-llama, home-manager, nixos-hardware, disko, hyprland, hyprshutdown, sops-nix, ... } @ inputs:
+  outputs = { self, nixpkgs, nixpkgs-llama, nixpkgs-joplin, home-manager, nixos-hardware, disko, hyprland, hyprshutdown, sops-nix, ... } @ inputs:
     let
       system = "x86_64-linux";
 
@@ -109,6 +117,56 @@
             })
           ];
         })
+        # Upstream breakage: joplin-desktop 3.6.16 on nixos-unstable b4fd65b has
+        # stale yarn missing-hashes (see the nixpkgs-joplin input comment).
+        # Take the previous generation's 3.7.18 build instead.
+        (final: prev: {
+          joplin-desktop = (import nixpkgs-joplin {
+            inherit system;
+            config.allowUnfree = true;
+          }).joplin-desktop;
+        })
+        # Upstream breakage: typescript-language-server 6.0.2 on nixos-unstable
+        # 7fd4004 ships a stale pnpmDeps hash (pnpm_12 moved to 12.9.0 after the
+        # hash was computed). Fixed by nixpkgs commit ac7b1aae (PR #572951);
+        # same hash here. Drop once that commit lands on nixos-unstable.
+        (final: prev: {
+          typescript-language-server = prev.typescript-language-server.overrideAttrs (old: {
+            pnpmDeps = old.pnpmDeps.override {
+              hash = "sha256-xR/EF60lVBsITKgH7wCM2wHM46PFQevD51KfCENSUH4=";
+            };
+          });
+        })
+        # Upstream breakage: soapyuhd fails to compile against uhd 4.11
+        # (UHDSoapyRxStream is abstract: get_stream_info is pure virtual).
+        # Fix pending in nixpkgs PR #568744. Build SDR++ against the SoapySDR
+        # plugin set without the USRP module; no USRP hardware here. Drop once
+        # the PR lands on nixos-unstable.
+        (final: prev: {
+          sdrpp = prev.sdrpp.override {
+            soapysdr-with-plugins = prev.soapysdr-with-plugins.override {
+              soapyuhd = prev.emptyDirectory;
+            };
+          };
+        })
+        # Upstream breakage: patchelf 0.19.2 (nixpkgs PR #569010) corrupts the
+        # prebuilt ARM toolchain; every binary segfaults in ld.so, so proxmark3
+        # fails to build its firmware. Patch it with patchelf 0.15.2, as nixpkgs
+        # PR #575979 does for CUDA. Drop once the revert (nixpkgs PR #574271)
+        # lands on nixos-unstable.
+        (final: prev: {
+          gcc-arm-embedded-15 = prev.gcc-arm-embedded-15.overrideAttrs (old: {
+            nativeBuildInputs = [
+              (prev.patchelf.overrideAttrs (finalAttrs: _: {
+                version = "0.15.2";
+                src = prev.fetchurl {
+                  url = "https://github.com/NixOS/patchelf/releases/download/${finalAttrs.version}/patchelf-${finalAttrs.version}.tar.bz2";
+                  hash = "sha256-F3RfVkFZyOIo/EEtplogSLhGxLa0Igt3y/IkFuAvLXw=";
+                };
+              }))
+            ] ++ (old.nativeBuildInputs or [ ]);
+          });
+        })
         # VS Code Latest - Always use the latest version from Microsoft
         # Update: overlays/vscode-latest.nix (version + sha256)
         (final: prev:
@@ -136,6 +194,11 @@
           llama-cpp = import ./overlays/llama-cpp-latest.nix {
             inherit (pkgsLlama) llama-cpp fetchFromGitHub fetchNpmDeps;
           };
+          # whisper-cpp links the system llama-cpp and requires the version
+          # its nixpkgs revision ships (1.9.5 needs llama 0.6.0; the pinned
+          # build reports 0.4.0-dev). Keep it on stock llama-cpp so whisper-cpp,
+          # ffmpeg-full and kdenlive substitute from cache.nixos.org.
+          whisper-cpp = prev.whisper-cpp.override { llama-cpp = prev.llama-cpp; };
         })
         # OpenCode Latest - AI coding agent from prebuilt binary (Bun SEA)
         # Update: overlays/opencode-latest.nix (version + sha256)
@@ -158,16 +221,33 @@
             inherit (prev) lib fetchurl stdenv;
           };
         })
+        # Gemini CLI Latest - Google terminal agent from the upstream npm bundle
+        # (nixpkgs lags and flags it as replaced by Antigravity CLI; paid API key still works)
+        # Update: overlays/gemini-cli-latest.nix (version + sha256)
+        (final: prev: {
+          gemini-cli = prev.callPackage ./overlays/gemini-cli-latest.nix { };
+        })
         # Yaru theme - removed from nixpkgs 2026-07-22 (gtk-engine-murrine
         # cleanup); restored locally without the GTK 2 murrine propagation.
         # All 7 config.theme presets use Yaru GTK/icon theme names.
         (final: prev: {
           yaru-theme = prev.callPackage ./overlays/yaru-theme.nix { };
         })
+        # Pinned analysis and game-modding tools absent from nixpkgs.
+        (final: prev: {
+          siglens = prev.callPackage ./overlays/siglens.nix { };
+          universal-modder = prev.callPackage ./overlays/universal-modder.nix { };
+          rea = prev.callPackage ./overlays/rea.nix { };
+        })
         # RunPod CLI - Prebuilt static Go binary, manages GPU workloads
         # Update: overlays/runpodctl-latest.nix (version + sha256)
         (final: prev: {
           runpodctl = prev.callPackage ./overlays/runpodctl-latest.nix { };
+        })
+        # BytePlus Ark CLI - Prebuilt static Go binary, ModelArk from the terminal
+        # Update: overlays/arkcli-latest.nix (version + sha256)
+        (final: prev: {
+          arkcli = prev.callPackage ./overlays/arkcli-latest.nix { };
         })
         # pnpm Latest - Fast Node package manager from the npm tarball, wrapped
         # around system nodejs-slim_22 so process.version matches the host Node.
@@ -188,17 +268,6 @@
         (final: prev: {
           waybar = import ./overlays/waybar-latest.nix {
             inherit (pkgsLlama) waybar fetchFromGitHub;
-          };
-        })
-        # Silence the "stdenv.isLinux is deprecated" evaluation warnings that
-        # nixpkgs started emitting on 2026-05-09. The only caller left in our
-        # closure is the sops-nix home-manager module (upstream fix pending in
-        # sops-nix PR #977). Re-adding the plain attributes shadows the
-        # warn-wrapped aliases without touching mkDerivation, so every
-        # derivation hash stays identical. Drop this once sops-nix is fixed.
-        (final: prev: {
-          stdenv = prev.stdenv // {
-            inherit (prev.stdenv.hostPlatform) isLinux isDarwin;
           };
         })
       ];
@@ -235,6 +304,7 @@
           {
             nixpkgs.hostPlatform = system;
             nixpkgs.config.allowUnfree = true;
+            nixpkgs.config.android_sdk.accept_license = true;
             nixpkgs.overlays = sharedOverlays;
           }
 
@@ -261,6 +331,7 @@
           ./modules/system/security.nix
           ./modules/system/services.nix
           ./modules/system/llama-cpp.nix
+          ./modules/system/postgresql.nix # Local PostgreSQL 18 for Medusa development
           ./modules/system/virtualisation.nix
           ./modules/system/btrfs.nix
           ./modules/system/amd-optimizations.nix # AMD Ryzen 7 PRO 8840HS + Radeon 780M

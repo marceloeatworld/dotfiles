@@ -13,7 +13,7 @@ let
         { keys = "Super+Enter"; desc = "Terminal (Ghostty)"; lock = true; }
         { keys = "Super+B"; desc = "Browser (Brave)"; lock = true; }
         { keys = "Super+E"; desc = "File manager (Nemo)"; lock = true; }
-        { keys = "Super+D"; desc = "App launcher (Wofi, all apps)"; lock = true; }
+        { keys = "Super+D"; desc = "Launcher (Vicinae: apps, calc, emoji, windows)"; lock = true; }
         { keys = "Super+A"; desc = "Audio control panel"; }
         { keys = "Super+Y"; desc = "YouTube PiP (toggle show/hide)"; }
         { keys = "Super+U"; desc = "Twitch PiP (toggle show/hide)"; }
@@ -53,7 +53,11 @@ let
         { keys = "Super+Mouse L"; desc = "Move window (drag)"; }
         { keys = "Super+Mouse R"; desc = "Resize window (drag)"; }
       ];
-      notes = [ "Floating windows snap to edges/other windows" ];
+      notes = [
+        "Floating windows snap to edges/other windows"
+        "Touchpad: 3 fingers left/right = workspace, down = scratchpad, up = float"
+        "Nemo: Space = Quick Look preview"
+      ];
     }
     {
       title = "GROUPS (TABS)";
@@ -70,7 +74,7 @@ let
       binds = [
         { keys = "Super+1-9/0"; desc = "Workspace 1-10"; lock = true; }
         { keys = "Super+Shift+1-9/0"; desc = "Move window to WS 1-10"; }
-        { keys = "Super+Ctrl+1-5"; desc = "Focus WS on current monitor"; }
+        { keys = "Super+Ctrl+1-6"; desc = "Focus WS on current monitor"; }
         { keys = "Super+Shift+Tab"; desc = "Swap workspaces between monitors"; }
         { keys = "Super+Ctrl+M"; desc = "Move current WS to next monitor"; }
         { keys = "Super+Shift+P"; desc = "Toggle laptop screen (eDP-1)"; }
@@ -86,7 +90,7 @@ let
     {
       title = "UTILS";
       binds = [
-        { keys = "Super+V"; desc = "Clipboard history"; lock = true; }
+        { keys = "Super+V"; desc = "Clipboard history (Vicinae, images too)"; lock = true; }
         { keys = "Super+Shift+V"; desc = "Clear clipboard"; }
         { keys = "Super+C"; desc = "Color picker"; }
         { keys = "Super+N"; desc = "Blue light filter (cycle 8 levels)"; lock = true; dynamic = "$BL_ICON"; }
@@ -96,13 +100,18 @@ let
         { keys = "Super+Shift+T"; desc = "Toggle touchpad"; }
         { keys = "Super+Shift+C"; desc = "Window inspector (hyprprop)"; }
         { keys = "Super+Shift+R"; desc = "Restart Waybar"; }
+        { keys = "Super+Shift+D"; desc = "Do Not Disturb toggle (critical still shows)"; }
+        { keys = "Super+Ctrl+D"; desc = "Do Not Disturb for 60 min"; }
+        { keys = "Super+Alt+R"; desc = "Resize mode (HJKL/arrows, Esc exits)"; }
+        { keys = "Super+Alt+T"; desc = "Jump to window by tag (B/C/T/M/V/A/D/S/G)"; }
       ];
+      notes = [ "Waybar bell: left invoke, middle restore last, right dismiss all" ];
     }
     {
       title = "SCREENSHOTS";
       binds = [
         { keys = "Print"; desc = "Region -> clipboard"; lock = true; }
-        { keys = "Super+Print"; desc = "Region -> file"; }
+        { keys = "Super+Print"; desc = "Region -> annotate (satty) -> file + clipboard"; }
         { keys = "Shift+Print"; desc = "Full screen -> clipboard"; }
         { keys = "Super+Shift+Print"; desc = "Full screen -> file"; }
         { keys = "Super+Ctrl+Print"; desc = "Active window -> clipboard"; }

@@ -16,6 +16,9 @@ json_output() {
     '{text: $text, tooltip: $tooltip, class: $class}'
 }
 
+dnd=0
+makoctl mode 2>/dev/null | grep -qx 'do-not-disturb' && dnd=1
+
 notif_data=$(makoctl history -j 2>/dev/null)
 notif_count=$(echo "$notif_data" | jq 'length' 2>/dev/null || echo "0")
 notif_count=${notif_count:-0}
@@ -50,9 +53,15 @@ if [ "$notif_count" -gt 0 ]; then
     [ -n "$last_msg" ] && tooltip="$tooltip\n<span color='$C_DIM'>  $last_msg</span>"
   done
 
-  tooltip="$tooltip\n\n<span color='$C_DIM'>Left: invoke │ Right: dismiss all</span>"
+  tooltip="$tooltip\n\n<span color='$C_DIM'>Left: invoke │ Middle: restore │ Right: dismiss all</span>"
 
-  json_output "󰂚 $notif_count" "$tooltip" "notification"
+  if [ "$dnd" -eq 1 ]; then
+    json_output "󰂛 $notif_count" "<span color='$C_ACCENT'><b>DO NOT DISTURB</b></span> (Super+Shift+D)\n$tooltip" "dnd"
+  else
+    json_output "󰂚 $notif_count" "$tooltip" "notification"
+  fi
+elif [ "$dnd" -eq 1 ]; then
+  json_output "󰂛" "<span color='$C_ACCENT'><b>DO NOT DISTURB</b></span>\nSuper+Shift+D to turn off" "dnd"
 else
   json_output "" "No notifications" "empty"
 fi

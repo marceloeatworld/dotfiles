@@ -1,6 +1,6 @@
 # Claude Code - AI-powered CLI assistant
 # Installed via nixpkgs with declarative configuration management
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   # Hooks follow the official Claude Code hooks documentation:
@@ -28,6 +28,8 @@ let
 
     ### 2. Simplicity first
     No features beyond what was asked. No abstractions for single-use code. No "flexibility" that wasn't requested. No error handling for impossible scenarios. The test: would a senior engineer say this is overcomplicated? If yes, rewrite it.
+    Before new code, climb: not needed > already in repo > stdlib > native platform > installed dep > one line > minimal new code.
+    Bug fix: grep every caller of the function, fix the shared function once, not the one path the report names.
 
     ### 3. Surgical changes
     Don't "improve" adjacent code. Don't refactor things that aren't broken. Match the existing style even if you'd do it differently. If you notice unrelated dead code, mention it, don't delete it. Every changed line should trace directly to the request.
@@ -55,6 +57,14 @@ let
 
         if not os.path.isfile(file_path):
             sys.exit(0)
+
+        # The global ~/.claude/CLAUDE.md already carries the block for every project.
+        try:
+            with open(os.path.expanduser("~/.claude/CLAUDE.md")) as g:
+                if PRINCIPLE_MARKER in g.read():
+                    sys.exit(0)
+        except OSError:
+            pass
 
         try:
             with open(file_path, "r") as f:
@@ -274,13 +284,17 @@ let
         main()
   '';
 
-  # Statusline: shows model | effort | branch | ctx% (colored) | cost
+  # Statusline: shows model | effort | branch | ctx% (colored) | cache hit% | cost
   statuslineScript = pkgs.writeText "claude-statusline.sh" ''
     #!/usr/bin/env bash
     set -euo pipefail
     INPUT=$(${pkgs.coreutils}/bin/cat)
     MODEL=$(${pkgs.jq}/bin/jq -r '.model.display_name // "?"' <<< "$INPUT")
     EFFORT=$(${pkgs.jq}/bin/jq -r '.effort.level // "?"' <<< "$INPUT")
+    # Main-conversation prompt cache: read share of all input tokens this
+    # session, and whether the cached prefix is still inside its TTL. A low
+    # share means the cache keeps breaking (model/effort switch, long gap).
+    CACHE=$(${pkgs.jq}/bin/jq -r 'if .prompt_cache.hit_ratio == null then "-" else ((.prompt_cache.hit_ratio * 100 | floor | tostring) + "%" + (if .prompt_cache.warm then "" else " cold" end)) end' <<< "$INPUT")
     PCT_RAW=$(${pkgs.jq}/bin/jq -r '.context_window.used_percentage // 0' <<< "$INPUT")
     PCT=$(${pkgs.coreutils}/bin/printf '%.0f' "$PCT_RAW")
     COST_RAW=$(${pkgs.jq}/bin/jq -r '.cost.total_cost_usd // 0' <<< "$INPUT")
@@ -293,8 +307,8 @@ let
     else COLOR=$'\033[32m'; fi
     RESET=$'\033[0m'
 
-    ${pkgs.coreutils}/bin/printf '[%s @%s] %s | %s%s%% ctx%s | %s' \
-      "$MODEL" "$EFFORT" "$BRANCH" "$COLOR" "$PCT" "$RESET" "$COST"
+    ${pkgs.coreutils}/bin/printf '[%s @%s] %s | %s%s%% ctx%s | cache %s | %s' \
+      "$MODEL" "$EFFORT" "$BRANCH" "$COLOR" "$PCT" "$RESET" "$CACHE" "$COST"
   '';
 
   # PreCompact hook: re-inject critical NixOS invariants before context is summarized
@@ -331,6 +345,202 @@ let
       }'
   '';
 
+  # GPT-6 second opinion (CLAUDE_GPT=1, alias claude-gpt). Codex (gpt-6-astra,
+  # read-only sandbox) reviews and advises; Claude verifies and decides.
+  # On demand only: nothing is sent to GPT until the user mentions "gpt" in a
+  # prompt (e.g. "verifie avec gpt"). The UserPromptSubmit hook then marks the
+  # session and the Stop hook reviews the changes at the end of that turn.
+  # Shared snapshot: "<content-hash> <path>" for every file that differs from
+  # $BASE (the commit HEAD pointed at when the session started, recorded in
+  # $STATE/head) plus untracked files, so the Stop hook can tell which files
+  # this session changed. Comparing against the session's starting commit
+  # rather than the current HEAD keeps changes reviewable after /commit.
+  gptSnapshotFn = ''
+    snapshot() (
+      # git prints repository-relative paths; resolve them from the root, not $CWD
+      cd "$(${pkgs.git}/bin/git rev-parse --show-toplevel 2>/dev/null || echo .)" || exit 0
+      { ${pkgs.git}/bin/git diff "''${BASE:-HEAD}" --name-only; ${pkgs.git}/bin/git ls-files --others --exclude-standard; } 2>/dev/null \
+        | ${pkgs.coreutils}/bin/sort -u | while IFS= read -r f; do
+            # A tracked file deleted in the worktree gets a marker instead of a
+            # hash, so a deletion shows up as a new snapshot entry and is reviewed.
+            if [ -f "$f" ]; then
+              printf '%s %s\n' "$(${pkgs.coreutils}/bin/sha256sum < "$f" | ${pkgs.coreutils}/bin/cut -c1-16)" "$f"
+            else
+              printf 'deleted %s\n' "$f"
+            fi
+          done
+    )
+  '';
+
+  gptSessionStartScript = pkgs.writeText "claude-gpt-session-start.sh" ''
+    #!/usr/bin/env bash
+    [ "''${CLAUDE_GPT:-}" = "1" ] || exit 0
+    INPUT=$(${pkgs.coreutils}/bin/cat)
+    SESSION=$(${pkgs.jq}/bin/jq -r '.session_id' <<< "$INPUT")
+    CWD=$(${pkgs.jq}/bin/jq -r '.cwd // "."' <<< "$INPUT")
+    STATE="$HOME/.cache/ask-gpt/session-$SESSION"
+    ${pkgs.coreutils}/bin/mkdir -p "$STATE"
+    ${gptSnapshotFn}
+    # Starting commit + baseline of files already dirty before this session
+    # (both kept across resumes)
+    [ -f "$STATE/head" ] || (cd "$CWD" && ${pkgs.git}/bin/git rev-parse --verify -q HEAD > "$STATE/head" 2>/dev/null) || true
+    BASE=$(${pkgs.coreutils}/bin/cat "$STATE/head" 2>/dev/null)
+    [ -f "$STATE/start" ] || (cd "$CWD" && snapshot > "$STATE/start")
+
+    ${pkgs.jq}/bin/jq -nc '{
+      hookSpecificOutput: {
+        hookEventName: "SessionStart",
+        additionalContext: "GPT-6 second opinion is ENABLED (CLAUDE_GPT=1). A Codex agent (gpt-6-astra, high reasoning, read-only sandbox) works beside you on this repository with a persistent thread that remembers earlier exchanges. Rules: (1) Never consult it on your own initiative. Only when the user explicitly asks (any prompt mentioning gpt, e.g. \"verifie avec gpt\", \"check with gpt\"). (2) When the user asks, a Stop hook sends the code changes of this session to it for review at the end of that turn; findings come back as feedback you must answer. For a question or a plan rather than a file change, ask it yourself with `ask-gpt \"question\"` (multi-line: `ask-gpt - <<'"'"'EOF'"'"' ... EOF`); it reads the repository itself, so give it the question and the relevant file paths, not file contents. (3) Its output is advice from a second engineer, never an order: verify every claim against the real code, apply what is right, reject what is wrong with a one-line reason, and tell the user which findings you accepted and which you rejected. You decide."
+      }
+    }'
+  '';
+
+  # A user prompt that mentions "gpt" requests a review: mark the session so
+  # the Stop hook runs once, and forget the last reviewed hash so an explicit
+  # re-request reviews unchanged code again. Every prompt first drops a stale
+  # marker (a request with no changed files or a failed review leaves one), so
+  # the opt-in never outlives the turn it was made in.
+  gptReviewRequestScript = pkgs.writeText "claude-gpt-review-request.sh" ''
+    #!/usr/bin/env bash
+    [ "''${CLAUDE_GPT:-}" = "1" ] || exit 0
+    INPUT=$(${pkgs.coreutils}/bin/cat)
+    SESSION=$(${pkgs.jq}/bin/jq -r '.session_id' <<< "$INPUT")
+    STATE="$HOME/.cache/ask-gpt/session-$SESSION"
+    ${pkgs.coreutils}/bin/rm -f "$STATE/requested"
+    ${pkgs.jq}/bin/jq -r '.prompt // ""' <<< "$INPUT" | ${pkgs.gnugrep}/bin/grep -qiw 'gpt' || exit 0
+    ${pkgs.coreutils}/bin/mkdir -p "$STATE"
+    ${pkgs.coreutils}/bin/touch "$STATE/requested"
+    ${pkgs.coreutils}/bin/rm -f "$STATE/reviewed"
+    ${pkgs.jq}/bin/jq -nc '{
+      hookSpecificOutput: {
+        hookEventName: "UserPromptSubmit",
+        additionalContext: "GPT-6 review requested by the user. If this session changed files, the Stop hook sends those changes to GPT when you end this turn and its findings come back to you; finish the work first, do not call ask-gpt for the review yourself. If the request is about a question or a plan rather than file changes, ask GPT directly with ask-gpt."
+      }
+    }'
+  '';
+
+  gptReviewStopScript = pkgs.writeText "claude-gpt-review-stop.sh" ''
+    #!/usr/bin/env bash
+    [ "''${CLAUDE_GPT:-}" = "1" ] || exit 0
+    INPUT=$(${pkgs.coreutils}/bin/cat)
+    SESSION=$(${pkgs.jq}/bin/jq -r '.session_id' <<< "$INPUT")
+    ACTIVE=$(${pkgs.jq}/bin/jq -r '.stop_hook_active // false' <<< "$INPUT")
+    CWD=$(${pkgs.jq}/bin/jq -r '.cwd // "."' <<< "$INPUT")
+    cd "$CWD" || exit 0
+    cd "$(${pkgs.git}/bin/git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || exit 0
+    STATE="$HOME/.cache/ask-gpt/session-$SESSION"
+    ${pkgs.coreutils}/bin/mkdir -p "$STATE"
+    # On demand: the user asked for a review in this turn (marker set by the
+    # UserPromptSubmit hook), or this is the follow-up round after a block.
+    [ -f "$STATE/requested" ] || [ "$ACTIVE" = "true" ] || exit 0
+    ${gptSnapshotFn}
+    # Session starting commit; fall back to HEAD when it is unknown or gone
+    # (rebased away, state dir from an older hook version).
+    BASE=$(${pkgs.coreutils}/bin/cat "$STATE/head" 2>/dev/null)
+    BASE=''${BASE:-HEAD}
+    ${pkgs.git}/bin/git rev-parse --verify -q "$BASE^{commit}" >/dev/null 2>&1 || BASE=HEAD
+    snapshot > "$STATE/now"
+    [ -f "$STATE/start" ] || { ${pkgs.coreutils}/bin/cp "$STATE/now" "$STATE/start"; exit 0; }
+
+    # Files whose content differs from the session baseline, plus baseline
+    # paths that vanished from the snapshot entirely: a pre-existing
+    # uncommitted change reverted to HEAD, or an untracked file deleted.
+    # Those have no diff against HEAD, so they are reported by name.
+    ADDED=$(${pkgs.coreutils}/bin/comm -13 <(${pkgs.coreutils}/bin/sort "$STATE/start") <(${pkgs.coreutils}/bin/sort "$STATE/now"))
+    VANISHED=$(${pkgs.coreutils}/bin/comm -23 \
+      <(${pkgs.coreutils}/bin/cut -d' ' -f2- "$STATE/start" | ${pkgs.coreutils}/bin/sort) \
+      <(${pkgs.coreutils}/bin/cut -d' ' -f2- "$STATE/now" | ${pkgs.coreutils}/bin/sort) \
+      | ${pkgs.gnused}/bin/sed 's/^/vanished /')
+    CHANGED=$(printf '%s\n%s\n' "$ADDED" "$VANISHED" | ${pkgs.gnugrep}/bin/grep .)
+    [ -n "$CHANGED" ] || exit 0
+    REVIEW_HASH=$(printf '%s' "$CHANGED" | ${pkgs.coreutils}/bin/sha256sum | ${pkgs.coreutils}/bin/cut -c1-16)
+    [ "$REVIEW_HASH" != "$(${pkgs.coreutils}/bin/cat "$STATE/reviewed" 2>/dev/null)" ] || exit 0
+
+    # At most two review rounds per turn (stop_hook_active = Claude continued after a block)
+    if [ "$ACTIVE" = "true" ]; then
+      ROUNDS=$(( $(${pkgs.coreutils}/bin/cat "$STATE/rounds" 2>/dev/null || echo 0) + 1 ))
+    else
+      ROUNDS=1
+    fi
+    echo "$ROUNDS" > "$STATE/rounds"
+    [ "$ROUNDS" -le 2 ] || exit 0
+
+    # The whole prompt is one argv entry (128 KiB limit): diffs get 100 KB,
+    # the file lists share the rest. Files whose diff does not fit are named
+    # so the reviewer reads them from the repository instead of silently
+    # dropping them; the name list itself stops before the limit.
+    export LC_ALL=C  # ''${#var} counts bytes
+    DIFF=""
+    OMITTED=""
+    REVERTED=""
+    while read -r kind f; do
+      [ -n "$f" ] || continue
+      if [ "$kind" = "vanished" ]; then
+        REVERTED="$REVERTED$f"$'\n'
+        continue
+      fi
+      # Tracked in the base commit or in the index (covers staged deletions, where the
+      # path is gone from the index but still in HEAD)
+      if ${pkgs.git}/bin/git cat-file -e "$BASE:$f" 2>/dev/null || ${pkgs.git}/bin/git ls-files --error-unmatch -- "$f" >/dev/null 2>&1; then
+        d=$(${pkgs.git}/bin/git diff "$BASE" -- "$f")
+      else
+        d=$(${pkgs.git}/bin/git diff --no-index -- /dev/null "$f" || true)
+      fi
+      if [ $(( ''${#DIFF} + ''${#d} )) -le 100000 ]; then
+        DIFF="$DIFF$d"$'\n'
+      else
+        OMITTED="$OMITTED$f"$'\n'
+      fi
+    done <<< "$CHANGED"
+
+    PROMPT="You are the second engineer reviewing changes that Claude Code just made in this repository. Claude decides; you only report.
+    Review the diff below. Read any file in the repository you need for context.
+    Report only real problems: bugs, wrong assumptions, security issues, code that contradicts the rest of the codebase, missed edge cases. No style nits, no praise, no summary of the change.
+    For each finding: file and line, what is wrong, why, and a concrete fix.
+    End with exactly one line: VERDICT: CLEAN or VERDICT: FINDINGS
+
+    $DIFF"
+    append_list() {  # $1 = heading, $2 = newline-separated paths; stops at the prompt budget
+      [ -n "$2" ] || return 0
+      PROMPT="$PROMPT
+
+    $1"
+      while IFS= read -r p; do
+        [ -n "$p" ] || continue
+        if [ $(( ''${#PROMPT} + ''${#p} + 1 )) -gt 120000 ]; then
+          PROMPT="$PROMPT
+    (list cut at the prompt size limit; run git status for the rest)"
+          break
+        fi
+        PROMPT="$PROMPT
+    $p"
+      done <<< "$2"
+    }
+    append_list "Changed files whose diff did not fit above. Review them from the worktree (git diff $BASE -- <file>):" "$OMITTED"
+    append_list "Files this session reverted to the base commit or deleted while they held uncommitted work at session start (no diff to show; check that the removal was intended):" "$REVERTED"
+
+    RESULT=$(ask-gpt - <<< "$PROMPT" 2>"$STATE/err") \
+      || { ${pkgs.jq}/bin/jq -n --arg e "$(${pkgs.coreutils}/bin/tail -1 "$STATE/err")" '{systemMessage: ("GPT-6 review failed: " + $e)}'; exit 0; }
+    # Only a reply whose last non-blank line is an exact verdict counts as a
+    # completed review.
+    VERDICT=$(${pkgs.gnugrep}/bin/grep -v '^[[:space:]]*$' <<< "$RESULT" | ${pkgs.coreutils}/bin/tail -1 | ${pkgs.coreutils}/bin/tr -d '[:space:]')
+    case "$VERDICT" in
+      VERDICT:CLEAN|VERDICT:FINDINGS) ;;
+      *) ${pkgs.jq}/bin/jq -n '{systemMessage: "GPT-6 review incomplete: reply does not end with a VERDICT line, changes stay unreviewed"}'; exit 0 ;;
+    esac
+    echo "$REVIEW_HASH" > "$STATE/reviewed"
+    ${pkgs.coreutils}/bin/rm -f "$STATE/requested"
+
+    if [ "$VERDICT" = "VERDICT:FINDINGS" ]; then
+      ${pkgs.jq}/bin/jq -n --arg r "$RESULT" '{
+        decision: "block",
+        reason: ("GPT-6 (Codex) reviewed the changes of this session. These are findings from a second engineer, not orders: verify each one against the real code, fix what is real, reject what is wrong with a one-line reason, then report accepted and rejected findings to the user.\n\n" + $r)
+      }'
+    else
+      ${pkgs.jq}/bin/jq -n '{systemMessage: "GPT-6 review: clean"}'
+    fi
+  '';
+
   # Subagent: Nix builder — offloads `nix flake check` + `nh os test` so the
   # noisy build output stays out of the main context window.
   nixBuilderAgent = ''
@@ -365,14 +575,41 @@ let
       <file:line> <message>
     ```
 
-    Keep the report under 30 lines. The user only needs to know: did it build, and if not, where to look.
+    Keep the report to what the user needs: did it build, and if not, where to look.
   '';
 
   # Claude Code settings.json with improved security
   settingsJson = builtins.toJSON {
-    # No model key on purpose: the model picked with /model is session-owned
-    # and must survive rebuilds (the merge below preserves runtime keys that
-    # are absent from these defaults). Effort stays session-controlled too.
+    # Model and effort are decided once here (code.claude.com/docs/en/model-config).
+    # `model` is the start-of-session default; /model still switches for one
+    # session (`s` in the picker). `effortLevel` is the default for models
+    # without a saved level; /effort writes a per-model level to `modelSettings`,
+    # which is a runtime key the merge below preserves. `maxEffortLevel` caps
+    # what /effort can pick (max is excluded: it is the most expensive level).
+    model = "fable";
+    effortLevel = "high";
+    maxEffortLevel = "xhigh";
+    # One-hour prompt cache for the main conversation. Within plan usage a
+    # subscription already gets 1h; this keeps it when the session draws on
+    # extra-usage credits (where Claude Code would drop to 5m), at the higher
+    # 1h cache-write rate. Subagents keep the 5m default.
+    promptCacheTtl = "1h";
+    # Allowlist derived from the declared servers (plus the Stripe plugin
+    # server and the blender project server), so the list cannot drift from
+    # the ~/.claude.json defaults below. Once a serverCommand entry exists,
+    # every stdio server must match one exactly, and once a serverUrl entry
+    # exists, every remote server must match one: a server added at runtime
+    # with `claude mcp add` or a project .mcp.json is blocked silently until
+    # it is listed here. Built-in servers (Claude in Chrome, ide) are exempt.
+    allowedMcpServers =
+      lib.mapAttrsToList (
+        _: s:
+        if s ? url then { serverUrl = s.url; } else { serverCommand = [ s.command ] ++ (s.args or [ ]); }
+      ) mcpServersDefaults
+      ++ [
+        { serverUrl = "https://mcp.stripe.com"; }
+        { serverCommand = [ "uvx" "blender-mcp" ]; }
+      ];
     # Alt-screen renderer with virtualized scrollback. The default main-screen
     # renderer leaks stale frames into terminal scrollback on every window
     # resize (duplicated/overlapping text after resizing Ghostty).
@@ -401,8 +638,12 @@ let
       # NOTE: DISABLE_TELEMETRY intentionally NOT set — it shares the GrowthBook
       # feature-flag code path and silently hides gated features (Opus 1M ctx, etc.).
       # Everything else is left at Claude Code defaults: the previous performance
-      # tweaks (1h prompt cache, output-token cap, autocompact override) interacted
-      # with extended thinking and produced "Invalid tool parameters" cascades.
+      # tweaks (ENABLE_PROMPT_CACHING_1H, output-token cap, autocompact override)
+      # interacted with extended thinking and produced "Invalid tool parameters"
+      # cascades. The cache TTL is now the promptCacheTtl setting above, which is
+      # what a subscription session already runs with inside plan usage.
+      # CLAUDE_CODE_ENABLE_TELEMETRY (OpenTelemetry) not set: no collector on this
+      # machine; cache hit ratio is on the statusline and in /usage instead.
     };
     permissions = {
       allow = [
@@ -497,9 +738,88 @@ let
         "Bash(fwupdmgr get-updates:*)"
         # ── Dev tools ──
         "Bash(runpodctl:*)"
+        "Bash(arkcli:*)"
         "Bash(gh search:*)"
         "Bash(gh api:*)"
         "Bash(mpv:*)"
+        "Bash(ask-gpt:*)"
+        "Bash(ask-gemini:*)"
+        # ── MCP servers (whole server = every tool it exposes) ──
+        # Allow rules resolve before the auto mode classifier, so these stop
+        # "denied by auto mode" on routine MCP calls (browser navigation,
+        # Neon queries, GitHub, ...). Destructive tools are caught by the ask
+        # rules below, which also run before the classifier.
+        "mcp__claude-in-chrome"
+        "mcp__chrome-devtools"
+        "mcp__playwright"
+        "mcp__nixos"
+        "mcp__neon"
+        "mcp__github"
+        "mcp__cloudflare-ai-gateway"
+        "mcp__workos"
+        "mcp__plugin_stripe_stripe"
+        "mcp__terraform"
+        "mcp__headroom"
+        "mcp__blender"
+        "mcp__reva"
+        "mcp__rea"
+      ];
+      # Always prompt for these, in every mode (ask rules beat allow rules and
+      # the auto mode classifier). Server allow rules above would otherwise
+      # approve them silently.
+      ask = [
+        # ── Arbitrary code execution / writes behind whole-server allows ──
+        "mcp__playwright__browser_run_code_unsafe"
+        "mcp__blender__execute_blender_code"
+        "mcp__reva__run-script"
+        "mcp__reva__write-script"
+        "mcp__reva__edit-script"
+        # REA: these launch an arbitrary local binary or Electron app to record it
+        "mcp__rea__capture_process_scenario"
+        "mcp__rea__capture_electron_scenario"
+        "mcp__github__push_files"
+        "mcp__github__create_or_update_file"
+        "mcp__github__delete_file"
+        "mcp__github__merge_pull_request"
+        # ── Neon: destructive / irreversible ──
+        "mcp__neon__delete_project"
+        "mcp__neon__delete_branch"
+        "mcp__neon__delete_postgres_database"
+        "mcp__neon__delete_postgres_role"
+        "mcp__neon__delete_postgres_endpoint"
+        "mcp__neon__delete_snapshot"
+        "mcp__neon__delete_storage_bucket"
+        "mcp__neon__delete_storage_object"
+        "mcp__neon__delete_storage_objects_by_prefix"
+        "mcp__neon__delete_function"
+        "mcp__neon__delete_functions_custom_domain"
+        "mcp__neon__delete_trigger"
+        "mcp__neon__delete_data_api"
+        "mcp__neon__delete_auth_user"
+        "mcp__neon__delete_auth_oauth_provider"
+        "mcp__neon__delete_auth_trusted_domain"
+        "mcp__neon__disable_auth"
+        "mcp__neon__reset_from_parent"
+        "mcp__neon__restore_snapshot"
+        "mcp__neon__finalize_branch_restore"
+        "mcp__neon__complete_database_migration"
+        "mcp__neon__revoke_credential"
+        "mcp__neon__rotate_credential"
+        "mcp__neon__reset_postgres_role_password"
+        # Arbitrary SQL (DROP/DELETE/UPDATE) and tuning/EXPLAIN ANALYZE, which execute the statement
+        "mcp__neon__run_sql"
+        "mcp__neon__run_sql_transaction"
+        "mcp__neon__complete_query_tuning"
+        "mcp__neon__explain_sql_statement"
+        # ── Terraform: runs change real infrastructure ──
+        "mcp__terraform__create_run"
+        # ── WorkOS: every write goes through mutate ──
+        "mcp__workos__mutate"
+        # ── Stripe: every POST/PATCH/PUT/DELETE goes through one tool ──
+        # (refunds, subscription cancels, invoice finalize, dispute updates).
+        # Stripe adds its own confirmation link for refunds and outbound
+        # payments, but the other writes land with no second step.
+        "mcp__plugin_stripe_stripe__stripe_api_write"
       ];
       # Path rule syntax (per docs/en/permissions): gitignore spec. Directory
       # contents need a trailing /**; a single leading / anchors at the
@@ -564,6 +884,35 @@ let
       # configured here because it is brittle on this NixOS/Home Manager setup.
       disableBypassPermissionsMode = "disable";
     };
+    # Auto mode classifier context. Only ~/.claude/settings.json is read for
+    # this block (project settings are ignored), and the activation merge below
+    # makes it Nix-owned: a /auto-mode-setup run scoped to one project used to
+    # replace the trusted repo with a hardcoded path, so every other repo and
+    # every browser navigation was "outside the environment" and denied.
+    # "$defaults" keeps the built-in entries (trusted repo = the repo Claude
+    # started in, and its remotes); the lines below add machine-wide context.
+    autoMode = {
+      environment = [
+        "$defaults"
+        "**Organization**: personal machine of a single developer (GitHub user marceloeatworld). Primary use: software development, NixOS dotfiles, and browser automation/research with Claude in Chrome and Playwright"
+        "**Source control**: github.com/marceloeatworld and every repo under it; local-only repos under ~/codes and ~/dotfiles are the user's own work"
+        "**Cloud provider(s)**: Cloudflare (Pages, Workers, AI Gateway), Neon Postgres, WorkOS, Stripe, HCP Terraform, RunPod, Google Cloud"
+        "**Key internal services**: the user's configured MCP servers (claude-in-chrome, chrome-devtools, playwright, neon, github, cloudflare-ai-gateway, workos, stripe, terraform, nixos, headroom, blender, reva, rea; stripe comes from the official stripe plugin). Opening any website the user asks for in Claude in Chrome or Playwright is routine browser automation, not exfiltration"
+        "**Trusted internal domains**: github.com, api.github.com, mcp.neon.tech, console.neon.tech, api.cloudflare.com, dash.cloudflare.com, mcp.workos.com, mcp.stripe.com, dashboard.stripe.com, app.terraform.io, api.runpod.io"
+        "**CI/CD deploy targets**: Cloudflare Pages via wrangler (raizes-do-alentejo project and its pages.dev previews)"
+        "**Org-specific CLIs**: nix, nh, hyprctl, gh, wrangler, runpodctl, arkcli"
+        "**Sensitive data locations & audiences**: genealogy research reports under ~/codes/genealogie/reports contain personal data about identifiable individuals; share only with the user"
+      ];
+      allow = [
+        "$defaults"
+        "Bash(wrangler pages deploy:*)"
+        "Bash(wrangler pages publish:*)"
+      ];
+      soft_deny = [
+        "$defaults"
+        "Bash(wrangler pages project delete:*)"
+      ];
+    };
     # Plugins
     enabledPlugins = {
       # LSP - language servers
@@ -589,6 +938,9 @@ let
       "feature-dev@claude-code-plugins" = true;
       "frontend-design@claude-code-plugins" = true;
       # Platform skills
+      # Ships the official Stripe MCP server (https://mcp.stripe.com) plus the
+      # Stripe skills. It registers as plugin:stripe:stripe, so its tools are
+      # prefixed mcp__plugin_stripe_stripe__ in the permission rules above.
       "stripe@claude-plugins-official" = true;
       # Duplicated by ai-skills.nix, which copies the same official upstream
       # skill repos to Claude, Forge, OpenCode, and Codex.
@@ -628,7 +980,9 @@ let
     feedbackDrafts = "off"; # Claude cannot queue feedback drafts
     disableClaudeAiConnectors = true; # MCP servers are declared here, not fetched from claude.ai
     isolatePeerMachines = true; # approval before SendMessage reaches a session on another machine
-    disableSkillShellExecution = true; # third-party skills cannot run inline !`cmd` blocks
+    # disableSkillShellExecution intentionally NOT set: it applies to every
+    # skill and command, official plugins included, so /commit and
+    # /commit-push-pr lost their inline `!git status` / `!git diff` context.
     # Hooks — defense in depth + productivity
     hooks = {
       # Security: block access to sensitive files and dangerous commands
@@ -692,6 +1046,27 @@ let
               type = "command";
               command = "notify-send 'Claude Code' 'Task completed' --icon=emblem-default -t 3000";
             }
+            # GPT-6 review gate (no-op unless CLAUDE_GPT=1 and the user asked
+            # for it this turn): blocks the stop with findings, Claude answers
+            # them, at most two rounds per turn.
+            {
+              type = "command";
+              command = "$HOME/.claude/hooks/gpt-review-stop.sh";
+              timeout = 900;
+            }
+          ];
+        }
+      ];
+      # GPT-6 second opinion (no-op unless CLAUDE_GPT=1): a prompt mentioning
+      # "gpt" (e.g. "verifie avec gpt") arms the Stop-hook review for this turn.
+      UserPromptSubmit = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "$HOME/.claude/hooks/gpt-review-request.sh";
+              timeout = 5;
+            }
           ];
         }
       ];
@@ -716,6 +1091,13 @@ let
               command = "$HOME/.claude/hooks/session-start.sh";
               timeout = 5;
             }
+            # GPT-6 second opinion (no-op unless CLAUDE_GPT=1): baseline
+            # snapshot of dirty files + usage rules injected into context.
+            {
+              type = "command";
+              command = "$HOME/.claude/hooks/gpt-session-start.sh";
+              timeout = 30;
+            }
           ];
         }
       ];
@@ -726,12 +1108,87 @@ let
   # User-scope MCP servers. Claude Code reads these from ~/.claude.json
   # (settings.json ignores an mcpServers key). Merged by an activation script
   # so servers added at runtime with `claude mcp add` are preserved.
-  mcpServersDefaultsFile = pkgs.writeText "claude-mcp-servers-defaults.json" (builtins.toJSON {
+  # Persistent Playwright profile per workspace, like upstream @playwright/mcp
+  # (mcp-<browser>-<hash of root path>). The nixpkgs wrapper runs a throwaway
+  # profile unless PLAYWRIGHT_MCP_USER_DATA_DIR is set, and one shared
+  # directory would make concurrent sessions in different repositories fight
+  # over Chromium's profile lock. Claude Code starts stdio servers in the
+  # session's working directory.
+  playwrightMcp = pkgs.writeShellScript "playwright-mcp-workspace" ''
+    export PLAYWRIGHT_MCP_USER_DATA_DIR="$HOME/.cache/playwright-mcp/$(printf '%s' "$PWD" | ${pkgs.coreutils}/bin/sha256sum | ${pkgs.coreutils}/bin/cut -c1-7)"
+    exec ${pkgs.playwright-mcp}/bin/playwright-mcp "$@"
+  '';
+
+  # GitHub MCP bearer token read from the decrypted sops file at connection
+  # time (headersHelper), so it also works when Claude Code is launched from
+  # somewhere that never ran the zsh secret loader (VS Code, desktop entry).
+  # Exit 1 with no output when the secret is empty: no "Bearer " header.
+  githubMcpHeaders = pkgs.writeShellScript "github-mcp-headers" ''
+    TOKEN_FILE="${config.sops.secrets.github_personal_access_token.path}"
+    [ -s "$TOKEN_FILE" ] || exit 1
+    ${pkgs.jq}/bin/jq -n --rawfile t "$TOKEN_FILE" '{ Authorization: ("Bearer " + ($t | rtrimstr("\n"))) }'
+  '';
+
+  # Google Developer Knowledge MCP: API key goes in the X-Goog-Api-Key header
+  # (never a query parameter). The key must be restricted to
+  # developerknowledge.googleapis.com; see the mcpServersDefaults entry.
+  developerKnowledgeMcpHeaders = pkgs.writeShellScript "developer-knowledge-mcp-headers" ''
+    KEY_FILE="${config.sops.secrets.developer_knowledge_api_key.path}"
+    [ -s "$KEY_FILE" ] || exit 1
+    ${pkgs.jq}/bin/jq -n --rawfile k "$KEY_FILE" '{ "X-Goog-Api-Key": ($k | rtrimstr("\n")) }'
+  '';
+
+  # ReVa headless (Ghidra MCP server, nixpkgs mcp-reva). PyGhidra boots the
+  # base Ghidra from GHIDRA_INSTALL_DIR and the nixpkgs Java patch loads the
+  # ReVa extension from NIX_GHIDRAHOME (withExtensions bundles only the
+  # extensions, no Ghidra tree). PyGhidra needs `java` on PATH to run
+  # LaunchSupport. Ephemeral Ghidra projects go to TMPDIR: /tmp is a tmpfs
+  # here and a firmware image project would swap it into zram. /var/tmp is on
+  # disk; ~/.cache is not an option, Ghidra rejects path elements starting
+  # with a dot.
+  ghidraWithReva = pkgs.ghidra.withExtensions (p: [ p.reva ]);
+  revaMcp = pkgs.writeShellScript "mcp-reva-nix" ''
+    export GHIDRA_INSTALL_DIR="${pkgs.ghidra}/lib/ghidra"
+    export NIX_GHIDRAHOME="${ghidraWithReva}/lib/ghidra/Ghidra"
+    export PATH="${pkgs.openjdk21}/bin:$PATH"
+    export TMPDIR="/var/tmp"
+    exec ${pkgs.mcp-reva}/bin/mcp-reva "$@"
+  '';
+
+  # REA's Ghidra provider accepts exactly application.version 12.1.4 and a
+  # JDK 21 (GhidraInstallation.js: SUPPORTED_GHIDRA_VERSION). The pinned
+  # nixpkgs ghidra-bin is 12.1.2, so this is the same prebuilt derivation
+  # with the 12.1.4 release zip. The GUI Ghidra firejail and ReVa stay on
+  # pkgs.ghidra; only the rea MCP server sees this tree.
+  ghidraForRea = pkgs.ghidra-bin.overrideAttrs (old: {
+    version = "12.1.4";
+    src = pkgs.fetchzip {
+      url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.4_build/ghidra_12.1.4_PUBLIC_20260921.zip";
+      hash = "sha256-ZD4Vs1i7BMvrneAbAiOc7F9iBj64Rbom+PaVO//TzK8=";
+    };
+  });
+  reaMcp = pkgs.writeShellScript "mcp-rea-nix" ''
+    export GHIDRA_INSTALL_DIR="${ghidraForRea}/lib/ghidra"
+    export JAVA_HOME="${pkgs.openjdk21.home}"
+    export TMPDIR="/var/tmp"
+    exec ${pkgs.rea}/bin/rea mcp "$@"
+  '';
+
+  # stdio servers come from nixpkgs where available: no `uvx`/`pnpm dlx`
+  # network fetch at session start, and the version is pinned by the flake.
+  # `alwaysLoad` only on the two-tool nixos server: it forces a server's whole
+  # tool list into context at every session, which for github/playwright is
+  # dozens of tools that ToolSearch loads on demand anyway.
+  # The stripe server is NOT declared here: the stripe plugin ships it
+  # (plugin:stripe:stripe). A user-scope server with the same name overrides
+  # the plugin one and renames its tools to mcp__stripe__*, which silently
+  # bypassed the mcp__plugin_stripe_stripe__ ask rules above.
+  mcpServersDefaultsFile = pkgs.writeText "claude-mcp-servers-defaults.json" (builtins.toJSON mcpServersDefaults);
+  mcpServersDefaults = {
     # Real-time NixOS knowledge: 130K+ packages, 23K+ options, home-manager,
     # nix-darwin, flakes, NixHub history, wiki.nixos.org. ~1K tokens overhead.
     "nixos" = {
-      command = "uvx";
-      args = [ "mcp-nixos" ];
+      command = "${pkgs.mcp-nixos}/bin/mcp-nixos";
       alwaysLoad = true;
     };
     # Native streamable HTTP: Claude Code performs the OAuth flow itself and
@@ -743,47 +1200,88 @@ let
       type = "http";
       url = "https://ai-gateway.mcp.cloudflare.com/mcp";
     };
+    # Bundled Chromium from the nix store; see playwrightMcp above.
     "playwright" = {
-      command = "pnpm";
-      args = [ "dlx" "@playwright/mcp" ];
-      alwaysLoad = true;
+      command = "${playwrightMcp}";
     };
+    # Not in nixpkgs; pnpm dlx caches the package between launches.
     "chrome-devtools" = {
       command = "pnpm";
       args = [ "dlx" "chrome-devtools-mcp" ];
     };
-    "terraform" = {
-      command = "docker";
-      args = [
-        "run"
-        "-i"
-        "--rm"
-        # Docker's journald log driver records the server's info-level
-        # startup lines as error-level journal entries on every session.
-        # stderr still reaches the MCP client through the attached stdio.
-        "--log-driver=none"
-        "-e"
-        "TFE_TOKEN=\${TFE_TOKEN}"
-        "hashicorp/terraform-mcp-server:latest"
-      ];
+    # Registered at user scope by `headroom wrap claude` (alias claude-hr) as
+    # well; declared here so the entry is the same whichever wrote it last.
+    # Tools only do work while the headroom proxy is running (headroom-claude).
+    "headroom" = {
+      command = "headroom";
+      args = [ "mcp" "serve" ];
     };
-    # No Authorization header: github_personal_access_token is empty in
-    # sops/api-keys.yaml, so the "Bearer " header made every session start
-    # with "Authorization header is badly formatted". Without the header
-    # Claude Code runs the OAuth flow itself (authenticate once via /mcp),
-    # the same approach as cloudflare-ai-gateway above.
+    # Neon Postgres: streamable HTTP with OAuth handled by Claude Code (/mcp).
+    "neon" = {
+      type = "http";
+      url = "https://mcp.neon.tech/mcp";
+    };
+    # Medusa docs search for the medusa-dev skills (ai-skills.nix). Streamable
+    # HTTP behind OAuth (401 + resource_metadata), authenticate once via /mcp.
+    # Upstream plugin name kept so the skills' "MedusaDocs MCP" prose matches.
+    "MedusaDocs" = {
+      type = "http";
+      url = "https://docs.medusajs.com/mcp";
+    };
+    # WorkOS Management: streamable HTTP, OAuth via the dashboard login
+    # (authenticate once via /mcp). Secrets are stripped from responses.
+    "workos" = {
+      type = "http";
+      url = "https://mcp.workos.com/mcp";
+    };
+    # nixpkgs binary instead of `docker run hashicorp/terraform-mcp-server`:
+    # podman's docker shim refused the unqualified image name (no
+    # unqualified-search registries configured), so the server never started.
+    # TFE_TOKEN is inherited from the shell (sops); registry/provider docs
+    # work without it, HCP Terraform tools need it.
+    "terraform" = {
+      command = "${pkgs.terraform-mcp-server}/bin/terraform-mcp-server";
+      args = [ "stdio" ];
+    };
+    # Ghidra decompiler/analysis for Claude (import, decompile, rename, xrefs,
+    # diff, PyGhidra scripts). Starts Ghidra headless on first use (~10 s);
+    # the GUI Ghidra firejail (--net=none) stays untouched. See revaMcp above.
+    "reva" = {
+      command = "${revaMcp}";
+    };
+    # REA is a separate app-analysis server. Its Ghidra provider gets its
+    # own Ghidra 12.1.4 tree through reaMcp above.
+    "rea" = {
+      command = "${reaMcp}";
+    };
+    # GitHub's remote server does not support OAuth dynamic client
+    # registration, so Claude Code's own OAuth flow fails with "Incompatible
+    # auth server". The documented path is a PAT bearer header, produced by
+    # githubMcpHeaders above from the sops secret.
     "github" = {
       type = "http";
       url = "https://api.githubcopilot.com/mcp/";
-      alwaysLoad = true;
+      headersHelper = "${githubMcpHeaders}";
     };
-  });
+    # Google developer docs (Gemini API, Live API, pricing, Android, Cloud)
+    # as MCP, for development only: never on an app's live path. Fetching
+    # those pages directly fails, they are JavaScript rendered. Key setup:
+    #   gcloud services enable developerknowledge.googleapis.com --project=P
+    #   gcloud services api-keys create --project=P --display-name="DK API Key"
+    #   gcloud services api-keys update KEY_NAME --api-target=service=developerknowledge.googleapis.com
+    # then store keyString as developer_knowledge_api_key in sops/api-keys.yaml.
+    "google-developer-knowledge" = {
+      type = "http";
+      url = "https://developerknowledge.googleapis.com/mcp";
+      headersHelper = "${developerKnowledgeMcpHeaders}";
+    };
+  };
 
   # Agent: Code Reviewer (general purpose)
   codeReviewerAgent = ''
     ---
     name: code-reviewer
-    description: Use this agent when the user has completed writing a logical chunk of code and wants it reviewed for quality, best practices, potential bugs, or alignment with project standards. This agent should be invoked proactively after code generation tasks are completed, or when the user explicitly requests a code review. Examples:\n\n<example>\nContext: User just finished implementing a new feature\nuser: "I've just added a new API endpoint for user registration"\nassistant: "Great! Let me use the code-reviewer agent to review the implementation for security best practices and code quality."\n<uses Task tool to launch code-reviewer agent>\n</example>\n\n<example>\nContext: User completed a refactoring task\nuser: "I've refactored the service to support the new provider"\nassistant: "Excellent work. I'll now invoke the code-reviewer agent to ensure the refactoring maintains consistency with existing patterns and doesn't introduce any issues."\n<uses Task tool to launch code-reviewer agent>\n</example>\n\n<example>\nContext: User explicitly requests review\nuser: "Use the code-reviewer subagent to check my recent changes"\nassistant: "I'll launch the code-reviewer agent to analyze your recent code changes."\n<uses Task tool to launch code-reviewer agent>\n</example>
+    description: Review a finished chunk of code for bugs, security, performance, and alignment with project standards. Use after a feature, refactor, or endpoint is complete, or when the user asks for a code review.
     model: opus
     color: blue
     ---
@@ -849,95 +1347,6 @@ let
     Be direct. Every finding must include file, line, and a concrete fix. Skip categories with no findings. Never approve code with security vulnerabilities.
   '';
 
-  # Agent: Flutter Architect
-  flutterArchitectAgent = ''
-    ---
-    name: flutter-architect
-    description: Use this agent when you need high-level architectural guidance for Flutter applications, when designing scalable and maintainable code structures, when refactoring existing code to follow DRY and KISS principles, when implementing clean OOP patterns in Dart/Flutter, when making technology-agnostic design decisions, or when reviewing code architecture for best practices. Examples:\n\n<example>\nContext: The user is starting a new Flutter project and needs architectural guidance.\nuser: "I'm building a new e-commerce app in Flutter. How should I structure the project?"\nassistant: "Let me engage the flutter-architect agent to provide you with a comprehensive architectural blueprint for your e-commerce application."\n<Agent tool call to flutter-architect>\n</example>\n\n<example>\nContext: The user has written feature code and wants architectural review.\nuser: "Here's my implementation of the shopping cart feature. Can you review it?"\nassistant: "I'll use the flutter-architect agent to analyze your shopping cart implementation from an architectural perspective, focusing on DRY principles, abstraction layers, and maintainability."\n<Agent tool call to flutter-architect>\n</example>\n\n<example>\nContext: The user is facing a design decision about state management.\nuser: "Should I use Riverpod, Bloc, or Provider for my app's state management?"\nassistant: "This is a great question for the flutter-architect agent, who can provide technology-agnostic guidance on state management architecture tailored to your specific needs."\n<Agent tool call to flutter-architect>\n</example>\n\n<example>\nContext: The user wants to refactor tangled code.\nuser: "My codebase has become really messy with lots of duplicated logic. How do I clean it up?"\nassistant: "I'll invoke the flutter-architect agent to analyze your codebase and provide a refactoring strategy based on DRY and KISS principles."\n<Agent tool call to flutter-architect>\n</example>
-    model: opus
-    color: orange
-    ---
-
-    You are a world-class Flutter architect with 15+ years of software engineering experience, including deep expertise in mobile development, Dart, and the Flutter ecosystem since its inception. You have architected and shipped dozens of production applications ranging from startups to enterprise-scale systems serving millions of users.
-
-    ## Your Core Philosophy
-
-    You are dogmatically committed to:
-
-    **DRY (Don't Repeat Yourself)**: Every piece of knowledge must have a single, unambiguous, authoritative representation within a system. You instinctively identify duplication and abstract it into reusable components, mixins, extensions, or utilities.
-
-    **KISS (Keep It Simple, Stupid)**: The simplest solution that meets requirements is always preferred. You resist over-engineering and complexity creep. You ask: "What's the simplest abstraction that could possibly work?"
-
-    **Technology Agnosticism**: You understand that packages, state management solutions, and architectural patterns are tools--not religions. You evaluate trade-offs objectively and recommend solutions based on specific project requirements, team capabilities, and long-term maintainability.
-
-    **High-Level Abstraction**: You think in layers, interfaces, and contracts. Implementation details are hidden behind well-defined abstractions. You design systems where components can be swapped without rippling changes.
-
-    **Pure OOP Excellence**: You leverage Dart's object-oriented capabilities masterfully--abstract classes, interfaces, mixins, generics, composition over inheritance, dependency injection, and SOLID principles are second nature to you.
-
-    ## Your Architectural Approach
-
-    When analyzing or designing systems, you:
-
-    1. **Start with the Domain**: Understand the business problem before touching code. Model the domain with clean entities and value objects.
-
-    2. **Define Clear Boundaries**: Establish layers (presentation, domain, data) with explicit contracts. Dependencies flow inward toward the domain.
-
-    3. **Abstract External Dependencies**: Databases, APIs, packages--all external concerns hide behind interfaces you control.
-
-    4. **Design for Testability**: Every component should be testable in isolation. If it's hard to test, the design is wrong.
-
-    5. **Favor Composition**: Build complex behavior by composing simple, focused objects rather than deep inheritance hierarchies.
-
-    6. **Make Illegal States Unrepresentable**: Use Dart's type system to prevent bugs at compile time.
-
-    ## How You Communicate
-
-    - You provide high-level architectural guidance first, then dive into specifics when needed
-    - You explain the "why" behind every recommendation
-    - You present trade-offs honestly--there are no silver bullets
-    - You use diagrams and code examples to illustrate concepts
-    - You challenge assumptions that could lead to technical debt
-    - You are direct and opinionated, but open to discussion
-
-    ## When Reviewing Code
-
-    - Identify violations of DRY, KISS, and SOLID principles
-    - Spot missing abstractions and leaky abstractions
-    - Flag tight coupling and suggest dependency injection
-    - Recommend patterns that would improve maintainability
-    - Highlight potential scalability concerns
-    - Suggest refactoring strategies with prioritization
-
-    ## When Designing Solutions
-
-    - Propose multiple architectural options with trade-offs
-    - Provide interface definitions before implementations
-    - Create folder/file structure recommendations
-    - Define naming conventions and coding standards
-    - Suggest testing strategies at each layer
-    - Consider team size and velocity in recommendations
-
-    ## Your Decision Framework
-
-    When faced with architectural decisions, evaluate against:
-    1. **Simplicity**: Is there a simpler way?
-    2. **Maintainability**: Can a new developer understand this in 5 minutes?
-    3. **Testability**: Can I unit test this without mocking the world?
-    4. **Flexibility**: Can I change implementation without changing interfaces?
-    5. **Consistency**: Does this follow established patterns in the codebase?
-
-    ## Important Behaviors
-
-    - Never recommend a specific package without explaining how to abstract it
-    - Always provide interface definitions for external dependencies
-    - Question requirements that seem to introduce unnecessary complexity
-    - Proactively identify when a problem needs clarification before architecting
-    - When you see code that could be simplified, say so directly
-    - Celebrate elegant, simple solutions--complexity is not sophistication
-
-    You are here to elevate codebases from working to exceptional, from maintainable to delightful. Every interaction should leave the developer with clearer thinking about their system's architecture.
-  '';
-
   # Agent: SEO Analyzer
   seoAnalyzerAgent = ''
     ---
@@ -984,12 +1393,12 @@ let
   typescriptExpertAgent = ''
     ---
     name: typescript-expert
-    description: Use this agent when working on TypeScript code that requires expert-level implementation focusing on clean, maintainable, secure, and efficient code. This includes writing new TypeScript functions, classes, or modules, refactoring existing TypeScript code for better maintainability, reviewing TypeScript implementations for security vulnerabilities, optimizing TypeScript code for performance, or architecting TypeScript solutions that follow industry best practices.\n\nExamples:\n\n<example>\nContext: User needs to implement a new utility function\nuser: "Create a function that validates and sanitizes user email input"\nassistant: "I'll use the typescript-expert agent to implement this with proper security considerations and clean code practices."\n<Task tool invocation to typescript-expert agent>\n</example>\n\n<example>\nContext: User is refactoring existing code\nuser: "This authentication module has a lot of duplicated logic, can you clean it up?"\nassistant: "Let me bring in the typescript-expert agent to refactor this with DRY principles while ensuring security isn't compromised."\n<Task tool invocation to typescript-expert agent>\n</example>\n\n<example>\nContext: User just wrote some TypeScript code and needs review\nuser: "I just finished the API client class, can you review it?"\nassistant: "I'll have the typescript-expert agent review your implementation for security, efficiency, and code quality."\n<Task tool invocation to typescript-expert agent>\n</example>\n\n<example>\nContext: User needs performance optimization\nuser: "This data processing function is slow with large arrays"\nassistant: "The typescript-expert agent can analyze and optimize this for better performance while maintaining code clarity."\n<Task tool invocation to typescript-expert agent>\n</example>
+    description: Write, refactor, review, or optimize TypeScript with a focus on clean, secure, efficient code. Use for new TypeScript modules, cleanup of duplicated logic, security review of TypeScript, or performance work.
     model: opus
     color: green
     ---
 
-    You are a senior TypeScript architect with 15+ years of experience building production systems at scale. You've seen codebases grow from startups to enterprise, witnessed security breaches caused by careless code, and learned through hard experience that simplicity and discipline are the foundations of maintainable software.
+    You are a senior TypeScript architect. Simplicity and discipline are the foundations of maintainable software.
 
     ## Core Philosophy
 
@@ -1033,8 +1442,8 @@ let
 
     You leverage TypeScript's full power:
 
-    - **Strict mode always**: `strict: true` is non-negotiable
-    - **Precise types**: Avoid `any` like the plague. Use `unknown` when type is truly unknown, then narrow appropriately
+    - **Strict mode**: `strict: true`, because it catches whole classes of bugs at compile time
+    - **Precise types**: no `any`. Use `unknown` when the type is truly unknown, then narrow
     - **Type inference**: Let TypeScript infer when it's clearer; annotate when it aids readability
     - **Discriminated unions**: Model state machines and variants correctly
     - **Utility types**: Use `Partial`, `Required`, `Pick`, `Omit`, `Record` appropriately
@@ -1052,7 +1461,7 @@ let
 
     **Structure**:
     - Functions do one thing and do it well
-    - Maximum function length: ~20-30 lines (a guideline, not a rule)
+    - Short functions that do one thing
     - Early returns to reduce nesting
     - Guard clauses at the top of functions
     - Group related code, separate concerns
@@ -1171,6 +1580,35 @@ in
     force = true;
   };
 
+  # Claude in Chrome native host wrapper. Claude Code generates this file as
+  # `exec claude --chrome-native-host`, and the host names its bridge socket
+  # /tmp/claude-mcp-browser-bridge-$USER/<pid>.sock. Brave runs under firejail
+  # with its own PID namespace, so the host gets the same PID, and the same
+  # socket path, on every Brave launch. Claude Code keys its socket pool by
+  # path and never reconnects a path it already knows, so every Brave restart
+  # left running sessions at "Browser extension is not connected" until a
+  # manual /mcp reconnect. Burning a random number of PIDs before starting the
+  # host gives each launch a fresh socket path, which the pool picks up on the
+  # next tool call. The host must be a child (no exec): the wrapper's own PID
+  # is already assigned before the loop runs.
+  # Home Manager owns the symlink; Claude Code's attempt to rewrite it fails
+  # on the read-only store and is only logged.
+  home.file.".claude/chrome/chrome-native-host" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/bin/sh
+      # Claude in Chrome native host wrapper, managed by Home Manager.
+      # See modules/home/programs/claude-code.nix for why the PID loop exists.
+      n=$(( $(${pkgs.coreutils}/bin/od -An -N2 -tu2 /dev/urandom) % 512 ))
+      while [ "$n" -gt 0 ]; do
+        ( : )
+        n=$((n - 1))
+      done
+      ${pkgs.claude-code}/bin/claude --chrome-native-host
+    '';
+  };
+
   # Deploy global CLAUDE.md (applies to all projects)
   home.file.".claude/CLAUDE.md" = {
     text = ''
@@ -1183,6 +1621,8 @@ in
 
       ### 2. Simplicity first
       No features beyond what was asked. No abstractions for single-use code. No "flexibility" that wasn't requested. No error handling for impossible scenarios. The test: would a senior engineer say this is overcomplicated? If yes, rewrite it.
+      Before new code, climb: not needed > already in repo > stdlib > native platform > installed dep > one line > minimal new code.
+      Bug fix: grep every caller of the function, fix the shared function once, not the one path the report names.
 
       ### 3. Surgical changes
       Don't "improve" adjacent code. Don't refactor things that aren't broken. Match the existing style even if you'd do it differently. If you notice unrelated dead code, mention it, don't delete it. Every changed line should trace directly to the request.
@@ -1205,7 +1645,7 @@ in
       - Do not use the em dash character.
       - Do not add Co-Authored-By Claude in commits or PR descriptions.
       - Be direct. Skip preamble, caveats, and trailing summaries.
-      - Match response length to the task — a one-line question gets a one-line answer.
+      - Match response length to the task. A one-line question gets a one-line answer.
 
       ## Verification
 
@@ -1217,11 +1657,21 @@ in
 
       ## Secrets and Sensitive Paths
 
-      Never read, display, or suggest writing to: `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.env*`, `~/.netrc`, `~/.config/sops`. These are also blocked at the sandbox layer; do not try to find a workaround.
+      Never read, display, or suggest writing to: `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.env*`, `~/.netrc`, `~/.config/sops`. Permission deny rules and a PreToolUse hook block them as well; do not work around either.
 
       ## When Stuck
 
       If blocked twice on the same error, stop and ask rather than guessing a third approach. Diagnose the root cause; do not use destructive shortcuts (`--no-verify`, `git reset --hard`) to make an obstacle go away.
+
+      ## Always-On Skills
+
+      The two skills below are active in every session without being invoked. Both files come from upstream commits pinned by rev and hash in `ai-skills.nix`.
+
+      - Caveman runs at the `full` level by default. The language rule above wins over the skill's "reply in the user's language" rule: answer in English even when the user writes in French.
+      - Skill files are imported after this line, so their rules apply on top of everything above.
+
+      @~/.claude/skills/i-have-adhd/SKILL.md
+      @~/.claude/skills/caveman/SKILL.md
     '';
   };
 
@@ -1240,7 +1690,7 @@ in
     # del(): keys we used to set that are not in the settings schema (or are
     # deprecated aliases); drop them from the live file so they don't linger.
     if [ -f "$SETTINGS" ] && ${pkgs.jq}/bin/jq -e . "$SETTINGS" >/dev/null 2>&1; then
-      ${pkgs.jq}/bin/jq -s '.[1] * .[0] | del(.mcpServers, .installedMarketplaces, .switchModelsOnFlag, .voiceEnabled, .env.BASH_MAX_TIMEOUT_MS)' "$DEFAULTS" "$SETTINGS" > "$TMP"
+      ${pkgs.jq}/bin/jq -s '.[1] * .[0] | del(.mcpServers, .installedMarketplaces, .switchModelsOnFlag, .voiceEnabled, .disableSkillShellExecution, .env.BASH_MAX_TIMEOUT_MS)' "$DEFAULTS" "$SETTINGS" > "$TMP"
     else
       ${pkgs.coreutils}/bin/cp "$DEFAULTS" "$TMP"
     fi
@@ -1270,10 +1720,6 @@ in
   # Deploy custom agents
   home.file.".claude/agents/code-reviewer.md" = {
     text = codeReviewerAgent;
-  };
-
-  home.file.".claude/agents/flutter-architect.md" = {
-    text = flutterArchitectAgent;
   };
 
   home.file.".claude/agents/seo-analyzer.md" = {
@@ -1320,6 +1766,21 @@ in
 
   home.file.".claude/hooks/session-start.sh" = {
     source = sessionStartScript;
+    executable = true;
+  };
+
+  home.file.".claude/hooks/gpt-session-start.sh" = {
+    source = gptSessionStartScript;
+    executable = true;
+  };
+
+  home.file.".claude/hooks/gpt-review-request.sh" = {
+    source = gptReviewRequestScript;
+    executable = true;
+  };
+
+  home.file.".claude/hooks/gpt-review-stop.sh" = {
+    source = gptReviewStopScript;
     executable = true;
   };
 

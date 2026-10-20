@@ -112,6 +112,7 @@ in
       # Dev platforms (MCP servers)
       github_personal_access_token = {};  # GitHub MCP
       tfe_token = {};                     # Terraform Cloud MCP
+      developer_knowledge_api_key = {};   # Google Developer Knowledge MCP
       forgejo_token = {};                 # Forgejo API
       # Local machines
       rdp_password = {};                  # Windows PC on the LAN (win alias)

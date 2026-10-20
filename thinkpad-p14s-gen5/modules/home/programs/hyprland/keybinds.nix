@@ -107,9 +107,10 @@
     hl.bind(mod .. " + SHIFT + minus", hl.dsp.workspace.toggle_special("minimized"))
 
     -----------------------------------------------------------------------
-    -- Clipboard history (cliphist + wofi)
+    -- Clipboard history (vicinae, with image thumbnails); cliphist keeps the
+    -- text/image watchers as the wipe target
     -----------------------------------------------------------------------
-    hl.bind(mod .. " + V",         hl.dsp.exec_cmd("cliphist list | wofi --dmenu | cliphist decode | wl-copy"))
+    hl.bind(mod .. " + V",         hl.dsp.exec_cmd("vicinae deeplink 'vicinae://launch/clipboard/history?toggle=true'"))
     hl.bind(mod .. " + SHIFT + V", hl.dsp.exec_cmd("cliphist wipe"))
 
     -----------------------------------------------------------------------
@@ -121,6 +122,8 @@
     -- Quick tools
     -----------------------------------------------------------------------
     hl.bind(mod .. " + C",         hl.dsp.exec_cmd("hyprpicker -a"))
+    hl.bind(mod .. " + SHIFT + D", hl.dsp.exec_cmd("${hyprScripts.dnd}/bin/dnd"))    -- Do Not Disturb toggle
+    hl.bind(mod .. " + CTRL + D",  hl.dsp.exec_cmd("${hyprScripts.dnd}/bin/dnd 60")) -- Do Not Disturb for 60 min
     hl.bind(mod .. " + N",         hl.dsp.exec_cmd("${hyprScripts.bluelight-toggle}/bin/bluelight-toggle"))
     hl.bind(mod .. " + SHIFT + N", hl.dsp.exec_cmd("${hyprScripts.bluelight-off}/bin/bluelight-off"))
     hl.bind(mod .. " + M",         hl.dsp.exec_cmd("${hyprScripts.battery-mode}/bin/battery-mode"))
@@ -145,11 +148,17 @@
     -----------------------------------------------------------------------
     -- Screenshots (grimblast - official hyprwm/contrib)
     -----------------------------------------------------------------------
-    hl.bind("Print",                 hl.dsp.exec_cmd("grimblast --freeze copy area")) -- Region -> clipboard
-    hl.bind(mod .. " + Print",       hl.dsp.exec_cmd("grimblast --freeze save area $SCREENSHOT_DIR/$(date +%Y%m%d_%H%M%S).png")) -- Region -> file
-    hl.bind("SHIFT + Print",         hl.dsp.exec_cmd("grimblast --freeze copy output")) -- Full screen -> clipboard
-    hl.bind(mod .. " + SHIFT + Print", hl.dsp.exec_cmd("grimblast --freeze save output $SCREENSHOT_DIR/$(date +%Y%m%d_%H%M%S).png"))
-    hl.bind(mod .. " + CTRL + Print", hl.dsp.exec_cmd("grimblast --freeze copy active")) -- Window -> clipboard
+    -- Screenshot binds stay global: `dont_inhibit` ignores clients that ask to
+    -- inhibit keybinds (VMs, remote desktop, fullscreen browsers) and
+    -- `allow_input_capture` keeps them firing while a client captures input.
+    local shot = { dont_inhibit = true, allow_input_capture = true }
+
+    hl.bind("Print",                 hl.dsp.exec_cmd("grimblast --freeze copy area"), shot) -- Region -> clipboard
+    -- Region -> satty (arrows, blur, crop), then Enter copies, Ctrl+S saves to the same file
+    hl.bind(mod .. " + Print",       hl.dsp.exec_cmd([[f="$SCREENSHOT_DIR/$(date +%Y%m%d_%H%M%S).png"; grimblast --freeze save area "$f" && satty --filename "$f" --output-filename "$f" --copy-command wl-copy]]), shot)
+    hl.bind("SHIFT + Print",         hl.dsp.exec_cmd("grimblast --freeze copy output"), shot) -- Full screen -> clipboard
+    hl.bind(mod .. " + SHIFT + Print", hl.dsp.exec_cmd("grimblast --freeze save output $SCREENSHOT_DIR/$(date +%Y%m%d_%H%M%S).png"), shot)
+    hl.bind(mod .. " + CTRL + Print", hl.dsp.exec_cmd("grimblast --freeze copy active"), shot) -- Window -> clipboard
 
     -----------------------------------------------------------------------
     -- Keyboard layout switch (fr <-> us)
@@ -171,7 +180,7 @@
     -----------------------------------------------------------------------
     -- Focus workspace on current monitor (multi-monitor, 0.54+)
     -----------------------------------------------------------------------
-    for i = 1, 5 do
+    for i = 1, 6 do
       hl.bind(mod .. " + CTRL + " .. i, hl.dsp.focus({ workspace = i, on_current_monitor = true }))
     end
 
@@ -190,10 +199,9 @@
     -- Bypass app shortcut inhibition (was bindp) - for escape/system keys,
     -- especially fullscreen games
     -----------------------------------------------------------------------
-    -- Wofi drun: full app list with icons on open. Replaces hyprlauncher
-    -- (v0.1.6 fuzzy-only, cannot list/browse apps); switch back when upstream
-    -- gains a browse view.
-    hl.bind(mod .. " + D",            hl.dsp.exec_cmd("wofi --show drun --allow-images"),                                       { dont_inhibit = true })
+    -- Vicinae (vicinae.nix): apps, clipboard, calculator, emoji, windows,
+    -- files in one Spotlight-style window. Wofi stays for the dmenu scripts.
+    hl.bind(mod .. " + D",            hl.dsp.exec_cmd("vicinae toggle"),                                                        { dont_inhibit = true })
     hl.bind(mod .. " + Escape",       hl.dsp.exec_cmd("hyprlock"),                                                              { dont_inhibit = true })
     -- Graceful shutdown via hyprshutdown: asks apps to close gracefully, quits Hyprland, runs post-cmd
     hl.bind(mod .. " + SHIFT + Escape", hl.dsp.exec_cmd("hyprshutdown -t 'Shutting down...' --post-cmd 'systemctl poweroff'"), { dont_inhibit = true })
@@ -239,5 +247,43 @@
     -- to the external monitor over DDC/CI (debounced, see waybar-scripts).
     hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("$HOME/.config/waybar/scripts/brightness-sync.sh raise"), { locked = true, repeating = true })
     hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("$HOME/.config/waybar/scripts/brightness-sync.sh lower"), { locked = true, repeating = true })
+
+    -----------------------------------------------------------------------
+    -- Submaps (modal modes). Waybar shows the active submap name
+    -- (hyprland/submap module). Escape or Return leaves the mode.
+    -----------------------------------------------------------------------
+    -- SUPER+ALT+R: resize mode, H/J/K/L or arrows resize by 40px, repeating
+    hl.bind(mod .. " + ALT + R", hl.dsp.submap("resize"))
+    hl.define_submap("resize", function()
+      local step = 40
+      for _, k in ipairs({ "H", "left" })  do hl.bind(k, hl.dsp.window.resize({ x = -step, y = 0,     relative = true }), { repeating = true }) end
+      for _, k in ipairs({ "L", "right" }) do hl.bind(k, hl.dsp.window.resize({ x = step,  y = 0,     relative = true }), { repeating = true }) end
+      for _, k in ipairs({ "K", "up" })    do hl.bind(k, hl.dsp.window.resize({ x = 0,     y = -step, relative = true }), { repeating = true }) end
+      for _, k in ipairs({ "J", "down" })  do hl.bind(k, hl.dsp.window.resize({ x = 0,     y = step,  relative = true }), { repeating = true }) end
+      hl.bind("escape", hl.dsp.submap("reset"))
+      hl.bind("Return", hl.dsp.submap("reset"))
+    end)
+
+    -- SUPER+ALT+T: jump to a window by tag (tags assigned in window-rules.lua)
+    hl.bind(mod .. " + ALT + T", hl.dsp.submap("tags"))
+    hl.define_submap("tags", function()
+      local function go(tag)
+        return function()
+          hl.dispatch(hl.dsp.focus({ window = "tag:" .. tag }))
+          hl.dispatch(hl.dsp.submap("reset"))
+        end
+      end
+      hl.bind("B", go("browser"))
+      hl.bind("C", go("code"))
+      hl.bind("T", go("terminal"))
+      hl.bind("M", go("messaging"))
+      hl.bind("V", go("media"))
+      hl.bind("A", go("creative"))
+      hl.bind("D", go("documents"))
+      hl.bind("S", go("security"))
+      hl.bind("G", go("gaming"))
+      hl.bind("escape", hl.dsp.submap("reset"))
+      hl.bind("Return", hl.dsp.submap("reset"))
+    end)
   '';
 }

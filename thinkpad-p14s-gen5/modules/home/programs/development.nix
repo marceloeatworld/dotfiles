@@ -3,7 +3,10 @@
 
 let
   headroomPythonPackage = "headroom-ai[proxy,mcp,code]==0.25.0";
-  headroomUvArgs = "--no-python-downloads --python ${pkgs.python313}/bin/python3 --from '${headroomPythonPackage}'";
+  # mcp<2: headroom 0.25.0 declares mcp>=1.0.0 but uses the 1.x low-level
+  # Server API (Server.list_tools); mcp 2.x removed it and `headroom mcp serve`
+  # crashed at startup, so every Claude session reported the server as failed.
+  headroomUvArgs = "--no-python-downloads --python ${pkgs.python313}/bin/python3 --with 'mcp<2' --from '${headroomPythonPackage}'";
   # Use the newest libstdc++ available (backward compatible with older symbols).
   # stdenv's gcc-15 lib lacks GLIBCXX_3.4.35, and since LD_LIBRARY_PATH leaks to
   # every child of the wrapped agent, it broke newer C++ binaries (hyprctl from
@@ -53,10 +56,11 @@ in
     # NOTE: lazygit is provided by programs.lazygit.enable (git.nix)
     git-lfs
     gh
+    universal-modder # `um`: game recon, assets, backups and mod packaging
 
     # Languages (base compilers)
     python313 # Project dependencies are managed with uv
-    nodejs-slim_22
+    nodejs_22 # Full Node (npm/npx): Medusa tooling and skills run `npx medusa ...`
     pnpm # Fast Node package manager (latest from overlay)
     # Bun wrapped with libstdc++ for NixOS compatibility (fixes sharp, canvas, etc.)
     # gcc16 lib: newest GLIBCXX symbols, so the leaked LD_LIBRARY_PATH doesn't
@@ -68,7 +72,6 @@ in
     go
     rustup
     jdk # Java Development Kit (latest LTS)
-    flutter # Flutter SDK (includes the matching Dart SDK)
     # .NET SDK 10 (latest)
     dotnetCorePackages.sdk_10_0
     icu # Required by .NET for globalization support

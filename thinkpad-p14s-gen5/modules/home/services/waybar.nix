@@ -828,7 +828,9 @@ in
           interval = 60;
           format = "{}";
           tooltip = true;
+          signal = 7; # dnd script: pkill -RTMIN+7 waybar
           on-click = "${pkgs.mako}/bin/makoctl invoke";
+          on-click-middle = "${pkgs.mako}/bin/makoctl restore";
           on-click-right = "${pkgs.mako}/bin/makoctl dismiss --all";
         };
 
@@ -896,7 +898,7 @@ in
       * {
         border: none;
         border-radius: 0;
-        font-family: "${theme.fonts.mono}", monospace;
+        font-family: "${theme.fonts.sans}", sans-serif;
         font-size: 13px;
         min-height: 0;
         font-feature-settings: "tnum";
@@ -1183,6 +1185,9 @@ in
       }
       #custom-mako.notification {
         color: @fg;
+      }
+      #custom-mako.dnd {
+        color: @accent;
       }
 
       /* ── Power ── */

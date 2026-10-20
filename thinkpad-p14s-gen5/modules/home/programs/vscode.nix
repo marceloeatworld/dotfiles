@@ -602,16 +602,6 @@ in
           "editor.tabSize" = 2;
         };
         "[github-actions-workflow]"."editor.defaultFormatter" = "redhat.vscode-yaml";
-        "[dart]" = {
-          "editor.formatOnSave" = true;
-          "editor.formatOnType" = true;
-          "editor.rulers" = [ 80 ];
-          "editor.tabCompletion" = "onlySnippets";
-          "editor.wordBasedSuggestions" = "off";
-        };
-        "dart.showExtensionRecommendations" = false;
-        "dart.checkForSdkUpdates" = false;
-        "dart.flutterSdkPath" = "${pkgs.flutter}";
         "dotnetAcquisitionExtension.sharedExistingDotnetPath" = "${pkgs.dotnetCorePackages.sdk_10_0}/bin/dotnet";
         "C_Cpp.intelliSenseEngine" = "disabled";
         "C_Cpp.errorSquiggles" = "disabled";
@@ -722,7 +712,7 @@ in
     # Absolute path key intentionally matches the home.file attribute name that
     # programs.vscode generates, so .force merges into it. A relative key here
     # creates a second managed entry for the same target -> activation conflict.
-    "/home/marcelo/.config/Code/User/settings.json".force = true;
+    "${config.home.homeDirectory}/.config/Code/User/settings.json".force = true;
   };
 
   # Home Manager's VS Code module writes these files as Nix store symlinks.

@@ -37,5 +37,8 @@ _:
 
     -- 3-finger horizontal swipe = workspace switch
     hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+    -- 3-finger swipe down = scratchpad (same as SUPER+S), swipe up = float/tile toggle
+    hl.gesture({ fingers = 3, direction = "down", action = "special", workspace_name = "magic" })
+    hl.gesture({ fingers = 3, direction = "up",   action = "float" })
   '';
 }

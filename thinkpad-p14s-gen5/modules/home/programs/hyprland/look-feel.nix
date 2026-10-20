@@ -118,6 +118,7 @@ in
         groupbar = {
           enabled = true,
           height = 18,
+          font_family = "${theme.fonts.sans}",
           font_size = 10,
           col = {
             active = "rgb(" .. theme_colors.accentSecondary .. ")",
@@ -153,12 +154,14 @@ in
     hl.curve("easeInOutQuart", { type = "bezier", points = { {0.76, 0   }, {0.24, 1   } } })
     hl.curve("linear",         { type = "bezier", points = { {0,    0   }, {1,    1   } } })
     hl.curve("snappy",         { type = "bezier", points = { {0.2,  1.0 }, {0.3,  1.0 } } })
-    hl.curve("overshot",       { type = "bezier", points = { {0.13, 0.99}, {0.29, 1.2 } } }) -- Pronounced overshoot for workspace slides
-    hl.curve("bounce",         { type = "bezier", points = { {0.05, 0.9 }, {0.1,  1.35} } }) -- Bouncy entry for window open/move
+    -- Spring-like settle (macOS style): fast start, no visible rubber-banding.
+    -- Was 1.2 / 1.35 overshoot, which made tiled windows bounce past their frame.
+    hl.curve("overshot",       { type = "bezier", points = { {0.13, 0.99}, {0.29, 1.04} } }) -- Barely-there overshoot for workspace slides
+    hl.curve("bounce",         { type = "bezier", points = { {0.22, 1.0 }, {0.36, 1.0 } } }) -- Damped spring for window open/move
 
     -- Animation rules
-    hl.animation({ leaf = "windows",          enabled = true,  speed = 5, bezier = "bounce",         style = "popin 90%" })
-    hl.animation({ leaf = "windowsOut",       enabled = true,  speed = 2, bezier = "fluent_decel",   style = "popin 90%" })
+    hl.animation({ leaf = "windows",          enabled = true,  speed = 4, bezier = "bounce",         style = "popin 95%" })
+    hl.animation({ leaf = "windowsOut",       enabled = true,  speed = 3, bezier = "fluent_decel",   style = "popin 95%" })
     hl.animation({ leaf = "windowsMove",      enabled = true,  speed = 4, bezier = "bounce",         style = "slide" })
     hl.animation({ leaf = "fade",             enabled = true,  speed = 3, bezier = "easeOutCubic" })
     hl.animation({ leaf = "fadeIn",           enabled = true,  speed = 2, bezier = "easeOutCubic" })
@@ -169,6 +172,7 @@ in
     hl.animation({ leaf = "border",           enabled = true,  speed = 3, bezier = "easeOutCubic" }) -- Animate border color on focus change
     hl.animation({ leaf = "workspaces",       enabled = true,  speed = 5, bezier = "overshot",       style = "slidefade 20%" })
     hl.animation({ leaf = "specialWorkspace", enabled = true,  speed = 3, bezier = "easeInOutQuart", style = "slidevert" })
-    hl.animation({ leaf = "layers",           enabled = true,  speed = 2, bezier = "easeOutCubic",   style = "fade" }) -- Waybar popups etc.
+    hl.animation({ leaf = "layersIn",         enabled = true,  speed = 3, bezier = "easeOutCubic",   style = "popin 95%" }) -- Launcher, OSD, waybar popups
+    hl.animation({ leaf = "layersOut",        enabled = true,  speed = 3, bezier = "easeOutCubic",   style = "fade" })
   '';
 }

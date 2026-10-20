@@ -998,7 +998,7 @@ let
       ${pkgs.libnotify}/bin/notify-send -t 2000 "Laptop screen" "Off (everything on the external)" -i "video-display"
     else
       # eDP-1 is off, restore its normal config (matches monitors.lua).
-      ${hyprlandPkg}/bin/hyprctl eval "hl.monitor({ output = \"$MON\", mode = \"1920x1200@60\", position = \"0x1080\", scale = 1 })"
+      ${hyprlandPkg}/bin/hyprctl eval "hl.monitor({ output = \"$MON\", disabled = false, mode = \"1920x1200@60\", position = \"0x1080\", scale = 1 })"
       ${pkgs.libnotify}/bin/notify-send -t 2000 "Laptop screen" "On" -i "video-display"
     fi
   '';
@@ -1240,7 +1240,7 @@ let
     TERMINAL_RE='^(com\.mitchellh\.ghostty|ghostty)$'
     run_in_terminal() {
       local cmd="$1" first
-      case "$cmd" in *[\;\|\&\`\$\>\<\(\)\{\}\\]*|*'\n'*) log "terminal_run refused (metacharacters): $cmd"; return 1 ;; esac
+      case "$cmd" in *[\;\|\&\`\$\>\<\(\)\{\}\\]*|*$'\n'*) log "terminal_run refused (metacharacters): $cmd"; return 1 ;; esac
       first=''${cmd%% *}
       case "$first" in
         ls|ll|la|tree|pwd|cat|head|tail|df|free|uptime|date|btop|htop|keys) ;;
@@ -1382,6 +1382,29 @@ let
   # Saying only "send" presses Enter, "delete" clears the line. Everything
   # else goes to voice-command, which runs it as an instruction or types it.
   # Everything heard and done is appended to ~/.local/state/voice-terminal/<date>.log.
+  # Do Not Disturb: toggle mako's do-not-disturb mode, optionally for N
+  # minutes (a transient systemd timer turns it off again). Critical alerts
+  # still show (see makoConf in lib/theme-configs.nix).
+  dnd = pkgs.writeShellScriptBin "dnd" ''
+    MAKOCTL=${pkgs.mako}/bin/makoctl
+    UNIT=dnd-off
+    minutes="''${1:-}"
+    ${pkgs.systemd}/bin/systemctl --user stop "$UNIT.timer" >/dev/null 2>&1 || true
+    if [ -n "$minutes" ]; then
+      "$MAKOCTL" mode -a do-not-disturb >/dev/null
+      ${pkgs.systemd}/bin/systemd-run --user --quiet --unit="$UNIT" --on-active="''${minutes}min" \
+        "$MAKOCTL" mode -r do-not-disturb
+      ${pkgs.libnotify}/bin/notify-send -u critical -t 2500 -i notifications-disabled "Do Not Disturb" "On for $minutes min"
+    elif "$MAKOCTL" mode | ${pkgs.gnugrep}/bin/grep -qx do-not-disturb; then
+      "$MAKOCTL" mode -r do-not-disturb >/dev/null
+      ${pkgs.libnotify}/bin/notify-send -t 2000 -i notifications "Do Not Disturb" "Off"
+    else
+      "$MAKOCTL" mode -a do-not-disturb >/dev/null
+      ${pkgs.libnotify}/bin/notify-send -u critical -t 2500 -i notifications-disabled "Do Not Disturb" "On (Super+Shift+D to turn off)"
+    fi
+    ${pkgs.procps}/bin/pkill -RTMIN+7 waybar 2>/dev/null || true
+  '';
+
   voice-terminal = pkgs.writeShellScriptBin "voice-terminal" ''
     WTYPE="${pkgs.wtype}/bin/wtype"
     NOTIFY="${pkgs.libnotify}/bin/notify-send"
@@ -1622,6 +1645,7 @@ in
     joplin-current-workspace
     bruno-current-workspace
     rustdesk-current-workspace
+    dnd
     voice-terminal
     voice-command
     ;

@@ -107,6 +107,7 @@ in
 
     nemo-with-extensions    # Nemo with all extensions included
     nemo-fileroller         # Archive support (create/extract zip, tar, etc.)
+    nemo-preview            # Quick Look: space bar previews files in Nemo
     file-roller             # GNOME archive manager (backend for nemo-fileroller)
     glib                    # Required for gsettings command
 

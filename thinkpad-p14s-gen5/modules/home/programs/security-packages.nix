@@ -3,6 +3,8 @@
 { pkgs, ... }:
 
 {
+  home.file.".local/share/siglens".source = "${pkgs.siglens}/share/siglens";
+
   # Create helpful aliases for common security tasks
   programs.zsh.shellAliases = {
     # Nmap shortcuts
@@ -43,6 +45,22 @@
     # Security Tools Quick Reference
 
     ## Installed Tools
+
+    ### SigLens and REA
+
+    - **SigLens**: `siglens --help`. Static PE, strings, YARA, disassembly and
+      JSON/HTML reports are available on Linux. Example:
+      `siglens scan ./sample.exe --yara "$HOME/.local/share/siglens/rules"`.
+      Reports go into `./reports`; use a writable working directory.
+      AMSI, Microsoft Defender and DbgHelp require Windows. Bundled engine
+      JSON files are Windows examples, not a configured Linux antivirus.
+    - **REA**: `rea --help`, `rea doctor --json`, or `rea mcp` for stdio.
+      The `rea` MCP registration is managed for Claude Code; other agents can
+      use the CLI. REA is separate from the existing `reva` server.
+      Native Ghidra analysis requires exactly Ghidra 12.1.4 and JDK 21;
+      the `rea` MCP wrapper ships its own 12.1.4 tree, the GUI Ghidra and
+      ReVa stay on nixpkgs 12.1.2.
+      Hopper is not installed by this configuration.
 
     ### Network Scanning
     - **nmap**: Network scanner and security auditor

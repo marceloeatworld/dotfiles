@@ -19,6 +19,11 @@
   # D-state (IO PSI >90%, ~9GB discard backlog fed by hourly btrbk snapshot
   # rotation). Subvolumes are mounted nodiscard instead, with TRIM done as a
   # weekly batch here.
+  # NOTE: IO PSI is not a reliable symptom on this machine anymore. io_uring
+  # accounts its completion waits as iowait, so Ghostty, Node and Ferdium
+  # alone keep the Hyprland session cgroup at 60-85% "full" IO pressure
+  # with the NVMe idle (verified 2026-09-06 on 7.2.3, no D-state tasks).
+  # Check /sys/block/nvme0n1/stat and D-state processes before blaming disk.
   services.fstrim.enable = true;
 
   # Automated snapshots with btrbk

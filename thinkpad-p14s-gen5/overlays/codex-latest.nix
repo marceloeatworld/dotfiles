@@ -1,44 +1,44 @@
-# Codex Latest - Override nixpkgs version with latest prebuilt binary
+# Codex Latest - Override nixpkgs version with latest prebuilt package
 # Source: https://github.com/openai/codex/releases
-# Binary: musl-linked static executable (no patchelf needed)
+# Asset: codex-package-*.tar.gz (musl static binaries, no patchelf needed)
+#
+# Since 0.157.0 codex runs a background app-server daemon that requires the
+# full package layout (bin/, codex-package.json, codex-resources/, codex-path/)
+# next to the executable. A bare binary fails with "this CLI has no complete
+# local package". The package tarball bundles codex, codex-code-mode-host,
+# bwrap, rg, zsh and the voice host.
 #
 # To update:
 #   1. Run: update-codex (shell alias)
 #   2. Or manually:
 #      a. Check latest: curl -sL https://api.github.com/repos/openai/codex/releases/latest | jq -r .tag_name
-#      b. Get hash: nix-prefetch-url "https://github.com/openai/codex/releases/download/rust-vVERSION/codex-x86_64-unknown-linux-musl.tar.gz"
+#      b. Get hash: nix-prefetch-url "https://github.com/openai/codex/releases/download/rust-vVERSION/codex-package-x86_64-unknown-linux-musl.tar.gz"
 #      c. Convert: nix hash convert --hash-algo sha256 --to sri HASH
 #      d. Update version and sha256 below
 { lib, fetchurl, stdenv, ... }:
 
 let
-  version = "0.153.4";
-  sha256 = "sha256-9HlCTsoJJITcQNh64oxE9MxAI0pgBF1hMeSTgA2BSjA=";
-  # Separate release asset since 0.143.0; codex spawns this helper at runtime
-  codeModeHostSha256 = "sha256-+VgwqGlZCVdmS7/Ge8ywh3OAa2k2cLrxWQgXb4m0zTE=";
+  version = "0.163.0";
+  sha256 = "sha256-WCZGxr8FYesN5UD3/IW5EhsAkagmvG6Wgwt/FyISIYI=";
 in
 stdenv.mkDerivation {
   pname = "codex";
   inherit version;
 
   src = fetchurl {
-    url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-x86_64-unknown-linux-musl.tar.gz";
+    url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-package-x86_64-unknown-linux-musl.tar.gz";
     inherit sha256;
-  };
-
-  codeModeHostSrc = fetchurl {
-    url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz";
-    sha256 = codeModeHostSha256;
   };
 
   sourceRoot = ".";
 
   dontStrip = true;
+  dontPatchELF = true;
 
+  # Keep the whole layout: codex resolves codex-package.json relative to bin/codex
   installPhase = ''
-    install -Dm755 codex-x86_64-unknown-linux-musl $out/bin/codex
-    tar -xzf $codeModeHostSrc
-    install -Dm755 codex-code-mode-host-x86_64-unknown-linux-musl $out/bin/codex-code-mode-host
+    mkdir -p $out
+    cp -r bin codex-package.json codex-path codex-resources $out/
   '';
 
   meta = {
