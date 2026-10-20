@@ -1129,12 +1129,11 @@ let
     ${pkgs.jq}/bin/jq -n --rawfile t "$TOKEN_FILE" '{ Authorization: ("Bearer " + ($t | rtrimstr("\n"))) }'
   '';
 
-  # Google Developer Knowledge MCP: the Gemini API key goes in the
-  # X-Goog-Api-Key header (never a query parameter). Its Google Cloud project
-  # must have the Developer Knowledge API enabled and the key's API
-  # restrictions must include it; see the mcpServersDefaults entry.
+  # Google Developer Knowledge MCP: API key goes in the X-Goog-Api-Key header
+  # (never a query parameter). The key must be restricted to
+  # developerknowledge.googleapis.com; see the mcpServersDefaults entry.
   developerKnowledgeMcpHeaders = pkgs.writeShellScript "developer-knowledge-mcp-headers" ''
-    KEY_FILE="${config.sops.secrets.gemini_api_key.path}"
+    KEY_FILE="${config.sops.secrets.developer_knowledge_api_key.path}"
     [ -s "$KEY_FILE" ] || exit 1
     ${pkgs.jq}/bin/jq -n --rawfile k "$KEY_FILE" '{ "X-Goog-Api-Key": ($k | rtrimstr("\n")) }'
   '';
@@ -1266,13 +1265,11 @@ let
     };
     # Google developer docs (Gemini API, Live API, pricing, Android, Cloud)
     # as MCP, for development only: never on an app's live path. Fetching
-    # those pages directly fails, they are JavaScript rendered. Reuses the
-    # gemini_api_key sops secret; one-time setup on that key's project P:
+    # those pages directly fails, they are JavaScript rendered. Key setup:
     #   gcloud services enable developerknowledge.googleapis.com --project=P
-    #   gcloud services api-keys update KEY_NAME \
-    #     --api-target=service=generativelanguage.googleapis.com \
-    #     --api-target=service=developerknowledge.googleapis.com
-    # Without it tools/call answers "API keys are not supported by this API".
+    #   gcloud services api-keys create --project=P --display-name="DK API Key"
+    #   gcloud services api-keys update KEY_NAME --api-target=service=developerknowledge.googleapis.com
+    # then store keyString as developer_knowledge_api_key in sops/api-keys.yaml.
     "google-developer-knowledge" = {
       type = "http";
       url = "https://developerknowledge.googleapis.com/mcp";
