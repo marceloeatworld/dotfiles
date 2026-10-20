@@ -17,6 +17,7 @@ rdp_password: ENC[AES256_GCM,data:bSpR,iv:xtVwlpOa16Eq6H9M1OZOdjNBh5irdnoXv/B45F
 vnc_password: ENC[AES256_GCM,data:4O7thM6FAjk4,iv:OaAdppMeCJ4YVi8rdjTzLAhKjX95YQoZ+40cghkIaUI=,tag:bfGtaudOsnJUUl20Ng9SNg==,type:str]
 mac_host: ENC[AES256_GCM,data:wLUGc6AeAe0Sv24wwGE5tDG3l+Y=,iv:Gw1cKxs5loii7dosWAhHW29OuTm1MwdUl88+fBJYe24=,tag:a18JY6Gfx5LtsLHk9veZMw==,type:str]
 mac_user: ENC[AES256_GCM,data:M27H1g==,iv:EMV05962PH3hDtIz+9Wwc85wSE7OjC+jqk6QA38zoUw=,tag:N8a5C/wyg2kovZMNHEBXwQ==,type:str]
+developer_knowledge_api_key: ENC[AES256_GCM,data:Gugr8Cff/VtKTuFrKLcTf+oiKVf9h1x95QhAL2U6zfUKBpUxCrzN,iv:LoVVbmRQBuRb6uUNfWAu8wgWWcbn4tYLWFBSw5b2pgI=,tag:+SiEx3NDHaBcdnEc55Pcmg==,type:str]
 sops:
     age:
         - enc: |
@@ -28,7 +29,7 @@ sops:
             MO7eUp49WSkMEwGPuRCy1UKXDRgjF9sIyVr1pvwVFF21NoDn1w6zZA==
             -----END AGE ENCRYPTED FILE-----
           recipient: age1kzrccuz8l293g7tuhxhkrlkecsphnqvdmp8uan2e8c38j3h0e47ssl2add
-    lastmodified: "2026-09-10T15:51:48Z"
-    mac: ENC[AES256_GCM,data:qMeEdrd45eZVJB0ejIh5Sqg5Tq8akxd07a+bx88dpHowOfWNZVWYVQqWHS7pGVwrFu69izikLbm388ULmGFOgIF+IGLktY79yScVISC/4zVY1aS2BOduLDT4ZSHkcDJsWD9OSJ/OtheMCEEja6g9xzy67cAUWLHd06hDSKjMj2o=,iv:ZN6+TEwNLGj9wtbhHV7lrTzr7JOST0wE9Wa3BqB+sj8=,tag:8ZROC2kx4NBePAtwmrHDqw==,type:str]
+    lastmodified: "2026-10-20T20:13:34Z"
+    mac: ENC[AES256_GCM,data:byxhAruQKg9+3iLCsRNib+jzbQg2ZJM7bY0Jcs9eM3l5c6cE301ZdrrS/d2O0m++VKbxp5vAn/VemxrZgd2XDWJbdiqfAOBAebGOJhta/r/24ElHO/B0tx/tSGXL3YMeX/EDfNEv6wiIUydEHVIzMFL8d7WGF2PzxtlrA08WZe4=,iv:HFNce6unyyr8DYpVipEMFWG1BtA7r+oFuu41INrI8bk=,tag:KDRnzGxLJ00dmLdAqXyXbA==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.13.3
