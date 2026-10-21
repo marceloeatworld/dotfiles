@@ -120,6 +120,55 @@ let
     EOF
   '';
 
+  # Local-only Strix skill set, taken from the same pinned source the CLI is
+  # built from. Upstream also documents the managed cloud, whose repo-scan
+  # command uploads the working tree, and recommends it whenever a local
+  # prerequisite is missing. The cloud and CI skills are not distributed, so
+  # that path is cut here too: the chooser section, the whole cloud option and
+  # the curl installer are removed, and a local-only note is prepended.
+  strixSkills = pkgs.runCommand "strix-skills" { } ''
+    mkdir -p "$out"
+    for name in penetration-testing-with-strix find-security-vulnerabilities-in-code \
+                fix-security-vulnerabilities-with-strix owasp-top-10-testing \
+                api-security-testing; do
+      cp -r ${pkgs.strix.src}/skills/"$name" "$out/$name"
+    done
+    chmod -R u+w "$out"
+    substituteInPlace "$out/penetration-testing-with-strix/SKILL.md" \
+      --replace-fail 'curl -sSL https://strix.ai/install | bash   # or: pipx install strix-agent' \
+                     'strix --version   # installed by Nix; never run an upstream installer'
+    ${pkgs.python313}/bin/python - "$out" <<'PY'
+    import pathlib, sys
+
+    note = """
+    > **Local-only install (NixOS).** `strix` is installed by Nix. Never run an
+    > upstream installer. Run every scan locally: do not run any `strix cloud`
+    > command and never upload source or a working tree to app.strix.ai. The
+    > managed-cloud and CI skills are deliberately not installed, so references
+    > to them cannot be followed. The sandbox container needs the rootless
+    > Podman socket (`DOCKER_HOST`). `STRIX_LLM` defaults to
+    > `gemini/gemini-4-argon` with the local `GEMINI_API_KEY`. `strix view` has
+    > no bundled dashboard; read `strix_runs/<run>/` directly. Only test targets
+    > the user owns or has written permission to test.
+
+    """
+    root = pathlib.Path(sys.argv[1])
+    main = root / 'penetration-testing-with-strix' / 'SKILL.md'
+    text = main.read_text()
+    # Both blocks end at the next horizontal rule.
+    for start in ('## Which one?', '# Option B'):
+        i = text.index(start)
+        text = text[:i] + text[text.index('\n---\n', i) + 5:]
+    main.write_text(text)
+    for skill in sorted(root.glob('*/SKILL.md')):
+        head, body = skill.read_text().split('\n---\n', 1)
+        skill.write_text(head + '\n---\n' + note + body)
+    PY
+    ${pkgs.gnugrep}/bin/grep -rq 'strix cloud scans start --source' "$out" && exit 1
+    ${pkgs.gnugrep}/bin/grep -rq 'strix.ai/install' "$out" && exit 1
+    true
+  '';
+
   # Helper: clone a git repo if missing (no pull — refresh via `update-skills`)
   # Keeps rebuilds fast and offline-capable; existing caches are left untouched.
   gitSync = ''
@@ -843,6 +892,21 @@ in
       mod-any-game game-recon reverse-engineering fal-assets asset-pipeline \
       game-automation showcase-video mashup-mods publish-mod share-field-notes
     _copy_named_skills "${reaSkills}" reverse-engineer-anything
+
+    # ── SkillSpector and Strix skills, taken from the same pinned source the
+    # CLIs are built from (overlays/skillspector.nix, overlays/strix.nix).
+    # Strix: managed-pentesting (uploads code to app.strix.ai) and
+    # ci-security-scanning (curl | bash installer in CI) are omitted;
+    # web-app-penetration-testing and application-security-testing duplicate
+    # penetration-testing-with-strix. The rest are patched local-only by
+    # strixSkills above ──
+    _copy_named_skills "${pkgs.skillspector.src}/skills" skill-inspector
+    _copy_named_skills "${strixSkills}" \
+      penetration-testing-with-strix \
+      find-security-vulnerabilities-in-code \
+      fix-security-vulnerabilities-with-strix \
+      owasp-top-10-testing \
+      api-security-testing
 
     # ── fal.ai (skills in skills/*/; genmedia core + umbrellas only, the vertical
     # production skills such as commercial, marketing, ugc, fan-cam are omitted) ──

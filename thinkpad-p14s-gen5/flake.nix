@@ -239,6 +239,12 @@
           universal-modder = prev.callPackage ./overlays/universal-modder.nix { };
           rea = prev.callPackage ./overlays/rea.nix { };
         })
+        # Security agents built from pinned upstream tags (not in nixpkgs).
+        # Update: bump version + hash in overlays/skillspector.nix, overlays/strix.nix
+        (final: prev: {
+          skillspector = prev.callPackage ./overlays/skillspector.nix { };
+          strix = prev.callPackage ./overlays/strix.nix { };
+        })
         # RunPod CLI - Prebuilt static Go binary, manages GPU workloads
         # Update: overlays/runpodctl-latest.nix (version + sha256)
         (final: prev: {

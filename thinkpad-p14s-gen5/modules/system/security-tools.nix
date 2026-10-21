@@ -138,6 +138,12 @@
     binwalk        # Firmware analysis and extraction (signature scan, entropy)
     siglens        # Static artifact/YARA analysis; Windows-only engines unavailable
     rea            # App/binary analysis CLI and MCP server (distinct from ReVa)
+
+    # ============================================
+    # AI SECURITY AGENTS
+    # ============================================
+    skillspector   # NVIDIA scanner for agent skills: `skillspector scan <dir> --no-llm`
+    strix          # AI pentest agent; its sandbox container runs in rootless Podman
   ]);
 
   # NOTE: ROCm OpenCL for hashcat GPU is configured in amd-optimizations.nix

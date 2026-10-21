@@ -62,6 +62,22 @@
       ReVa stay on nixpkgs 12.1.2.
       Hopper is not installed by this configuration.
 
+    ### AI Security Agents (pinned overlays, skills in ~/.claude/skills)
+
+    - **SkillSpector**: `skillspector scan <skill-dir> --no-llm` for the static
+      pass; drop `--no-llm` to add the LLM review (needs a provider key).
+      The `skill-inspector` skill drives it. Use it on any skill before
+      adding it to ai-skills.nix.
+    - **Strix**: `strix --target ./app`. `STRIX_LLM` defaults to
+      `gemini/gemini-4-argon` and the wrapper maps the sops `GEMINI_API_KEY`
+      to `LLM_API_KEY` for gemini models only. For another provider set
+      `STRIX_LLM` and `LLM_API_KEY` yourself (`OPENAI_API_KEY` also works).
+      The sandbox image is pulled on first run into rootless Podman via
+      `DOCKER_HOST`. Telemetry is off by default here.
+      `strix view` has no bundled viewer (the Vite bundle is not in the
+      source tag); read `strix_runs/<run>/` directly. Only test systems you
+      own or have written permission for.
+
     ### Network Scanning
     - **nmap**: Network scanner and security auditor
       ```bash
