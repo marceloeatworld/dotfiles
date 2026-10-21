@@ -17,8 +17,8 @@
 { lib, fetchurl, stdenv, nodejs-slim_22, ripgrep, makeWrapper, ... }:
 
 let
-  version = "0.64.0";
-  sha256 = "sha256-iRp5TlXIMZtrePb48T1riyeCpHCd/S/KvzofY66DZeY=";
+  version = "0.65.0";
+  sha256 = "sha256-l/H38efhiQVNJ+37nGLGpFzsFbZ4hA393jwMzYf6s3Y=";
 in
 stdenv.mkDerivation {
   pname = "gemini-cli";
