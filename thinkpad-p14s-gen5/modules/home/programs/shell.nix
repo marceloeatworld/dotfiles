@@ -205,12 +205,12 @@ in
           return 0
         fi
 
-        if root=$(git rev-parse --show-toplevel 2>/dev/null); then
-          if [[ -f "$root/thinkpad-p14s-gen5/flake.nix" ]]; then
-            dir="$root/thinkpad-p14s-gen5"
-          elif [[ -f "$root/flake.nix" ]]; then
-            dir="$root"
-          fi
+        # Only the dotfiles repo counts. Any other repo with a flake.nix
+        # (project flakes) must fall through to ~/dotfiles, otherwise
+        # update/rebuild run against the wrong flake.
+        if root=$(git rev-parse --show-toplevel 2>/dev/null) \
+          && [[ -f "$root/thinkpad-p14s-gen5/flake.nix" ]]; then
+          dir="$root/thinkpad-p14s-gen5"
         fi
 
         if [[ -z "$dir" && -f "$HOME/dotfiles/thinkpad-p14s-gen5/flake.nix" ]]; then
