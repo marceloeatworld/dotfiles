@@ -310,6 +310,58 @@ let
       };
     };
 
+    # ── Catppuccin Latte ───────────────────────────────────────────────────
+    # Daylight companion to Catppuccin Mocha, faithful to the official Latte
+    # base/text/overlay palette. The accent hues are Latte's, darkened until
+    # they hold WCAG AA (≥4.5:1) on both the window background and the darker
+    # terminal background (Latte Mantle, see terminalBackground below).
+    catppuccin-latte = {
+      name = "Catppuccin Latte";
+      description = "Soothing pastel latte daylight";
+      icon = "🐱";
+      colors = {
+        # Base - Latte
+        background = "#eff1f5";      # Latte Base
+        backgroundAlt = "#e6e9ef";   # Latte Mantle (recessed)
+        surface = "#f8f9fc";         # Raised sheet, slightly above Base
+        foreground = "#4c4f69";      # Latte Text - ~7.1:1
+        foregroundDim = "#5c5f77";   # Latte Subtext1 - ~5.5:1
+        accent = "#8737ef";          # Primary UI accent - Latte Mauve
+        accentSecondary = "#0d5af4"; # Secondary UI accent - Latte Blue
+        # Accents - Latte hues darkened for WCAG AA on bg AND terminal bg
+        red = "#d00f38";             # ~4.9:1 bg / ~4.5:1 terminal
+        orange = "#b74301";          # Latte Peach darkened - ~4.9:1 / ~4.5:1
+        yellow = "#925d13";          # Latte Yellow darkened - ~4.9:1 / ~4.6:1
+        green = "#307820";           # Latte Green darkened - ~4.8:1 / ~4.5:1
+        cyan = "#12747a";            # Latte Teal darkened - ~4.9:1 / ~4.5:1
+        blue = "#0d5af4";            # Latte Blue darkened - ~4.9:1 / ~4.6:1
+        magenta = "#8737ef";         # Latte Mauve - ~4.9:1 / ~4.5:1
+        # UI - border ≥3:1; selection is a mauve highlighter. Latte Text is
+        # too light for a 4.5:1 text-on-selection AND a 2.7:1 selection-on-bg
+        # at once, so the selection favors readable text (~4.0:1) over pop.
+        border = "#80849a";          # ~3.3:1
+        selection = "#c8adeb";       # ~1.75:1 vs bg, fg on it ~4.0:1
+        comment = "#64677f";         # ~4.9:1
+        # Terminal variants: keep ANSI white readable on light backgrounds.
+        brightBlack = "#62657d";     # ~5.0:1
+        brightWhite = "#4c4f69";
+        # Terminal background: Latte Mantle, same step down as the other light
+        # themes use (#e6dfd5), but on Latte's cool gray instead of warm beige.
+        terminalBackground = "#e6e9ef";
+      };
+      fonts = defaultFonts;
+      appearance = {
+        gtkTheme = "Yaru-purple";
+        iconTheme = "Yaru-purple";
+        cursorTheme = "Bibata-Modern-Ice";
+        cursorSize = 24;
+        kvantumTheme = "KvMojaveLight";
+        nvimColorscheme = "catppuccin";
+        nvimFlavor = "latte";
+        preferDark = false;
+      };
+    };
+
     # ── Paper ─────────────────────────────────────────────────────────────
     # Soft warm paper palette — light, but never pure white.
     # Designed for daylight work while keeping terminal/syntax contrast readable.
@@ -387,8 +439,24 @@ let
     "nord"
     "tokyonight"
     "catppuccin"
+    "catppuccin-latte"
     "paper"
   ];
+
+  # Day/night pairs switched at runtime by theme-switch (runtime-theme.nix).
+  # The pair that contains the selected theme is scheduled; any other theme
+  # falls back to the Catppuccin pair for the manual day/night commands.
+  schedulePairs = [
+    { dark = "catppuccin"; light = "catppuccin-latte"; }
+    { dark = "neobrutalist"; light = "neobrutalist-light"; }
+  ];
+  schedulePair =
+    let
+      matching = lib.filter
+        (pair: validTheme == pair.dark || validTheme == pair.light)
+        schedulePairs;
+    in
+    if matching == [ ] then lib.head schedulePairs else lib.head matching;
 
   themeMetadata = lib.genAttrs themeList (themeName: {
     inherit (themes.${themeName}) name description icon;
@@ -409,6 +477,7 @@ in
         - nord: Arctic aurora over polar night
         - tokyonight: Neon city lights at midnight
         - catppuccin: Soothing pastel mocha warmth
+        - catppuccin-latte: Soothing pastel latte daylight
         - paper: Warm off-white paper with ink accents
       '';
     };
@@ -432,6 +501,20 @@ in
       default = themes;
       readOnly = true;
       description = "Complete theme definitions used by runtime theme tooling";
+    };
+
+    schedule = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = schedulePair;
+      readOnly = true;
+      description = "Dark/light theme pair used by theme-switch day/night commands";
+    };
+
+    scheduleEnabled = lib.mkOption {
+      type = lib.types.bool;
+      default = validTheme == schedulePair.dark || validTheme == schedulePair.light;
+      readOnly = true;
+      description = "Whether the selected theme belongs to the scheduled day/night pair";
     };
 
     # ── Color Options ──

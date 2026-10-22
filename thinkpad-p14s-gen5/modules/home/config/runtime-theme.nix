@@ -1,13 +1,14 @@
 { config, pkgs, lib, hyprScripts, ... }:
 
 let
-  scheduledThemeNames = [
-    "neobrutalist"
-    "neobrutalist-light"
-  ];
+  # Day/night pair (theme.nix schedulePairs): the pair containing the selected
+  # theme, so the 07:00/18:00 timers only run when the selected theme has a
+  # light/dark companion.
+  scheduleDark = config.theme.schedule.dark;
+  scheduleLight = config.theme.schedule.light;
 
   runtimeThemeNames = config.theme.available;
-  scheduledThemeEnabled = lib.elem config.theme.name scheduledThemeNames;
+  scheduledThemeEnabled = config.theme.scheduleEnabled;
   initialThemeCommand = if scheduledThemeEnabled then "auto" else config.theme.name;
 
   runtimeThemes = lib.genAttrs runtimeThemeNames (themeName:
@@ -24,10 +25,13 @@ let
     if theme.appearance.preferDark then "prefer-dark" else "prefer-light";
 
   # Shared by Ghostty and Alacritty so both terminals render identically.
+  # Light themes use a darker terminal background than their window background
+  # (warm beige by default, or the theme's own terminalBackground).
   terminalBackground = theme:
-    if theme.appearance.preferDark then theme.colors.background else "#e6dfd5";
+    if theme.appearance.preferDark then theme.colors.background
+    else theme.colors.terminalBackground or "#e6dfd5";
   # Theme selection colors are dark enough to stay visible on the light
-  # terminal background (#e6dfd5), so no light-mode override is needed.
+  # terminal background, so no light-mode override is needed.
   terminalSelectionBackground = theme: theme.colors.selection;
 
   colorsShell = themeName: theme: ''
@@ -786,9 +790,9 @@ let
       hour="$(${pkgs.coreutils}/bin/date +%H)"
       hour=$((10#$hour))
       if [ "$hour" -ge "$DAY_START" ] && [ "$hour" -lt "$DAY_END" ]; then
-        printf '%s\n' neobrutalist-light
+        printf '%s\n' ${scheduleLight}
       else
-        printf '%s\n' neobrutalist
+        printf '%s\n' ${scheduleDark}
       fi
     }
 
@@ -818,19 +822,19 @@ let
         ;;
       toggle)
         case "$(current_theme)" in
-          neobrutalist-light)
-            theme_name="neobrutalist"
+          ${scheduleLight})
+            theme_name="${scheduleDark}"
             ;;
           *)
-            theme_name="neobrutalist-light"
+            theme_name="${scheduleLight}"
             ;;
         esac
         ;;
       day|light)
-        theme_name="neobrutalist-light"
+        theme_name="${scheduleLight}"
         ;;
       night|dark)
-        theme_name="neobrutalist"
+        theme_name="${scheduleDark}"
         ;;
       ${lib.concatStringsSep "|" runtimeThemeNames})
         theme_name="$command_name"

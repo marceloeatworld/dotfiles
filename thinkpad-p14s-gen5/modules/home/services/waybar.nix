@@ -43,12 +43,12 @@ let
     fi
 
     case "$theme" in
-      neobrutalist-light)
+      ${config.theme.schedule.light})
         text="󰖨"
         class="light"
         tooltip="Theme: light | Left: dark | Right: auto"
         ;;
-      neobrutalist)
+      ${config.theme.schedule.dark})
         text="󰖔"
         class="dark"
         tooltip="Theme: dark | Left: light | Right: auto"
@@ -70,7 +70,7 @@ let
       theme="$(${pkgs.coreutils}/bin/tr -d '[:space:]' < "$state_file")"
     fi
 
-    if [ "$theme" = "neobrutalist-light" ]; then
+    if [ "$theme" = "${config.theme.schedule.light}" ]; then
       ${pkgs.systemd}/bin/systemctl --user start runtime-theme-night.service
     else
       ${pkgs.systemd}/bin/systemctl --user start runtime-theme-day.service

@@ -201,7 +201,7 @@ let
     theme-selector list  List available themes
     theme-selector current  Show active theme
       Themes: ristretto neobrutalist neobrutalist-light
-              nord tokyonight catppuccin paper
+              nord tokyonight catppuccin catppuccin-latte paper
 
     ━━━━━━━━━━━ SHELL COMMANDS ━━━━━━━━━━━
     rebuild       Rebuild NixOS live (nh os switch .)

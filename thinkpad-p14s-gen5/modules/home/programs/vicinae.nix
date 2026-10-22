@@ -13,10 +13,10 @@ let
   definitions = theme.definitions;
   current = definitions.${theme.name};
 
-  # Dark/light map for Vicinae's appearance switch. The runtime pair is
-  # neobrutalist / neobrutalist-light (runtime-theme.nix schedule).
-  darkName = if current.appearance.preferDark then theme.name else "neobrutalist";
-  lightName = if current.appearance.preferDark then "neobrutalist-light" else theme.name;
+  # Dark/light map for Vicinae's appearance switch: the runtime day/night pair
+  # (theme.nix schedulePairs, applied by runtime-theme.nix).
+  darkName = theme.schedule.dark;
+  lightName = theme.schedule.light;
 
   vicinaeTheme = _name: t:
     let
