@@ -23,21 +23,8 @@ let
     rev = "9b68f7ed12b05e7efaff18e65c5a3fc2849fd0a4"; # 2026-10-25
     hash = "sha256-fuSsPP7GMuAZ5Ab2paS41RAo5k/objd503ElcMeMgsk=";
   };
-  nullteaSrc = pkgs.fetchFromGitHub {
-    owner = "nulltea";
-    repo = "skills";
-    rev = "c9822866e2065df4da5fe13afdb98767c580a306"; # 2026-08-05
-    hash = "sha256-jXfMG0RerboOOOwOnf6IGR3bzvS3uktbVy8KW1h48xI=";
-  };
-  # ReVa skills, pinned to the same tag as the nixpkgs mcp-reva server (7.3.1)
-  # so the tool names the skills reference match the running server.
-  revaSrc = pkgs.fetchFromGitHub {
-    owner = "cyberkaida";
-    repo = "reverse-engineering-assistant";
-    rev = "3cb3e65f354cda8d6125ecff654063436a3ab5ab"; # v7.3.1
-    hash = "sha256-eYZeyhXlGwLVa/k77Y5x2OeGo/m9fh3VauzAqB+obxw=";
-  };
-
+  # Skills vendored in this repo (modules/home/programs/skills/<name>/SKILL.md).
+  localSkills = ./skills;
   # Marketing skills (MIT). 52 skills upstream; only the ones below are
   # installed, all of which read the shared `.agents/product-marketing.md`
   # that product-marketing creates.
@@ -123,9 +110,9 @@ let
     `rea` is installed by Nix and the `rea` MCP server is configured for Claude.
     Use the CLI in agents without that MCP registration. Manage packages and
     registration through this flake rather than `rea setup` or its installers.
-    This is separate from ReVa (`reva` MCP). REA 6.8.0 requires exactly Ghidra
-    12.1.4 and JDK 21; the `rea` MCP wrapper in claude-code.nix provides its own
-    Ghidra 12.1.4 tree, while the GUI Ghidra and ReVa stay on nixpkgs 12.1.2.
+    REA 6.8.0 requires exactly Ghidra 12.1.4 and JDK 21; the `rea` MCP wrapper
+    in claude-code.nix provides its own Ghidra 12.1.4 tree, while the GUI Ghidra
+    stays on nixpkgs.
     Hopper needs a separate installation/license.
     EOF
   '';
@@ -775,7 +762,7 @@ in
       done
     done
     $DRY_RUN_CMD rm -rf "${cache}/supabase" "${cache}/android-re" "${cache}/mdbook" "${cache}/svelte"
-    # caveman and nulltea moved to pinned fetchFromGitHub sources (see top of file)
+    # caveman is a pinned fetchFromGitHub source; i-have-adhd is vendored (see top of file)
     $DRY_RUN_CMD rm -rf "${cache}/caveman" "${cache}/nulltea"
 
     # Unmanaged leftovers copied before the managed marker existed, so the
@@ -887,14 +874,9 @@ in
     # and overlap with commit-commands, code-review, and CLAUDE.md rules) ──
     _copy_named_skills "${cavemanSrc}/skills" caveman
 
-    # ── nulltea (pinned; skills grouped in skills/<bucket>/*/; only i-have-adhd,
+    # ── i-have-adhd (vendored copy of nulltea/skills@c982286, 2026-08-05;
     # loaded every session by the global CLAUDE.md import in claude-code.nix) ──
-    _copy_named_skills "${nullteaSrc}/skills/productivity" i-have-adhd
-
-    # ── ReVa (pinned; reverse engineering workflows for the reva MCP server
-    # declared in claude-code.nix: triage, deep analysis, CTF, PyGhidra) ──
-    _copy_named_skills "${revaSrc}/ReVa/skills" \
-      binary-triage deep-analysis ctf-crypto ctf-pwn ctf-rev pyghidra-scripting
+    _copy_named_skills "${localSkills}" i-have-adhd
 
     # ── Marketing (pinned; product-marketing is the shared context every other
     # skill reads first. seo-audit is a technical audit, distinct from the seo
@@ -902,7 +884,7 @@ in
     _copy_named_skills "${marketingSrc}/skills" \
       product-marketing copywriting cro pricing launch seo-audit
 
-    # Pinned prompt pack, modding toolkit and REA (distinct from ReVa).
+    # Pinned prompt pack, modding toolkit and REA.
     _copy_named_skills "${bugBountySkills}" bug-bounty-hunting
     _copy_named_skills "${universalModderSkills}" \
       mod-any-game game-recon reverse-engineering fal-assets asset-pipeline \

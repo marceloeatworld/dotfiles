@@ -761,7 +761,6 @@ let
         "mcp__terraform"
         "mcp__headroom"
         "mcp__blender"
-        "mcp__reva"
         "mcp__rea"
       ];
       # Always prompt for these, in every mode (ask rules beat allow rules and
@@ -771,9 +770,6 @@ let
         # ── Arbitrary code execution / writes behind whole-server allows ──
         "mcp__playwright__browser_run_code_unsafe"
         "mcp__blender__execute_blender_code"
-        "mcp__reva__run-script"
-        "mcp__reva__write-script"
-        "mcp__reva__edit-script"
         # REA: these launch an arbitrary local binary or Electron app to record it
         "mcp__rea__capture_process_scenario"
         "mcp__rea__capture_electron_scenario"
@@ -897,7 +893,7 @@ let
         "**Organization**: personal machine of a single developer (GitHub user marceloeatworld). Primary use: software development, NixOS dotfiles, and browser automation/research with Claude in Chrome and Playwright"
         "**Source control**: github.com/marceloeatworld and every repo under it; local-only repos under ~/codes and ~/dotfiles are the user's own work"
         "**Cloud provider(s)**: Cloudflare (Pages, Workers, AI Gateway), Neon Postgres, WorkOS, Stripe, HCP Terraform, RunPod, Google Cloud"
-        "**Key internal services**: the user's configured MCP servers (claude-in-chrome, chrome-devtools, playwright, neon, github, cloudflare-ai-gateway, workos, stripe, terraform, nixos, headroom, blender, reva, rea; stripe comes from the official stripe plugin). Opening any website the user asks for in Claude in Chrome or Playwright is routine browser automation, not exfiltration"
+        "**Key internal services**: the user's configured MCP servers (claude-in-chrome, chrome-devtools, playwright, neon, github, cloudflare-ai-gateway, workos, stripe, terraform, nixos, headroom, blender, rea; stripe comes from the official stripe plugin). Opening any website the user asks for in Claude in Chrome or Playwright is routine browser automation, not exfiltration"
         "**Trusted internal domains**: github.com, api.github.com, mcp.neon.tech, console.neon.tech, api.cloudflare.com, dash.cloudflare.com, mcp.workos.com, mcp.stripe.com, dashboard.stripe.com, app.terraform.io, api.runpod.io"
         "**CI/CD deploy targets**: Cloudflare Pages via wrangler (raizes-do-alentejo project and its pages.dev previews)"
         "**Org-specific CLIs**: nix, nh, hyprctl, gh, wrangler, runpodctl, arkcli"
@@ -1138,28 +1134,13 @@ let
     ${pkgs.jq}/bin/jq -n --rawfile k "$KEY_FILE" '{ "X-Goog-Api-Key": ($k | rtrimstr("\n")) }'
   '';
 
-  # ReVa headless (Ghidra MCP server, nixpkgs mcp-reva). PyGhidra boots the
-  # base Ghidra from GHIDRA_INSTALL_DIR and the nixpkgs Java patch loads the
-  # ReVa extension from NIX_GHIDRAHOME (withExtensions bundles only the
-  # extensions, no Ghidra tree). PyGhidra needs `java` on PATH to run
-  # LaunchSupport. Ephemeral Ghidra projects go to TMPDIR: /tmp is a tmpfs
-  # here and a firmware image project would swap it into zram. /var/tmp is on
-  # disk; ~/.cache is not an option, Ghidra rejects path elements starting
-  # with a dot.
-  ghidraWithReva = pkgs.ghidra.withExtensions (p: [ p.reva ]);
-  revaMcp = pkgs.writeShellScript "mcp-reva-nix" ''
-    export GHIDRA_INSTALL_DIR="${pkgs.ghidra}/lib/ghidra"
-    export NIX_GHIDRAHOME="${ghidraWithReva}/lib/ghidra/Ghidra"
-    export PATH="${pkgs.openjdk21}/bin:$PATH"
-    export TMPDIR="/var/tmp"
-    exec ${pkgs.mcp-reva}/bin/mcp-reva "$@"
-  '';
-
   # REA's Ghidra provider accepts exactly application.version 12.1.4 and a
   # JDK 21 (GhidraInstallation.js: SUPPORTED_GHIDRA_VERSION). The pinned
   # nixpkgs ghidra-bin is 12.1.2, so this is the same prebuilt derivation
-  # with the 12.1.4 release zip. The GUI Ghidra firejail and ReVa stay on
-  # pkgs.ghidra; only the rea MCP server sees this tree.
+  # with the 12.1.4 release zip. The GUI Ghidra firejail stays on
+  # pkgs.ghidra; only the rea MCP server sees this tree. Ephemeral Ghidra
+  # projects go to TMPDIR: /tmp is a tmpfs here and a firmware image project
+  # would swap it into zram; /var/tmp is on disk.
   ghidraForRea = pkgs.ghidra-bin.overrideAttrs (old: {
     version = "12.1.4";
     src = pkgs.fetchzip {
@@ -1243,14 +1224,9 @@ let
       command = "${pkgs.terraform-mcp-server}/bin/terraform-mcp-server";
       args = [ "stdio" ];
     };
-    # Ghidra decompiler/analysis for Claude (import, decompile, rename, xrefs,
-    # diff, PyGhidra scripts). Starts Ghidra headless on first use (~10 s);
-    # the GUI Ghidra firejail (--net=none) stays untouched. See revaMcp above.
-    "reva" = {
-      command = "${revaMcp}";
-    };
-    # REA is a separate app-analysis server. Its Ghidra provider gets its
-    # own Ghidra 12.1.4 tree through reaMcp above.
+    # REA app/binary analysis server (decompile, xrefs, strings, Frida, GDB,
+    # Android, Electron, web). Its Ghidra provider gets its own Ghidra 12.1.4
+    # tree through reaMcp above; the GUI Ghidra firejail stays untouched.
     "rea" = {
       command = "${reaMcp}";
     };
@@ -1665,7 +1641,7 @@ in
 
       ## Always-On Skills
 
-      The two skills below are active in every session without being invoked. Both files come from upstream commits pinned by rev and hash in `ai-skills.nix`.
+      The two skills below are active in every session without being invoked. Caveman comes from an upstream commit pinned by rev and hash in `ai-skills.nix`; i-have-adhd is a vendored copy under `modules/home/programs/skills/`.
 
       - Caveman is always on. The language rule above wins over the skill's "user's language" rule: answer in English even when the user writes in French. `/caveman ultra` and `/caveman wenyan` point at the `ultracave` and `megacave` skills, which are not installed; the mode hook is not installed either.
       - Skill files are imported after this line, so their rules apply on top of everything above.

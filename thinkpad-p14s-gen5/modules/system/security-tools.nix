@@ -133,11 +133,11 @@
     # REVERSE ENGINEERING
     # ============================================
     # Ghidra itself is installed via the firejail wrapper in security.nix;
-    # Claude drives it headless through the reva MCP server (claude-code.nix)
+    # Claude drives Ghidra headless through the rea MCP server (claude-code.nix)
     moria          # Firmware identification and extraction (filesystems, kernels, keys)
     binwalk        # Firmware analysis and extraction (signature scan, entropy)
     siglens        # Static artifact/YARA analysis; Windows-only engines unavailable
-    rea            # App/binary analysis CLI and MCP server (distinct from ReVa)
+    rea            # App/binary analysis CLI and MCP server
 
     # ============================================
     # AI SECURITY AGENTS
