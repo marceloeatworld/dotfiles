@@ -15,8 +15,8 @@
 { lib, fetchurl, stdenv, installShellFiles, ... }:
 
 let
-  version = "1.0.41";
-  sha256 = "sha256-LuZTst+jCXiZUrbba7Fl7+JV96EitDDFOChSmZnkjrI=";
+  version = "1.0.42";
+  sha256 = "sha256-LSzEx8EjaTAIdrBXCA53hMdZT3AzMEdjlmwJtHGgSJ4=";
 in
 stdenv.mkDerivation {
   pname = "arkcli";

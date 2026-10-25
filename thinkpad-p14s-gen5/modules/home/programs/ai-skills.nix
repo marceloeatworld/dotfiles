@@ -38,6 +38,16 @@ let
     hash = "sha256-eYZeyhXlGwLVa/k77Y5x2OeGo/m9fh3VauzAqB+obxw=";
   };
 
+  # Marketing skills (MIT). 52 skills upstream; only the ones below are
+  # installed, all of which read the shared `.agents/product-marketing.md`
+  # that product-marketing creates.
+  marketingSrc = pkgs.fetchFromGitHub {
+    owner = "coreyhaines31";
+    repo = "marketingskills";
+    rev = "e85f3cbc2e4a79bf33b2a12e9bdd9087d414735b"; # 2026-10-22
+    hash = "sha256-7vfgajBoZMtgct2IZwqFoQrAoKkrMrK8jc644NdNju4=";
+  };
+
   # Prompt pack rather than an executable or upstream SKILL.md.
   bugBountySrc = pkgs.fetchFromGitHub {
     owner = "mdpsec";
@@ -885,6 +895,12 @@ in
     # declared in claude-code.nix: triage, deep analysis, CTF, PyGhidra) ──
     _copy_named_skills "${revaSrc}/ReVa/skills" \
       binary-triage deep-analysis ctf-crypto ctf-pwn ctf-rev pyghidra-scripting
+
+    # ── Marketing (pinned; product-marketing is the shared context every other
+    # skill reads first. seo-audit is a technical audit, distinct from the seo
+    # router above. ads, sms, events, influencer, PR and the rest are omitted) ──
+    _copy_named_skills "${marketingSrc}/skills" \
+      product-marketing copywriting cro pricing launch seo-audit
 
     # Pinned prompt pack, modding toolkit and REA (distinct from ReVa).
     _copy_named_skills "${bugBountySkills}" bug-bounty-hunting

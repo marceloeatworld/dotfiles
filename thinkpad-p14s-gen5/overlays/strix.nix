@@ -32,7 +32,10 @@ let
 
   # nixpkgs ships openai-agents 0.22.0, which needs openai >=3 (nixpkgs has
   # 2.x) and fails its runtime deps check; Strix pins 0.19.x anyway.
-  openai-agents = python3Packages.openai-agents.overridePythonAttrs (old: rec {
+  # 0.19.x also needs mcp <2; nixpkgs moved mcp to 2.x and keeps 1.x as mcp_1.
+  openai-agents = (python3Packages.openai-agents.override {
+    mcp = python3Packages.mcp_1;
+  }).overridePythonAttrs (old: rec {
     version = "0.19.4";
     src = fetchPypi {
       inherit version;

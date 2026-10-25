@@ -114,6 +114,13 @@
               androguard = python-prev.androguard.overridePythonAttrs {
                 doCheck = false;
               };
+
+              # Upstream breakage: nixpkgs bumped mcp to 2.x and marked
+              # fastmcp-slim broken (requires mcp < 2). mcp-nixos -> fastmcp
+              # -> fastmcp-slim. Build against the kept mcp_1 (1.29.0) instead.
+              fastmcp-slim = python-prev.fastmcp-slim.override {
+                mcp = python-final.mcp_1;
+              };
             })
           ];
         })
