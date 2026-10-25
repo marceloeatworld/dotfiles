@@ -982,9 +982,9 @@ in
     Unit.Description = "Switch to the daylight runtime desktop theme";
     Service = {
       Type = "oneshot";
-      # "auto", not "day": after a boot both Persistent timers catch up at
-      # once, so each run must pick the theme for the current time.
-      ExecStart = "${themeSwitch}/bin/theme-switch auto --quiet";
+      # Manual switch (Waybar click, keybind). The timers trigger
+      # runtime-theme-sync instead, which picks the theme for the current time.
+      ExecStart = "${themeSwitch}/bin/theme-switch day --quiet";
     };
   };
 
@@ -992,9 +992,7 @@ in
     Unit.Description = "Switch to the night runtime desktop theme";
     Service = {
       Type = "oneshot";
-      # "auto", not "night": after a boot both Persistent timers catch up at
-      # once, so each run must pick the theme for the current time.
-      ExecStart = "${themeSwitch}/bin/theme-switch auto --quiet";
+      ExecStart = "${themeSwitch}/bin/theme-switch night --quiet";
     };
   };
 
@@ -1003,7 +1001,9 @@ in
     Timer = {
       OnCalendar = "*-*-* 07:00:00";
       Persistent = true;
-      Unit = "runtime-theme-day.service";
+      # Both Persistent timers catch up at once after a boot, so they run the
+      # sync unit (auto) rather than the fixed day/night units.
+      Unit = "runtime-theme-sync.service";
     };
     Install.WantedBy = [ "timers.target" ];
   };
@@ -1013,7 +1013,9 @@ in
     Timer = {
       OnCalendar = "*-*-* 18:00:00";
       Persistent = true;
-      Unit = "runtime-theme-night.service";
+      # Both Persistent timers catch up at once after a boot, so they run the
+      # sync unit (auto) rather than the fixed day/night units.
+      Unit = "runtime-theme-sync.service";
     };
     Install.WantedBy = [ "timers.target" ];
   };
