@@ -14,7 +14,7 @@
 { waybar, fetchFromGitHub, ... }:
 
 let
-  rev = "98b2a563f398f63f99ec8a6f7fb2b19a172abd5d";
+  rev = "c15ec02ede4343592a59eb5c2ff4443c9c045f7c";
   shortRev = builtins.substring 0 7 rev;
   version = "0.15.0-unstable-${shortRev}";
 in
@@ -44,7 +44,7 @@ in
     owner = "Alexays";
     repo = "Waybar";
     inherit rev;
-    hash = "sha256-gVYj72W4L5FJwtfkT/m8PxgDKBT/3HIq1BdnxhFtlPQ=";
+    hash = "sha256-mBDWjeeIuFfDZQuBxHu+EpbJ+GMbbSxpRz0WVM2N+ZI=";
   };
 
   postPatch = (old.postPatch or "") + ''
@@ -75,7 +75,7 @@ in
     # otherwise flood the user journal while connectivity remains healthy.
     substituteInPlace src/modules/network.cpp \
       --replace-fail \
-'        spdlog::warn("nl80211: nl_send_sync get_station error {}", err);' \
-'        spdlog::debug("nl80211: nl_send_sync get_station error {}", err);'
+'        spdlog::warn("nl80211: get_station error: {}", nl_geterror(err));' \
+'        spdlog::debug("nl80211: get_station error: {}", nl_geterror(err));'
   '';
 })

@@ -2,13 +2,13 @@
 
 python313Packages.buildPythonApplication {
   pname = "universal-modder";
-  version = "0.2.0-unstable-2026-10-05";
+  version = "0.2.0-unstable-2026-10-21";
   pyproject = true;
   src = fetchFromGitHub {
     owner = "rehan-remade";
     repo = "universal-modder";
-    rev = "afc34437a05786358fdf93163304f8a51646fedd";
-    hash = "sha256-zExi4vl5XtCv9jgK4Oj6VOrFS9rIlOeUR6CJN7qku5g=";
+    rev = "c1dff21663665dd17af289744a301b66e369605e";
+    hash = "sha256-/hMtVomQl8TZ038Hddt2GQUGI3xZgRlU4wMu+G1mliQ=";
   };
   build-system = [ python313Packages.hatchling ];
   dependencies = with python313Packages; [ pillow numpy pyyaml ];

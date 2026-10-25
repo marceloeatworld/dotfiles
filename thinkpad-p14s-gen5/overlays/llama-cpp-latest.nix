@@ -14,10 +14,10 @@
 
 let
   # AUTO-UPDATED BY update-llama-cpp SCRIPT
-  version = "10819";
-  hash = "sha256-6x9ryBR71MSZgJ8e4ysFlQCnQHtFsNnYlPevBUvlPNY=";
+  version = "11883";
+  hash = "sha256-DEB3+wXJ/akJtQBNBn5tEDzg2qapT2mYY+Izkqviu6I=";
   # webui npm deps hash for this pinned version (decouples from nixpkgs)
-  npmDepsHash = "sha256-2Q7XhaLAArmviOLdQsNbYTfdyDE5pW9lR26cRHEVl9k=";
+  npmDepsHash = "sha256-XLtEZsSFdk+2SyfXzBp8HQ2e27PQPpDCn1YjePU1/9w=";
 in
 (llama-cpp.override {
   rocmSupport = true;   # AMD GPU acceleration via ROCm

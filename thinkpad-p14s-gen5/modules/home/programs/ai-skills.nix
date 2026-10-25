@@ -20,8 +20,8 @@ let
   cavemanSrc = pkgs.fetchFromGitHub {
     owner = "JuliusBrussee";
     repo = "caveman";
-    rev = "2fd153c67988e980fb0b2455c90832159a6a5a25"; # 2026-09-22
-    hash = "sha256-KFfU8LmNajKLZcOXOFisn4beTcg2YL+rpasr39UgSZE=";
+    rev = "9b68f7ed12b05e7efaff18e65c5a3fc2849fd0a4"; # 2026-10-25
+    hash = "sha256-fuSsPP7GMuAZ5Ab2paS41RAo5k/objd503ElcMeMgsk=";
   };
   nullteaSrc = pkgs.fetchFromGitHub {
     owner = "nulltea";
@@ -111,7 +111,7 @@ let
 
   reaSkills = pkgs.runCommand "rea-skills" { } ''
     mkdir -p "$out"
-    cp -r ${pkgs.rea.src}/skills/reverse-engineer-anything "$out/"
+    cp -r ${pkgs.rea.src}/.agents/skills/reverse-engineer-anything "$out/"
     chmod -R u+w "$out"
     # Use the packaged version; upstream setup would rewrite agent configs.
     substituteInPlace "$out/reverse-engineer-anything/SKILL.md" \
@@ -123,7 +123,7 @@ let
     `rea` is installed by Nix and the `rea` MCP server is configured for Claude.
     Use the CLI in agents without that MCP registration. Manage packages and
     registration through this flake rather than `rea setup` or its installers.
-    This is separate from ReVa (`reva` MCP). REA 4.0.1 requires exactly Ghidra
+    This is separate from ReVa (`reva` MCP). REA 6.8.0 requires exactly Ghidra
     12.1.4 and JDK 21; the `rea` MCP wrapper in claude-code.nix provides its own
     Ghidra 12.1.4 tree, while the GUI Ghidra and ReVa stay on nixpkgs 12.1.2.
     Hopper needs a separate installation/license.
@@ -446,7 +446,7 @@ let
   seoSkillsSrc = pkgs.fetchFromGitHub {
     owner = "Illyism";
     repo = "seo-skills";
-    rev = "af48ce5953e00ca75d1cd4d440e77d0c0d61a038"; # 2026-10-06
+    rev = "a47acc9d28ceebe5d4845cda29113a6c07781bca"; # 2026-10-06
     hash = "sha256-sS/I8hXhQT+uXsByS4gqKA3WGZi0qvOvKoU11DuoCbw=";
   };
 
@@ -906,7 +906,8 @@ in
     _copy_named_skills "${bugBountySkills}" bug-bounty-hunting
     _copy_named_skills "${universalModderSkills}" \
       mod-any-game game-recon reverse-engineering fal-assets asset-pipeline \
-      game-automation showcase-video mashup-mods publish-mod share-field-notes
+      game-automation showcase-video mashup-mods publish-mod share-field-notes \
+      game-research-websearch port-a-mod
     _copy_named_skills "${reaSkills}" reverse-engineer-anything
 
     # ── SkillSpector and Strix skills, taken from the same pinned source the

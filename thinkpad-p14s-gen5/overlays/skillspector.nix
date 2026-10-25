@@ -18,13 +18,13 @@ let
 in
 python3Packages.buildPythonApplication rec {
   pname = "skillspector";
-  version = "2.13.0";
+  version = "2.13.1";
   pyproject = true;
   src = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "SkillSpector";
     rev = "v${version}";
-    hash = "sha256-ytTZ7MEi4nzBTxk9zGmyOwuMStsaXAuH/yis64EbSmg=";
+    hash = "sha256-6cgi0+uk4cCoS2AAp4aUUQm4ZF9KfGdLjqC1wVOoHa0=";
   };
   build-system = [ python3Packages.hatchling ];
   # typer <0.24 is pinned upstream only to coexist with semgrep's click; the

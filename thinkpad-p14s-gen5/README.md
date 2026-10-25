@@ -463,7 +463,7 @@ Each repo is narrowed to a named list so only the skills actually used land in t
 | `hoainho/img2threejs` | `img2threejs` |
 | `mdpsec/bug-bounty-hunting-prompts` | `bug-bounty-hunting` wrapper with adaptation guide and phase prompts (pinned) |
 | `Illyism/seo-skills` | `seo` router with autopilot, title optimization, blog refresher and diff marketing references, plus the local parasite-seo workflow (pinned; vendor skills omitted) |
-| `rehan-remade/universal-modder` | `mod-any-game`, `game-recon`, `reverse-engineering`, `fal-assets`, `asset-pipeline`, `game-automation`, `showcase-video`, `mashup-mods`, `publish-mod`, `share-field-notes` (pinned with `um`) |
+| `rehan-remade/universal-modder` | `mod-any-game`, `game-recon`, `reverse-engineering`, `fal-assets`, `asset-pipeline`, `game-automation`, `showcase-video`, `mashup-mods`, `publish-mod`, `share-field-notes`, `game-research-websearch`, `port-a-mod` (pinned with `um`) |
 | `morluto/rea` | `reverse-engineer-anything` (pinned with `rea`; separate from ReVa) |
 
 The new pinned sources update through their `rev` and `hash` in Nix, rather than
@@ -482,7 +482,7 @@ to Claude, Codex, ForgeCode and OpenCode; restart the agent to load them.
   before use with a Linux scanner. Packaging excludes one stale upstream test
   for the unused `fixed_windows` helper (bytes versus KiB); the other tests run.
 - **[REA](https://github.com/morluto/rea):** `rea --help` and `rea doctor --json`.
-  Claude gets a separate `rea` MCP server. REA 4.0.1 requires exactly Ghidra 12.1.4
+  Claude gets a separate `rea` MCP server. REA 6.8.0 requires exactly Ghidra 12.1.4
   and JDK 21 for its Ghidra provider; the current Ghidra 12.1.2 remains served by
   ReVa. Hopper is not installed. Manage installation and agent registration with
   Nix rather than REA's upstream setup scripts.

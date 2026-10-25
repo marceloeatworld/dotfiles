@@ -1667,7 +1667,7 @@ in
 
       The two skills below are active in every session without being invoked. Both files come from upstream commits pinned by rev and hash in `ai-skills.nix`.
 
-      - Caveman runs at the `full` level by default. The language rule above wins over the skill's "reply in the user's language" rule: answer in English even when the user writes in French.
+      - Caveman is always on. The language rule above wins over the skill's "user's language" rule: answer in English even when the user writes in French. `/caveman ultra` and `/caveman wenyan` point at the `ultracave` and `megacave` skills, which are not installed; the mode hook is not installed either.
       - Skill files are imported after this line, so their rules apply on top of everything above.
 
       @~/.claude/skills/i-have-adhd/SKILL.md
