@@ -21,7 +21,7 @@ Personal NixOS configurations with flakes and home-manager.
 - Bitcoin wallet monitoring (privacy-focused zpub derivation)
 - Ferdium messaging workspace for WhatsApp + WhatsApp Business multi-account use
 - Automatic VPN DNS switching (dnscrypt-proxy / Proton VPN)
-- Local LLM inference (llama.cpp + ROCm, Qwythos 9B + Gemma 4 12B Coder + Qwopus3.6 27B Coder + Devstral Small + GLM-OCR vision)
+- Local LLM inference (llama.cpp + ROCm, Qwythos 9B + Mellum2.1 12B MoE coder + Nemotron 3.5 Bolt E4B + Xiaomi-OCR-0 vision)
 - AI coding agents (Claude Code, ForgeCode, OpenCode, Codex)
 - Kali red-team container
 - Malware analysis VM (libvirt + network killswitch)

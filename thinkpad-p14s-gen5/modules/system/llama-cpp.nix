@@ -86,11 +86,10 @@ let
     MODELS_DIR="$HOME/models"
 
     MODEL_QWYTHOS="Qwythos-9B-Claude-Mythos-5-1M-Q4_K_M.gguf"
-    MODEL_GEMMA_CODER="gemma4-coding-Q4_K_M.gguf"
-    MODEL_QWOPUS="Qwopus3.6-27B-Coder-MTP-IQ4_XS.gguf"
-    MODEL_DEVSTRAL="Devstral-Small-2507-Q4_K_M.gguf"
-    MODEL_OCR="GLM-OCR-Q8_0.gguf"
-    MMPROJ_OCR="mmproj-GLM-OCR-Q8_0.gguf"
+    MODEL_MELLUM="Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf"
+    MODEL_BOLT="Nemotron-3.5-Bolt-E4B-Uncensored-Q4_K_M.gguf"
+    MODEL_OCR="Xiaomi-OCR-0.BF16.gguf"
+    MMPROJ_OCR="Xiaomi-OCR-0.mmproj-bf16.gguf"
     USER_ACTIVE_MODEL="$MODELS_DIR/active-model.gguf"
 
     DU="${pkgs.coreutils}/bin/du"
@@ -133,27 +132,21 @@ let
         mode="text"
         service="llama-cpp"
         ;;
-      gemma|gemma4|gemma-coder|code|coding)
-        target="$MODEL_GEMMA_CODER"
-        label="Gemma 4 12B Coder Q4_K_M (7.38GB)"
+      mellum|mellum2|mellum2.1|jetbrains|code|coding|agent)
+        target="$MODEL_MELLUM"
+        label="Mellum2.1 12B-A2.5B Thinking Q4_K_M (8.07GB)"
         mode="text"
         service="llama-cpp"
         ;;
-      qwopus|qwen|qwen36|qwen3.6|heavy)
-        target="$MODEL_QWOPUS"
-        label="Qwopus3.6 27B Coder MTP IQ4_XS (15.4GB)"
-        mode="text"
-        service="llama-cpp"
-        ;;
-      devstral|agent)
-        target="$MODEL_DEVSTRAL"
-        label="Devstral Small 2507 Q4_K_M (14.3GB)"
+      bolt|nemotron|research|uncensored|chat)
+        target="$MODEL_BOLT"
+        label="Nemotron 3.5 Bolt E4B Uncensored Q4_K_M (5.06GB)"
         mode="text"
         service="llama-cpp"
         ;;
       ocr|OCR|vision)
         target="$MODEL_OCR"
-        label="GLM-OCR 0.9B (vision/OCR, 1.4GB)"
+        label="Xiaomi-OCR-0 0.8B BF16 (vision/OCR, 1.7GB)"
         mode="ocr"
         service="llama-cpp-ocr"
         ;;
@@ -177,12 +170,11 @@ let
         echo ""
         echo "Available models:"
         [ -f "$MODELS_DIR/$MODEL_QWYTHOS" ] && echo "  qwythos   -> $MODEL_QWYTHOS (5.63GB)" || echo "  qwythos   -> $MODEL_QWYTHOS (not downloaded)"
-        [ -f "$MODELS_DIR/$MODEL_GEMMA_CODER" ] && echo "  gemma     -> $MODEL_GEMMA_CODER (7.38GB)" || echo "  gemma     -> $MODEL_GEMMA_CODER (not downloaded)"
-        [ -f "$MODELS_DIR/$MODEL_QWOPUS" ] && echo "  qwopus    -> $MODEL_QWOPUS (15.4GB)" || echo "  qwopus    -> $MODEL_QWOPUS (not downloaded)"
-        [ -f "$MODELS_DIR/$MODEL_DEVSTRAL" ] && echo "  devstral  -> $MODEL_DEVSTRAL (14.3GB)" || echo "  devstral  -> $MODEL_DEVSTRAL (not downloaded)"
-        [ -f "$MODELS_DIR/$MODEL_OCR" ] && echo "  ocr       -> $MODEL_OCR (1.4GB) - vision/OCR" || echo "  ocr       -> $MODEL_OCR (not downloaded)"
+        [ -f "$MODELS_DIR/$MODEL_MELLUM" ] && echo "  mellum    -> $MODEL_MELLUM (8.07GB)" || echo "  mellum    -> $MODEL_MELLUM (not downloaded)"
+        [ -f "$MODELS_DIR/$MODEL_BOLT" ] && echo "  bolt      -> $MODEL_BOLT (5.06GB)" || echo "  bolt      -> $MODEL_BOLT (not downloaded)"
+        [ -f "$MODELS_DIR/$MODEL_OCR" ] && echo "  ocr       -> $MODEL_OCR (1.7GB) - vision/OCR" || echo "  ocr       -> $MODEL_OCR (not downloaded)"
         echo ""
-        echo "Usage: llm-switch [qwythos|gemma|qwopus|devstral|ocr|status|stop]"
+        echo "Usage: llm-switch [qwythos|mellum|bolt|ocr|status|stop]"
         exit 0
         ;;
       stop)
@@ -192,12 +184,11 @@ let
         exit 0
         ;;
       *)
-        echo "Usage: llm-switch [qwythos|gemma|qwopus|devstral|ocr|status|stop]"
+        echo "Usage: llm-switch [qwythos|mellum|bolt|ocr|status|stop]"
         echo "  qwythos  -> Qwythos 9B Claude Mythos 5 1M default local model"
-        echo "  gemma    -> Gemma 4 12B Coder fast local coding"
-        echo "  qwopus   -> Qwopus3.6 27B Coder MTP heavier coding"
-        echo "  devstral -> Devstral Small 2507 agentic coding"
-        echo "  ocr      -> GLM-OCR vision/OCR utility"
+        echo "  mellum   -> Mellum2.1 12B MoE (2.5B active) coding, fast"
+        echo "  bolt     -> Nemotron 3.5 Bolt E4B uncensored, chat and research"
+        echo "  ocr      -> Xiaomi-OCR-0 0.8B vision/OCR utility"
         echo "  stop     -> Stop LLM service"
         exit 1
         ;;
@@ -208,6 +199,12 @@ let
       echo "Download it first."
       if [ "$target" = "$MODEL_QWYTHOS" ]; then
         echo "  wget -P ~/models https://huggingface.co/empero-ai/Qwythos-9B-Claude-Mythos-5-1M-GGUF/resolve/main/$MODEL_QWYTHOS"
+      elif [ "$target" = "$MODEL_OCR" ]; then
+        echo "  wget -P ~/models https://huggingface.co/prithivMLmods/Xiaomi-OCR-0-GGUF/resolve/main/$MODEL_OCR"
+      elif [ "$target" = "$MODEL_MELLUM" ]; then
+        echo "  wget -P ~/models https://huggingface.co/JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF/resolve/main/$MODEL_MELLUM"
+      elif [ "$target" = "$MODEL_BOLT" ]; then
+        echo "  wget -O ~/models/$MODEL_BOLT https://huggingface.co/AtomicChat/NVIDIA-Nemotron-3.5-Bolt-E4B-Uncensored-GGUF/resolve/main/NVIDIA-Nemotron-3.5-Bolt-E4B-Uncensored-AD-Q4_K_M/NVIDIA-Nemotron-3.5-Bolt-E4B-Uncensored-AD-Q4_K_M-00001-of-00001.gguf"
       fi
       exit 1
     fi
@@ -223,7 +220,7 @@ let
     if [ "$mode" = "ocr" ]; then
       if [ ! -f "$MODELS_DIR/$MMPROJ_OCR" ]; then
         echo "Error: $MODELS_DIR/$MMPROJ_OCR not found."
-        echo "Download it: wget -P ~/models https://huggingface.co/ggml-org/GLM-OCR-GGUF/resolve/main/$MMPROJ_OCR"
+        echo "Download it: wget -P ~/models https://huggingface.co/prithivMLmods/Xiaomi-OCR-0-GGUF/resolve/main/$MMPROJ_OCR"
         exit 1
       fi
       sudo "$ACTIVATE" ocr "$MODELS_DIR/$target" "$MODELS_DIR/$MMPROJ_OCR"

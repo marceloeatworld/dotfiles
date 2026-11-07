@@ -150,7 +150,7 @@ nix flake update
 - **Bitcoin Wallet Monitor** - Privacy-focused zpub derivation, Waybar integration
 - **DNS Privacy** - AdGuard + Mullvad via dnscrypt-proxy (DNSSEC)
 - **VPN Integration** - Auto DNS switching (dnscrypt ↔ Proton VPN WireGuard) + captive portal detection
-- **Local LLM** - llama.cpp with ROCm (Qwythos 9B, Gemma 4 12B Coder, Qwopus3.6 27B Coder, Devstral Small, plus GLM-OCR vision), started on demand with `llm local`
+- **Local LLM** - llama.cpp with ROCm (Qwythos 9B, Mellum2.1 12B MoE coder, Nemotron 3.5 Bolt E4B uncensored, plus Xiaomi-OCR-0 vision), started on demand with `llm local`
 - **AI Agents** - Claude Code, ForgeCode, OpenCode, Codex
 - **Kali Red Team Container** - Podman-managed Kali container (rootless, persistent storage)
 - **Malware Analysis Lab** - 3 VMs (FLARE-VM + REMnux + Dev-Win) with killswitch, fake-internet routing, VirtioFS sample sharing
@@ -388,20 +388,17 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 |---------|--------|
 | `llm "prompt"` | Chat with local LLM |
 | `llm qwythos` | Chat with Qwythos 9B Claude Mythos |
-| `llm gemma` | Chat with Gemma 4 12B Coder |
-| `llm qwopus` | Chat with Qwopus3.6 27B Coder MTP |
-| `llm devstral` | Chat with Devstral Small 2507 |
-| `llm ocr <image>` | OCR an image with GLM-OCR |
-| `llm ocr <image> "Table Recognition:"` | OCR a table |
-| `llm ocr <image> "Formula Recognition:"` | OCR a formula |
+| `llm mellum` | Chat with Mellum2.1 12B MoE coder |
+| `llm bolt` | Chat with Nemotron 3.5 Bolt E4B uncensored |
+| `llm ocr <image>` | OCR an image with Xiaomi-OCR-0 (document to markdown) |
+| `llm ocr <image> "Parse the table in the image into OTSL."` | OCR a table |
 | `llm list` | List available models |
 | `llm local` | Start the active llama.cpp API service on demand |
 | `llm-switch` | Show active model |
 | `llm-switch qwythos` | Switch to Qwythos 9B Claude Mythos |
-| `llm-switch gemma` | Switch to Gemma 4 12B Coder |
-| `llm-switch qwopus` | Switch to Qwopus3.6 27B Coder MTP |
-| `llm-switch devstral` | Switch to Devstral Small 2507 |
-| `llm-switch ocr` | Switch to GLM-OCR 0.9B (vision, 1.4GB) |
+| `llm-switch mellum` | Switch to Mellum2.1 12B MoE coder |
+| `llm-switch bolt` | Switch to Nemotron 3.5 Bolt E4B uncensored |
+| `llm-switch ocr` | Switch to Xiaomi-OCR-0 0.8B (vision, 1.7GB) |
 | `llm-switch stop` | Stop LLM service |
 
 ---

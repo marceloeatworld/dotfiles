@@ -165,30 +165,29 @@ in
         ["text"]="Qwythos-9B-Claude-Mythos-5-1M-Q4_K_M.gguf"
         ["default"]="Qwythos-9B-Claude-Mythos-5-1M-Q4_K_M.gguf"
         ["fast"]="Qwythos-9B-Claude-Mythos-5-1M-Q4_K_M.gguf"
-        ["gemma"]="gemma4-coding-Q4_K_M.gguf"
-        ["gemma4"]="gemma4-coding-Q4_K_M.gguf"
-        ["gemma-coder"]="gemma4-coding-Q4_K_M.gguf"
-        ["code"]="gemma4-coding-Q4_K_M.gguf"
-        ["coding"]="gemma4-coding-Q4_K_M.gguf"
-        ["qwopus"]="Qwopus3.6-27B-Coder-MTP-IQ4_XS.gguf"
-        ["qwen"]="Qwopus3.6-27B-Coder-MTP-IQ4_XS.gguf"
-        ["qwen36"]="Qwopus3.6-27B-Coder-MTP-IQ4_XS.gguf"
-        ["qwen3.6"]="Qwopus3.6-27B-Coder-MTP-IQ4_XS.gguf"
-        ["heavy"]="Qwopus3.6-27B-Coder-MTP-IQ4_XS.gguf"
-        ["devstral"]="Devstral-Small-2507-Q4_K_M.gguf"
-        ["agent"]="Devstral-Small-2507-Q4_K_M.gguf"
-        ["ocr"]="GLM-OCR-Q8_0.gguf"
+        ["mellum"]="Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf"
+        ["mellum2"]="Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf"
+        ["mellum2.1"]="Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf"
+        ["jetbrains"]="Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf"
+        ["code"]="Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf"
+        ["coding"]="Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf"
+        ["agent"]="Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf"
+        ["bolt"]="Nemotron-3.5-Bolt-E4B-Uncensored-Q4_K_M.gguf"
+        ["nemotron"]="Nemotron-3.5-Bolt-E4B-Uncensored-Q4_K_M.gguf"
+        ["research"]="Nemotron-3.5-Bolt-E4B-Uncensored-Q4_K_M.gguf"
+        ["uncensored"]="Nemotron-3.5-Bolt-E4B-Uncensored-Q4_K_M.gguf"
+        ["chat"]="Nemotron-3.5-Bolt-E4B-Uncensored-Q4_K_M.gguf"
+        ["ocr"]="Xiaomi-OCR-0.BF16.gguf"
       )
-      MMPROJ_OCR="$MODELS_DIR/mmproj-GLM-OCR-Q8_0.gguf"
+      MMPROJ_OCR="$MODELS_DIR/Xiaomi-OCR-0.mmproj-bf16.gguf"
 
       usage() {
         echo "Usage: llm [model] [extra-args...]"
         echo "       llm              Chat with active model (set by llm-switch)"
         echo "       llm qwythos      Chat with Qwythos 9B Claude Mythos"
-        echo "       llm gemma        Chat with Gemma 4 12B Coder"
-        echo "       llm qwopus       Chat with Qwopus3.6 27B Coder MTP"
-        echo "       llm devstral     Chat with Devstral Small 2507"
-        echo "       llm ocr <image>  OCR an image with GLM-OCR"
+        echo "       llm mellum       Chat with Mellum2.1 12B MoE coder"
+        echo "       llm bolt         Chat with Nemotron 3.5 Bolt E4B uncensored"
+        echo "       llm ocr <image>  OCR an image with Xiaomi-OCR-0"
         echo "       llm local        Start local llama-cpp API service"
         echo "       llm list         List available models"
         echo "       llm server       Start OpenAI-compatible API server"
@@ -232,14 +231,14 @@ in
           exit 0
           ;;
         ocr)
-          # OCR mode: use GLM-OCR vision model, saves output to .txt next to image
+          # OCR mode: use Xiaomi-OCR-0 vision model, saves output to .txt next to image
           MODEL_PATH="$MODELS_DIR/''${MODEL_NAMES[ocr]}"
-          [ ! -f "$MODEL_PATH" ] && { echo "Model not found: $MODEL_PATH"; echo "Download: wget -P ~/models https://huggingface.co/ggml-org/GLM-OCR-GGUF/resolve/main/GLM-OCR-Q8_0.gguf"; exit 1; }
-          [ ! -f "$MMPROJ_OCR" ] && { echo "mmproj not found: $MMPROJ_OCR"; echo "Download: wget -P ~/models https://huggingface.co/ggml-org/GLM-OCR-GGUF/resolve/main/mmproj-GLM-OCR-Q8_0.gguf"; exit 1; }
+          [ ! -f "$MODEL_PATH" ] && { echo "Model not found: $MODEL_PATH"; echo "Download: wget -P ~/models https://huggingface.co/prithivMLmods/Xiaomi-OCR-0-GGUF/resolve/main/Xiaomi-OCR-0.BF16.gguf"; exit 1; }
+          [ ! -f "$MMPROJ_OCR" ] && { echo "mmproj not found: $MMPROJ_OCR"; echo "Download: wget -P ~/models https://huggingface.co/prithivMLmods/Xiaomi-OCR-0-GGUF/resolve/main/Xiaomi-OCR-0.mmproj-bf16.gguf"; exit 1; }
           IMAGE="''${2:-}"
-          [ -z "$IMAGE" ] && { echo "Usage: llm ocr <image> [prompt]"; echo "  llm ocr photo.jpg                    # default: Text Recognition"; echo "  llm ocr doc.png 'Table Recognition:'"; exit 1; }
+          [ -z "$IMAGE" ] && { echo "Usage: llm ocr <image> [prompt]"; echo "  llm ocr photo.jpg                    # default: full document to markdown"; echo "  llm ocr table.png 'Parse the table in the image into OTSL.'"; echo "  llm ocr eq.png 'Identify the formula in the image and represent it using LATEX format.'"; exit 1; }
           [ ! -f "$IMAGE" ] && { echo "File not found: $IMAGE"; exit 1; }
-          PROMPT="''${3:-Text Recognition:}"
+          PROMPT="''${3:-Extract all information from the main body of the document image and represent it in markdown format, ignoring headers and footers. Tables should be expressed in OTSL format, formulas in the document should be represented using LATEX format, and the parsing should be organized according to the reading order.}"
           OUTPUT="''${IMAGE%.*}.txt"
           echo "OCR: $IMAGE → $OUTPUT (prompt: $PROMPT)"
           ${pkgs.llama-cpp}/bin/llama-mtmd-cli -m "$MODEL_PATH" --mmproj "$MMPROJ_OCR" -ngl "$LLM_GPU_LAYERS" --no-kv-offload --load-mode none -c 8192 --image "$IMAGE" -p "$PROMPT" --temp 0.1 -n 8192 "''${@:4}" | tee "$OUTPUT"
@@ -266,7 +265,7 @@ in
             MODEL_PATH="$ACTIVE"
           fi
           [ ! -f "$MODEL_PATH" ] && { echo "No active model. Run: llm-switch qwythos"; exit 1; }
-          exec ${pkgs.llama-cpp}/bin/llama-cli -m "$MODEL_PATH" "''${COMMON_FLAGS[@]}" --conversation "$@"
+          exec ${pkgs.llama-cpp}/bin/llama-cli -m "$MODEL_PATH" "''${COMMON_FLAGS[@]}" "$@"
           ;;
       esac
     '')

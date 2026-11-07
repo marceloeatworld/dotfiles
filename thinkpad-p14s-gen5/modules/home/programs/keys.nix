@@ -310,22 +310,19 @@ let
     ━━━━━━━━━━━━ AI/LLM ━━━━━━━━━━━━
     llm "prompt"           Chat with active model
     llm qwythos            Chat with Qwythos 9B Claude Mythos
-    llm gemma              Chat with Gemma 4 12B Coder
-    llm qwopus             Chat with Qwopus3.6 27B Coder MTP
-    llm devstral           Chat with Devstral Small 2507
-    llm ocr <img>          OCR image -> .txt
-    llm ocr <img> "Table Recognition:"   OCR table
-    llm ocr <img> "Formula Recognition:" OCR formula
+    llm mellum             Chat with Mellum2.1 12B MoE coder
+    llm bolt               Chat with Nemotron 3.5 Bolt E4B uncensored
+    llm ocr <img>          OCR image -> .txt (document to markdown)
+    llm ocr <img> "Parse the table in the image into OTSL."   OCR table
     llm local              Start local llama-cpp API helper
     llm server [model]     Start OpenAI-compatible API server
     llm list               List available models
     llm-switch             Show active model + available
     llm-switch status      Show active model/services
     llm-switch qwythos     Qwythos 9B Claude Mythos default local model
-    llm-switch gemma       Gemma 4 12B Coder fast local coding
-    llm-switch qwopus      Qwopus3.6 27B Coder MTP heavier coding
-    llm-switch devstral    Devstral Small 2507 agentic coding
-    llm-switch ocr         GLM-OCR 0.9B (vision, 1.4GB)
+    llm-switch mellum      Mellum2.1 12B MoE (2.5B active) coding, fast
+    llm-switch bolt        Nemotron 3.5 Bolt E4B uncensored, chat and research
+    llm-switch ocr         Xiaomi-OCR-0 0.8B (vision, 1.7GB)
     llm-switch stop        Stop LLM service
 
     ━━━━━━━━ KALI RED TEAM ━━━━━━━━
