@@ -109,7 +109,7 @@ let
     # symlink the user plants.
     active_mode=text
     current_name=""
-    read -r active_mode current_name < "$MODELS_DIR/.llm-active" 2>/dev/null || true
+    read -r active_mode current_name 2>/dev/null < "$MODELS_DIR/.llm-active" || true
 
     stop_services() {
       sudo "$SYSTEMCTL" stop llama-cpp 2>/dev/null || true
@@ -281,7 +281,7 @@ in
       model = "/var/lib/llama-cpp/active-model.gguf";
       gpu-layers = llamaSafeGpuLayers;
       no-kv-offload = true;
-      no-mmap = true; # Better for iGPU with shared memory
+      load-mode = "none"; # No mmap: better for iGPU with shared memory (--no-mmap removed in b11883)
       ctx-size = 16384; # Safer default for 12-27B local coding models on the 780M APU
       parallel = 1;
       cache-ram = 0;
@@ -350,7 +350,7 @@ in
       DynamicUser = true;
       StateDirectory = "llama-cpp";
       WorkingDirectory = "/var/lib/llama-cpp";
-      ExecStart = "${pkgs.llama-cpp}/bin/llama-server --log-disable --host 127.0.0.1 --port 8080 -m /var/lib/llama-cpp/active-model.gguf --mmproj /var/lib/llama-cpp/active-mmproj.gguf -ngl ${llamaSafeGpuLayers} --no-kv-offload --no-mmap -c 8192 --parallel 1 --cache-ram 0 --no-warmup --jinja";
+      ExecStart = "${pkgs.llama-cpp}/bin/llama-server --log-disable --host 127.0.0.1 --port 8080 -m /var/lib/llama-cpp/active-model.gguf --mmproj /var/lib/llama-cpp/active-mmproj.gguf -ngl ${llamaSafeGpuLayers} --no-kv-offload --load-mode none -c 8192 --parallel 1 --cache-ram 0 --no-warmup --jinja";
       Restart = "on-failure";
       RestartSec = 10;
       ProtectHome = true;

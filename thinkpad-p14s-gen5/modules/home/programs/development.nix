@@ -217,7 +217,7 @@ in
       # Common flags for local text models. Let GGUF metadata provide the chat template.
       # Conservative GPU offload. Full ROCm offload on the Radeon 780M has
       # caused amdgpu MES hangs and compositor resets with larger local models.
-      COMMON_FLAGS=(-ngl "$LLM_GPU_LAYERS" --no-kv-offload --temp "$LLM_TEMP" --top-p "$LLM_TOP_P" --top-k "$LLM_TOP_K" --no-mmap -c "$LLM_CTX_SIZE" --jinja)
+      COMMON_FLAGS=(-ngl "$LLM_GPU_LAYERS" --no-kv-offload --temp "$LLM_TEMP" --top-p "$LLM_TOP_P" --top-k "$LLM_TOP_K" --load-mode none -c "$LLM_CTX_SIZE" --jinja)
 
       case "''${1:-}" in
         help|--help|-h)
@@ -242,7 +242,7 @@ in
           PROMPT="''${3:-Text Recognition:}"
           OUTPUT="''${IMAGE%.*}.txt"
           echo "OCR: $IMAGE → $OUTPUT (prompt: $PROMPT)"
-          ${pkgs.llama-cpp}/bin/llama-mtmd-cli -m "$MODEL_PATH" --mmproj "$MMPROJ_OCR" -ngl "$LLM_GPU_LAYERS" --no-kv-offload --no-mmap -c 8192 --image "$IMAGE" -p "$PROMPT" --temp 0.1 -n 8192 "''${@:4}" | tee "$OUTPUT"
+          ${pkgs.llama-cpp}/bin/llama-mtmd-cli -m "$MODEL_PATH" --mmproj "$MMPROJ_OCR" -ngl "$LLM_GPU_LAYERS" --no-kv-offload --load-mode none -c 8192 --image "$IMAGE" -p "$PROMPT" --temp 0.1 -n 8192 "''${@:4}" | tee "$OUTPUT"
           echo ""
           echo "Saved: $OUTPUT"
           ;;
