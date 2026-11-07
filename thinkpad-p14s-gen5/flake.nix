@@ -133,17 +133,6 @@
             config.allowUnfree = true;
           }).joplin-desktop;
         })
-        # Upstream breakage: typescript-language-server 6.0.2 on nixos-unstable
-        # 7fd4004 ships a stale pnpmDeps hash (pnpm_12 moved to 12.9.0 after the
-        # hash was computed). Fixed by nixpkgs commit ac7b1aae (PR #572951);
-        # same hash here. Drop once that commit lands on nixos-unstable.
-        (final: prev: {
-          typescript-language-server = prev.typescript-language-server.overrideAttrs (old: {
-            pnpmDeps = old.pnpmDeps.override {
-              hash = "sha256-xR/EF60lVBsITKgH7wCM2wHM46PFQevD51KfCENSUH4=";
-            };
-          });
-        })
         # Upstream breakage: soapyuhd fails to compile against uhd 4.11
         # (UHDSoapyRxStream is abstract: get_stream_info is pure virtual).
         # Fix pending in nixpkgs PR #568744. Build SDR++ against the SoapySDR
@@ -318,6 +307,10 @@
             nixpkgs.hostPlatform = system;
             nixpkgs.config.allowUnfree = true;
             nixpkgs.config.android_sdk.accept_license = true;
+            # xsane (modules/system/scanner.nix) pulls gtk2 via sane-frontends.
+            # nixpkgs flags gtk2 as broken ahead of its removal in NixOS 27.05;
+            # keep evaluating it until xsane has a gtk3 replacement.
+            nixpkgs.config.problems.handlers."gtk+".broken = "ignore";
             nixpkgs.overlays = sharedOverlays;
           }
 
@@ -342,6 +335,7 @@
           ./modules/system/locale.nix
           ./modules/system/users.nix
           ./modules/system/security.nix
+          ./modules/system/brave-policies.nix # Brave default search engine (SearXNG) via Chromium policy
           ./modules/system/services.nix
           ./modules/system/llama-cpp.nix
           ./modules/system/postgresql.nix # Local PostgreSQL 18 for Medusa development

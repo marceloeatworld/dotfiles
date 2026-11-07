@@ -57,8 +57,8 @@
     - **REA**: `rea --help`, `rea doctor --json`, or `rea mcp` for stdio.
       The `rea` MCP registration is managed for Claude Code; other agents can
       use the CLI. Native Ghidra analysis requires exactly Ghidra 12.1.4 and
-      JDK 21; the `rea` MCP wrapper ships its own 12.1.4 tree, the GUI Ghidra
-      stays on nixpkgs.
+      JDK 21; the `rea` MCP wrapper uses the source-built nixpkgs Ghidra, the
+      same tree as the GUI.
       Hopper is not installed by this configuration.
 
     ### AI Security Agents (pinned overlays, skills in ~/.claude/skills)

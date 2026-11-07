@@ -1,6 +1,6 @@
 --- a/grimblast
 +++ b/grimblast
-@@ -196,7 +196,7 @@
+@@ -205,7 +205,7 @@
    local focused app_id
    grimblast::wait
    focused="$(hyprctl activewindow -j)" app_id=$(jq -r '.class' <<<"$focused")
@@ -9,11 +9,14 @@
    WHAT="$app_id window"
  }
  
-@@ -242,7 +242,8 @@
+@@ -254,9 +254,9 @@
+   # use `|` as separator for stableId label
    choice="$(echo -n "$rects" | slurp -o "${SLURP_ARGS[@]}" -f "%x,%y %wx%h|%l")"
  
-   WINDOW="$(jq -r --arg c "$choice" '.[] | select("\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])|\(.stableId)" == $c) | .stableId' <<<"$windows")"
+-  # toplevel capture is live, so it would miss the cursor drawn in the frozen preview
+-  [[ $frozen_cursor ]] || WINDOW="$(jq -r --arg c "$choice" '.[] | select("\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])|\(.stableId)" == $c) | .stableId' <<<"$windows")"
 -  [[ -z "$WINDOW" ]] && GEOM="${choice%|*}"
++  # toplevel capture hangs on Hyprland 0.56 (hyprwm/Hyprland#16109): always capture by geometry
 +  WINDOW=""
 +  GEOM="${choice%|*}"
  

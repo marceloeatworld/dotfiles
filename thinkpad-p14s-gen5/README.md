@@ -462,6 +462,7 @@ Each repo is narrowed to a named list so only the skills actually used land in t
 | local `modules/home/programs/skills/` | `i-have-adhd` (vendored copy of `nulltea/skills`; always on, imported by the global `CLAUDE.md`) |
 | `hoainho/img2threejs` | `img2threejs` |
 | `mdpsec/bug-bounty-hunting-prompts` | `bug-bounty-hunting` wrapper with adaptation guide and phase prompts (pinned) |
+| `google/mantis` | `mantis-meta-agent`, `mantis-history`, `mantis-structural-index`, `mantis-architecture`, `mantis-threat-model`, `mantis-plan`, `mantis-researcher`, `mantis-summarize`, `mantis-dedupe`, `mantis-review`, `mantis-critic`, `mantis-calibrate`, `mantis-reflect`, `mantis-chain`, `mantis-reproduce`, `mantis-patch`, `mantis-report` (pinned, prompt-only; the ADK harness, `mantis-advise` and `mantis-pipeline-adapter` are omitted) |
 | `Illyism/seo-skills` | `seo` router with autopilot, title optimization, blog refresher and diff marketing references, plus the local parasite-seo workflow (pinned; vendor skills omitted) |
 | `rehan-remade/universal-modder` | `mod-any-game`, `game-recon`, `reverse-engineering`, `fal-assets`, `asset-pipeline`, `game-automation`, `showcase-video`, `mashup-mods`, `publish-mod`, `share-field-notes`, `game-research-websearch`, `port-a-mod` (pinned with `um`) |
 | `morluto/rea` | `reverse-engineer-anything` (pinned with `rea`) |
@@ -483,7 +484,8 @@ to Claude, Codex, ForgeCode and OpenCode; restart the agent to load them.
   for the unused `fixed_windows` helper (bytes versus KiB); the other tests run.
 - **[REA](https://github.com/morluto/rea):** `rea --help` and `rea doctor --json`.
   Claude gets a separate `rea` MCP server. REA 6.8.0 requires exactly Ghidra 12.1.4
-  and JDK 21 for its Ghidra provider; the GUI Ghidra stays on nixpkgs. Hopper
+  and JDK 21 for its Ghidra provider; it uses the source-built nixpkgs Ghidra, the
+  same tree as the GUI (`ghidra-bin`'s patchelf'd decompiler segfaults). Hopper
   is not installed. Manage installation and agent registration with
   Nix rather than REA's upstream setup scripts.
 - **[Bug-bounty prompts](https://github.com/mdpsec/bug-bounty-hunting-prompts):**

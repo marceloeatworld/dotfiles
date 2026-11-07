@@ -18,8 +18,8 @@
 { lib, fetchurl, stdenv, ... }:
 
 let
-  version = "0.164.0";
-  sha256 = "sha256-PsVQUxCWCNUDj35QdQ99Jfdo39dA/vBxqnEOJVm2Oqw=";
+  version = "0.167.0";
+  sha256 = "sha256-O7916D3mtYrtKPLPbjOtQj7DH9RwChRXuUvlV+pafG4=";
 in
 stdenv.mkDerivation {
   pname = "codex";

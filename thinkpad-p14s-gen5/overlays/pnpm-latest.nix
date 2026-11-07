@@ -26,8 +26,8 @@
 { lib, fetchurl, stdenv, nodejs-slim_22, makeWrapper, ... }:
 
 let
-  version = "10.34.8";
-  sha256 = "sha256-W+n6yXZFg69foHAVubCqkw72NFNd+fpvRkAg1ysZVjA=";
+  version = "10.34.9";
+  sha256 = "sha256-foqUYQjnuqsRnlHSfCTWF4tGVFQiZD28keNOLx7jLg8=";
 in
 stdenv.mkDerivation {
   pname = "pnpm";

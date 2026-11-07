@@ -1135,21 +1135,16 @@ let
   '';
 
   # REA's Ghidra provider accepts exactly application.version 12.1.4 and a
-  # JDK 21 (GhidraInstallation.js: SUPPORTED_GHIDRA_VERSION). The pinned
-  # nixpkgs ghidra-bin is 12.1.2, so this is the same prebuilt derivation
-  # with the 12.1.4 release zip. The GUI Ghidra firejail stays on
-  # pkgs.ghidra; only the rea MCP server sees this tree. Ephemeral Ghidra
-  # projects go to TMPDIR: /tmp is a tmpfs here and a firmware image project
-  # would swap it into zram; /var/tmp is on disk.
-  ghidraForRea = pkgs.ghidra-bin.overrideAttrs (old: {
-    version = "12.1.4";
-    src = pkgs.fetchzip {
-      url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.4_build/ghidra_12.1.4_PUBLIC_20260921.zip";
-      hash = "sha256-ZD4Vs1i7BMvrneAbAiOc7F9iBj64Rbom+PaVO//TzK8=";
-    };
-  });
+  # JDK 21 (GhidraInstallation.js: SUPPORTED_GHIDRA_VERSION). This is the
+  # same source-built pkgs.ghidra as the GUI firejail. Not pkgs.ghidra-bin:
+  # autoPatchelfHook corrupts the upstream prebuilt non-PIE `decompile`
+  # (ld.so segfaults before main), and Ghidra then reports "Decompiler
+  # executable may not be compatible with your system". rea doctor does not
+  # catch it, it only checks the ELF header. Ephemeral Ghidra projects go to
+  # TMPDIR: /tmp is a tmpfs here and a firmware image project would swap it
+  # into zram; /var/tmp is on disk.
   reaMcp = pkgs.writeShellScript "mcp-rea-nix" ''
-    export GHIDRA_INSTALL_DIR="${ghidraForRea}/lib/ghidra"
+    export GHIDRA_INSTALL_DIR="${pkgs.ghidra}/lib/ghidra"
     export JAVA_HOME="${pkgs.openjdk21.home}"
     export TMPDIR="/var/tmp"
     exec ${pkgs.rea}/bin/rea mcp "$@"
@@ -1225,8 +1220,8 @@ let
       args = [ "stdio" ];
     };
     # REA app/binary analysis server (decompile, xrefs, strings, Frida, GDB,
-    # Android, Electron, web). Its Ghidra provider gets its own Ghidra 12.1.4
-    # tree through reaMcp above; the GUI Ghidra firejail stays untouched.
+    # Android, Electron, web). Its Ghidra provider uses the source-built
+    # pkgs.ghidra through reaMcp above, same tree as the GUI firejail.
     "rea" = {
       command = "${reaMcp}";
     };

@@ -42,6 +42,15 @@ let
     rev = "5ed41580564c978417d5f0105f9c92457d77f3b5";
     hash = "sha256-d7tZdbpb1754Z4iD1YUoDCo4MA2Bj/jDdxuQyJR/aS4=";
   };
+  # Google Mantis (Apache 2.0): vulnerability review pipeline as prompt-only
+  # skills. The ADK/LiteLLM reference harness in reference/ is not installed;
+  # the agent runs the stages itself and keeps state under workspace/.
+  mantisSrc = pkgs.fetchFromGitHub {
+    owner = "google";
+    repo = "mantis";
+    rev = "f3162c039ecd9c9d5d8bc404dd1373c7ca3152f7"; # 2026-10-25
+    hash = "sha256-L0sq1MXicjx+81s9/lLxF0EK3pzJRjDOjPhhlHtvdv0=";
+  };
   bugBountySkill = pkgs.writeText "bug-bounty-hunting-SKILL.md" ''
     ---
     name: bug-bounty-hunting
@@ -111,8 +120,8 @@ let
     Use the CLI in agents without that MCP registration. Manage packages and
     registration through this flake rather than `rea setup` or its installers.
     REA 6.8.0 requires exactly Ghidra 12.1.4 and JDK 21; the `rea` MCP wrapper
-    in claude-code.nix provides its own Ghidra 12.1.4 tree, while the GUI Ghidra
-    stays on nixpkgs.
+    in claude-code.nix points it at the source-built nixpkgs Ghidra, the same
+    tree the GUI uses.
     Hopper needs a separate installation/license.
     EOF
   '';
@@ -886,6 +895,16 @@ in
 
     # Pinned prompt pack, modding toolkit and REA.
     _copy_named_skills "${bugBountySkills}" bug-bounty-hunting
+    # ── Mantis (pinned; mantis-advise needs reference/scripts/advise.py from
+    # the uninstalled harness, mantis-pipeline-adapter only builds custom
+    # harnesses, both omitted). Only run it against throwaway clones:
+    # mantis-reproduce executes generated reproducer code ──
+    _copy_named_skills "${mantisSrc}/skills" \
+      mantis-meta-agent mantis-history mantis-structural-index \
+      mantis-architecture mantis-threat-model mantis-plan mantis-researcher \
+      mantis-summarize mantis-dedupe mantis-review mantis-critic \
+      mantis-calibrate mantis-reflect mantis-chain mantis-reproduce \
+      mantis-patch mantis-report
     _copy_named_skills "${universalModderSkills}" \
       mod-any-game game-recon reverse-engineering fal-assets asset-pipeline \
       game-automation showcase-video mashup-mods publish-mod share-field-notes \
