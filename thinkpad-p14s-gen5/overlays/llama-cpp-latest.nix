@@ -14,13 +14,18 @@
 
 let
   # AUTO-UPDATED BY update-llama-cpp SCRIPT
-  version = "12180";
-  hash = "sha256-NnU9+9605ut8zKc8mPlw9cZEnSCCMlelzCicFofvjuU=";
+  version = "12212";
+  hash = "sha256-GLrXWMJXWGzDaI7m3G+DoYN5DGehx29EVUTlb01lfBo=";
   # webui npm deps hash for this pinned version (decouples from nixpkgs)
   npmDepsHash = "sha256-XLtEZsSFdk+2SyfXzBp8HQ2e27PQPpDCn1YjePU1/9w=";
 in
 (llama-cpp.override {
   rocmSupport = true;   # AMD GPU acceleration via ROCm
+  # Only the kernels this machine runs. The 780M (gfx1103) loads gfx1100
+  # code objects through HSA_OVERRIDE_GFX_VERSION=11.0.0; the nixpkgs
+  # default compiles 14 targets and turns every update into an hour-long
+  # build.
+  rocmGpuTargets = [ "gfx1100" ];
 }).overrideAttrs (old: rec {
   inherit version;
   pname = "llama-cpp";

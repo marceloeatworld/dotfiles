@@ -210,6 +210,7 @@ let
     update-apps   Overlays/skills; rebuild only if changed
     update-skills Update all agent skill repos
     update-vscode Update VS Code overlay
+    update-brave  Update Brave overlay
     update-claude-code Update Claude Code overlay
     update-opencode Update OpenCode overlay
     update-forgecode Update ForgeCode overlay

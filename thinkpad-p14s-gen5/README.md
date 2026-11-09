@@ -42,6 +42,7 @@ nix flake update
 ├── flake.lock                # Locked inputs (current system: 26.11.20260904)
 ├── overlays/                 # Custom package overlays (10)
 │   ├── vscode-latest.nix     # VS Code from Microsoft CDN
+│   ├── brave-latest.nix      # Brave from GitHub releases (dropped from nixpkgs 2026-11)
 │   ├── claude-code-latest.nix # Claude Code from npm
 │   ├── llama-cpp-latest.nix  # llama.cpp with ROCm + native CPU opts
 │   ├── opencode-latest.nix   # OpenCode from GitHub releases (Bun SEA)
@@ -355,6 +356,7 @@ key, then remove it with `hl.unbind` - never simulate the chord with wtype.
 | Function | Description |
 |----------|-------------|
 | `update-vscode` | Check/update VS Code from Microsoft API |
+| `update-brave` | Check/update Brave from GitHub releases |
 | `update-claude-code` | Check/update Claude Code from npm registry |
 | `update-opencode` | Check/update OpenCode from GitHub releases |
 | `update-forgecode` | Check/update ForgeCode from GitHub releases |

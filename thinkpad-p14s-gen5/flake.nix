@@ -223,6 +223,12 @@
         (final: prev: {
           gemini-cli = prev.callPackage ./overlays/gemini-cli-latest.nix { };
         })
+        # Brave Latest - removed from nixpkgs 2026-11-03 (no committers among
+        # its maintainers); repackaged locally from the upstream .deb.
+        # Update: overlays/brave-latest.nix (version + sha256)
+        (final: prev: {
+          brave = prev.callPackage ./overlays/brave-latest.nix { };
+        })
         # Yaru theme - removed from nixpkgs 2026-07-22 (gtk-engine-murrine
         # cleanup); restored locally without the GTK 2 murrine propagation.
         # All 7 config.theme presets use Yaru GTK/icon theme names.

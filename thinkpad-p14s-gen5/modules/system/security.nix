@@ -6,7 +6,9 @@ let
   # pkgs.brave lost .override { commandLineArgs = ...; } when nixpkgs
   # restructured it into make-brave.nix (the exported attr is a plain
   # derivation now), so the flags moved from an override to wrapper argv.
-  # The nixpkgs brave wrapper prepends its own --enable/--disable-features;
+  # nixpkgs dropped brave on 2026-11-03; pkgs.brave is now the local
+  # overlays/brave-latest.nix, which keeps the nixpkgs wrapper.
+  # That wrapper prepends its own --enable/--disable-features;
   # Chromium only honors the LAST occurrence, so these two lists are the
   # effective ones and must carry everything we want.
   # AcceleratedVideoDecodeLinuxGL = VA-API hardware video decode (radeonsi,

@@ -131,6 +131,20 @@
           "sha256"
       }
 
+      function update-brave() {
+        # GitHub "latest" is the stable Release channel (nightly/beta are
+        # prereleases). nixpkgs dropped brave on 2026-11-03, so this overlay
+        # is the only source of browser security updates.
+        update-binary-overlay \
+          "Brave" \
+          "overlays/brave-latest.nix" \
+          "https://api.github.com/repos/brave/brave-browser/releases/latest" \
+          ".tag_name" \
+          "v" \
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser_{version}_amd64.deb" \
+          "sha256"
+      }
+
       function update-claude-code() {
         update-binary-overlay \
           "Claude Code" \
@@ -305,11 +319,12 @@
           "sha256"
       }
 
-      # Update quick overlays (VS Code + Claude Code + OpenCode + ForgeCode + Codex + Gemini CLI + RunPod + arkcli + pnpm) + agent skills
+      # Update quick overlays (VS Code + Brave + Claude Code + OpenCode + ForgeCode + Codex + Gemini CLI + RunPod + arkcli + pnpm) + agent skills
       # Returns 0 if something was updated, 1 if nothing changed
       function update-overlays() {
         local changed=0
         update-vscode; [[ $? -eq 2 ]] && changed=1
+        update-brave; [[ $? -eq 2 ]] && changed=1
         update-claude-code; [[ $? -eq 2 ]] && changed=1
         update-opencode; [[ $? -eq 2 ]] && changed=1
         update-forgecode; [[ $? -eq 2 ]] && changed=1
@@ -432,8 +447,10 @@
         local flake
         flake=$(dotfiles-flake-dir) || return 1
         local NPM_HASH
+        # tee keeps the build log visible on the terminal; the hash is picked
+        # out of the same stream.
         NPM_HASH=$(cd "$flake" && __with_nix_github_access_token nix build --no-link .#nixosConfigurations.pop.pkgs.llama-cpp 2>&1 \
-          | awk '/got: */ {print $2; exit}')
+          | tee /dev/stderr | awk '/got: */ {h=$2} END {print h}')
 
         if [[ -n "$NPM_HASH" && "$NPM_HASH" == sha256-* ]]; then
           sed -i "s|npmDepsHash = \".*\"|npmDepsHash = \"$NPM_HASH\"|" "$OVERLAY"

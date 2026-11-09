@@ -116,6 +116,7 @@ nh clean all --keep 3             # Clean old generations
 | Function | Description |
 |----------|-------------|
 | `update-vscode` | Check/update VS Code from Microsoft API |
+| `update-brave` | Check/update Brave from GitHub releases |
 | `update-claude-code` | Check/update Claude Code from npm registry |
 | `update-opencode` | Check/update OpenCode from GitHub releases |
 | `update-forgecode` | Check/update ForgeCode from GitHub releases |
