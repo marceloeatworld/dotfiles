@@ -14,14 +14,15 @@ buildNpmPackage {
   # Build the CLI without running setup, Husky or the upstream prepack build.
   # `npm pack` runs `prepare` even with --ignore-scripts, and upstream's
   # prepare.mjs patches release-please with git.
+  # The deletion runs in preBuild, not postPatch: buildNpmPackage forwards
+  # postPatch to the npm-deps fetcher, which has no npm on PATH.
   npmFlags = [ "--ignore-scripts" ];
-  postPatch = ''
-    npm pkg delete scripts.prepare scripts.prepack
-  '';
   npmBuildScript = "build";
   # Native compiler/bundler binaries from npm (tsrs, rolldown, oxc) need the
   # Nix dynamic loader before the build runs; autoPatchelfHook only fixes $out.
   preBuild = ''
+    npm pkg delete scripts.prepare scripts.prepack
+
     for dir in node_modules/@*/linux-x64-gnu node_modules/@*/linux-x64 node_modules/*-linux-x64-gnu node_modules/*-linux-x64; do
       [ -d "$dir" ] && autoPatchelf "$dir"
     done

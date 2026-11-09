@@ -17,6 +17,15 @@
     # f3b35b92 (joplin-desktop 3.7.21, merged to master 2026-09-30).
     nixpkgs-joplin.url = "github:NixOS/nixpkgs/7a0f122f5090cf4c2ade2a13a0e229d4e19ba71f";
 
+    # Temporary pin for packages broken by the nixos-unstable f4a03c0
+    # (2026-11-07) bump. This is the previous generation's nixpkgs (cached):
+    #   - rustdesk-flutter: libsodium-sys no longer finds libsodium through
+    #     pkg-config, so Hydra has no build and the local one fails.
+    #   - strix: upstream pins openai <3 and openai-agents <0.20; nixpkgs
+    #     moved to openai 3.14.
+    # Drop each overlay once fixed upstream, then the input.
+    nixpkgs-prev.url = "github:NixOS/nixpkgs/1d060086d60cb76a40cf37109f979d88a5bd6396";
+
     # Tracks home-manager master. nixos-unstable has rolled to 26.11, so the
     # two currently match; the release check stays disabled in
     # modules/home/home.nix because master bumps its version first at every
@@ -67,13 +76,20 @@
 
   };
 
-  outputs = { self, nixpkgs, nixpkgs-llama, nixpkgs-joplin, home-manager, nixos-hardware, disko, hyprland, hyprshutdown, sops-nix, ... } @ inputs:
+  outputs = { self, nixpkgs, nixpkgs-llama, nixpkgs-joplin, nixpkgs-prev, home-manager, nixos-hardware, disko, hyprland, hyprshutdown, sops-nix, ... } @ inputs:
     let
       system = "x86_64-linux";
 
       # Pinned nixpkgs snapshot used solely for llama-cpp build inputs.
       # Keeps the llama.cpp derivation hash stable across `nix flake update`.
       pkgsLlama = import nixpkgs-llama {
+        inherit system;
+        config.allowUnfree = true;
+      };
+
+      # Previous generation's nixpkgs, for packages the current snapshot
+      # breaks (see the nixpkgs-prev input comment).
+      pkgsPrev = import nixpkgs-prev {
         inherit system;
         config.allowUnfree = true;
       };
@@ -132,6 +148,12 @@
             inherit system;
             config.allowUnfree = true;
           }).joplin-desktop;
+        })
+        # Upstream breakage: rustdesk-flutter 1.5.0 fails on nixos-unstable
+        # f4a03c0 (libsodium-sys: libsodium.pc not found). Take the previous
+        # generation's build instead (see the nixpkgs-prev input comment).
+        (final: prev: {
+          rustdesk-flutter = pkgsPrev.rustdesk-flutter;
         })
         # Upstream breakage: soapyuhd fails to compile against uhd 4.11
         # (UHDSoapyRxStream is abstract: get_stream_info is pure virtual).
@@ -245,7 +267,9 @@
         # Update: bump version + hash in overlays/skillspector.nix, overlays/strix.nix
         (final: prev: {
           skillspector = prev.callPackage ./overlays/skillspector.nix { };
-          strix = prev.callPackage ./overlays/strix.nix { };
+          # Strix pins openai <3; built against nixpkgs-prev (openai 2.x)
+          # until upstream accepts openai 3.
+          strix = pkgsPrev.callPackage ./overlays/strix.nix { };
         })
         # RunPod CLI - Prebuilt static Go binary, manages GPU workloads
         # Update: overlays/runpodctl-latest.nix (version + sha256)
