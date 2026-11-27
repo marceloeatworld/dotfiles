@@ -1,0 +1,274 @@
+# System services configuration
+{ config, options, pkgs, ... }:
+
+{
+  # Enable CUPS for printing
+  services.printing = {
+    enable = true;
+    # Keep local/manual printing support, but avoid the always-running remote
+    # printer discovery daemon.
+    browsed.enable = false;
+    drivers = with pkgs; [
+      brlaser # Brother laser printers only
+    ];
+  };
+
+  # cupsd calls colord at startup for per-printer colour profiles; without
+  # the daemon every boot logs "CreateProfile failed: ServiceUnknown".
+  services.colord.enable = true;
+
+  # Avahi for mDNS and manual/network printer discovery
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
+
+  # Network printer (mDNS hostname stays stable across DHCP renewals)
+  hardware.printers = {
+    ensurePrinters = [
+      {
+        name = "Brother_HL-L2350DW";
+        description = "Brother HL-L2350DW";
+        deviceUri = "ipp://BRW30C9AB64003F.local:631/ipp/print";
+        model = "drv:///brlaser.drv/brl2350d.ppd";
+        ppdOptions = {
+          PageSize = "A4";
+          Duplex = "DuplexNoTumble";
+        };
+      }
+    ];
+    ensureDefaultPrinter = "Brother_HL-L2350DW";
+  };
+
+  # Power management with TLP (optimized for AMD)
+  services.tlp = {
+    enable = true;
+    settings = {
+      # CPU settings
+      # Governor stays "powersave" (amd-pstate-epp active-mode default); the
+      # EPP value below is what actually selects the perf/power bias.
+      # AC: balance_performance idles cool and still reaches full boost under
+      # load ("performance" EPP would run hot at idle for nothing); the
+      # platform profile below provides the max TDP/fan headroom when loaded.
+      # Battery = eco. `travel-mode` forces the battery settings while on AC.
+      CPU_SCALING_GOVERNOR_ON_AC = "powersave";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+
+      CPU_ENERGY_PERF_POLICY_ON_AC = "balance_performance";
+      CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
+
+      CPU_BOOST_ON_AC = 1;
+      CPU_BOOST_ON_BAT = 0;
+
+      # Battery care
+      # Note: Conservation mode 55-60% for always-plugged usage (maximizes lifespan)
+      # Change to 75-80 for balanced use, or 95-100 for full charge
+      START_CHARGE_THRESH_BAT0 = 55;
+      STOP_CHARGE_THRESH_BAT0 = 60;
+
+      # NOTE: RADEON_DPM/RADEON_POWER_PROFILE removed - only for legacy radeon driver
+      # Radeon 780M uses amdgpu driver, managed via kernel sysfs and TLP's AMDGPU_ABM_LEVEL
+
+      # PCIe power saving
+      PCIE_ASPM_ON_AC = "default";
+      PCIE_ASPM_ON_BAT = "powersave"; # "powersupersave" can cause GPU hangs and link recovery failures on AMD
+
+      # Runtime power management
+      RUNTIME_PM_ON_AC = "on";
+      RUNTIME_PM_ON_BAT = "auto";
+
+      # Disk devices (NVMe - APM not applicable, NVMe uses APST natively)
+      DISK_DEVICES = "nvme0n1";
+
+      # Linux 7.1 deprecated vm.laptop_mode. It is not useful for NVMe, so
+      # leave TLP's legacy disk-idle knobs unconfigured instead of writing the
+      # deprecated sysctl at every profile change.
+      DISK_IDLE_SECS_ON_AC = "";
+      DISK_IDLE_SECS_ON_BAT = "";
+
+      # USB autosuspend (saves ~0.5W per idle device)
+      USB_AUTOSUSPEND = 1;
+      # Exclude Bluetooth USB controllers from autosuspend.
+      # The Qualcomm WCN6855 BT combo (USI 10ab:9309) hangs after long idle when btusb is autosuspended,
+      # causing Bluetooth to stop working until module reload.
+      USB_EXCLUDE_BTUSB = 1;
+
+      # WiFi power saving
+      # Keep "off" on battery too: ath11k WCN6855 firmware crashes
+      # (MHI_CB_EE_RDDM) at cold boot on battery when 802.11 powersave is active,
+      # leaving WiFi unusable until full reboot. Cost: ~0.3W extra on battery.
+      WIFI_PWR_ON_AC = "off";
+      WIFI_PWR_ON_BAT = "off";
+
+      # Audio power saving (snd_hda_intel)
+      SOUND_POWER_SAVE_ON_AC = 0;
+      SOUND_POWER_SAVE_ON_BAT = 1;
+      SOUND_POWER_SAVE_CONTROLLER = "Y";
+
+      # AMD Adaptive Backlight Management (saves power by adjusting panel brightness at GPU level)
+      # Values: 0=off, 1=light, 2=medium, 3=aggressive, 4=maximum
+      AMDGPU_ABM_LEVEL_ON_AC = 0;
+      AMDGPU_ABM_LEVEL_ON_BAT = 3;
+
+      # Platform profile (AMD-specific)
+      PLATFORM_PROFILE_ON_AC = "performance";
+      PLATFORM_PROFILE_ON_BAT = "low-power";
+    };
+  };
+
+  # Suspend/resume hooks stay on; powertop auto-tune would fight TLP.
+  powerManagement = {
+    enable = true;
+    powertop.enable = false;
+  };
+
+  # dbus-broker scans every servicedir NixOS lists in session.conf and
+  # system.conf: each package's own share/dbus-1, the system-path store
+  # path, and /run/current-system/sw (the same system-path again via
+  # XDG_DATA_DIRS). The same service file is therefore found 2-3 times and
+  # dbus-broker-launch logs an error-level "Ignoring duplicate name" for
+  # every copy, on every start and reload: ~460 lines per boot, 85% of
+  # all error-level journal entries. The layout is NixOS's, not fixable
+  # here, so drop those two messages at journald level for the two
+  # dbus-broker units only.
+  systemd.services.dbus-broker.serviceConfig.LogFilterPatterns = [
+    "~Ignoring duplicate name"
+    "~is not named after the D-Bus name"
+  ];
+  systemd.user.services.dbus-broker.serviceConfig.LogFilterPatterns = [
+    "~Ignoring duplicate name"
+    "~is not named after the D-Bus name"
+  ];
+
+  # Journald: cap log storage to reduce SSD wear
+  services.journald.settings.Journal = {
+    SystemMaxUse = "500M";
+    SystemKeepFree = "1G";
+    MaxFileSec = "1week";
+  };
+
+  # SMART monitoring of the NVMe: logs health changes to the journal and
+  # broadcasts a wall message on pre-failure, the only early warning the SSD
+  # gives before dying. Query manually with smartctl -a /dev/nvme0.
+  services.smartd = {
+    enable = true;
+    notifications = {
+      # Desktop notification via systembus-notify, same channel earlyoom
+      # already uses (their modules conflict unless both enable it).
+      systembus-notify.enable = true;
+      wall.enable = true;
+    };
+  };
+
+  # Coredumps were unbounded: 1.3GB of old dumps had accumulated (mostly
+  # dotnet and brave crashes). Cap total size, and age out dumps after 7
+  # days via the daily tmpfiles clean.
+  systemd.coredump.settings.Coredump = {
+    MaxUse = "512M";
+    KeepFree = "1G";
+    # MaxUse only triggers cleanup of OLD dumps; a single oversized dump still
+    # lands on disk (a 2.4G next-server core was stored despite the cap).
+    # Refuse to store dumps beyond 512M in the first place.
+    ProcessSizeMax = "512M";
+    ExternalSizeMax = "512M";
+  };
+  systemd.tmpfiles.rules = [
+    "e /var/lib/systemd/coredump - - - 7d"
+  ];
+
+  # Logind: lid switch and power button handling
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend"; # Lid close → suspend
+    HandleLidSwitchExternalPower = "suspend"; # Same behavior on AC
+    HandlePowerKey = "suspend";
+    HandleHibernateKey = "ignore";
+  };
+
+  systemd.sleep.settings.Sleep = {
+    # s2idle (freeze) is the only mode available on this hardware (no S3 deep sleep)
+    # Tradeoff: faster wake but higher battery drain (~2-5%/hr vs <1%/hr with S3)
+    SuspendState = "freeze";
+    AllowHibernation = "no";
+    AllowHybridSleep = "no";
+    AllowSuspendThenHibernate = "no";
+  };
+
+  # Enable upower for battery monitoring
+  services.upower = {
+    enable = true;
+    percentageLow = 15;
+    percentageCritical = 5;
+    percentageAction = 3;
+    criticalPowerAction = "PowerOff"; # Hibernation is intentionally disabled in sleep.conf.
+  };
+
+  # Disable XHC0 ACPI wakeup to reach deepest s2idle state
+  # XHC0 is the main USB3 controller that causes spurious wakeups on Lenovo ThinkPads
+  # Without this, amd_pmc reports "Last suspend didn't reach deepest state" → freeze on resume
+  # Keyboard/trackpad (PS/2 or internal USB) and LID/SLPB still wake the system
+  # Reference: https://github.com/0FL01/fix-s2idle-instant-wakeup (Lenovo-specific fix)
+  systemd.services.disable-usb-wakeup = {
+    description = "Disable XHC0 wakeup for deeper s2idle";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      if grep -q "XHC0.*enabled" /proc/acpi/wakeup 2>/dev/null; then
+        echo "XHC0" > /proc/acpi/wakeup
+      fi
+    '';
+  };
+
+  # Enable dconf for GTK applications
+  programs.dconf.enable = true;
+
+  # Enable udisks2 for automatic mounting
+  services.udisks2.enable = true;
+
+  # Enable GVFS for virtual filesystems
+  services.gvfs.enable = true;
+
+  # Locate database (plocate - fast file indexing)
+  services.locate = {
+    enable = true;
+    package = pkgs.plocate;
+    # Default is 02:15: the laptop is off then, so the Persistent timer caught
+    # up at every boot and scanned the disk during login.
+    interval = "21:15";
+    # btrbk snapshots were 66% of the index and container layers another 4%.
+    prunePaths = options.services.locate.prunePaths.default ++ [
+      "/.snapshots"
+      "${config.users.users.marcelo.home}/.local/share/containers"
+    ];
+    pruneNames = options.services.locate.pruneNames.default ++ [ "node_modules" ];
+  };
+
+  # BitBox Bridge - Hardware wallet communication bridge
+  # Provides udev rules and WebSocket bridge for BitBox02 hardware wallets
+  services.bitbox-bridge = {
+    enable = true;
+    runOnMount = true; # Only run when BitBox is plugged in (saves power)
+  };
+
+  # Udev rules for USB device access (non-root)
+  # - rtl-sdr: SDR dongles
+  # - qFlipper: Flipper Zero device
+  # Blacklist DVB-T kernel module (conflicts with SDR use)
+  # NOTE: boot.blacklistedKernelModules also set in boot.nix (amdxdna) - NixOS merges lists
+  services.udev.packages = [
+    pkgs.rtl-sdr
+    pkgs.qFlipper
+    # TLP masks systemd-rfkill (it manages radio state itself), but udev's
+    # 99-systemd.rules still tags the rfkill device with
+    # SYSTEMD_WANTS=systemd-rfkill.socket, so every boot logs "Failed to
+    # enqueue SYSTEMD_WANTS job ... is masked". Clear the wants after
+    # 99-systemd.rules (rule files run in lexical order).
+    (pkgs.writeTextDir "lib/udev/rules.d/99-zz-rfkill-no-wants.rules" ''
+      SUBSYSTEM=="misc", KERNEL=="rfkill", ENV{SYSTEMD_WANTS}=""
+    '')
+  ];
+  boot.blacklistedKernelModules = [ "dvb_usb_rtl28xxu" ];
+}

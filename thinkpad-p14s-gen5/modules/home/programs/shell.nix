@@ -1,0 +1,561 @@
+# Shell configuration (ZSH with Starship prompt)
+{ pkgs, config, lib, ... }:
+
+let
+  theme = config.theme;
+
+in
+{
+  # `compinit -C` (initContent below) never refreshes ~/.zcompdump on its own,
+  # and the system-wide compinit that used to rebuild it is off (users.nix).
+  # Drop the dump on activation so the next shell picks up new completions.
+  home.activation.resetZcompdump = config.lib.dag.entryAfter [ "writeBoundary" ] ''
+    $DRY_RUN_CMD rm -f "$HOME/.zcompdump"
+  '';
+
+  home.packages = with pkgs; [
+    # comma (`,`) is provided by programs.nix-index-database.comma below.
+    nix-zsh-completions # Completions for nix, nix-env, nix-shell, etc.
+    zsh-completions # Extra completions (nmap, docker, systemctl, etc.)
+  ];
+  programs.zsh = {
+    enable = true;
+    enableCompletion = true;
+    autocd = true; # Type a directory name to cd into it
+    cdpath = [
+      "${config.home.homeDirectory}"
+      "${config.home.homeDirectory}/Documents"
+      "${config.home.homeDirectory}/Downloads"
+      "${config.home.homeDirectory}/dotfiles"
+    ];
+    dirHashes = {
+      cfg = "${config.xdg.configHome}";
+      dl = "${config.home.homeDirectory}/Downloads";
+      docs = "${config.home.homeDirectory}/Documents";
+      dots = "${config.home.homeDirectory}/dotfiles";
+      flake = "${config.home.homeDirectory}/dotfiles/thinkpad-p14s-gen5";
+    };
+    setOptions = [
+      "AUTO_PUSHD"
+      "PUSHD_IGNORE_DUPS"
+      "PUSHD_SILENT"
+      "PUSHD_TO_HOME"
+      "INTERACTIVE_COMMENTS"
+    ];
+    autosuggestion = {
+      enable = true;
+      strategy = [ "history" "completion" ];
+    };
+    syntaxHighlighting.enable = true;
+    completionInit = ''
+      # Interactive menu completion with descriptions
+      zstyle ':completion:*' menu select                              # Arrow-key menu on Tab
+      zstyle ':completion:*' list-colors "''${(s.:.)LS_COLORS}"      # Colorize file completions
+      zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|=*' 'l:|=* r:|=*'  # Case-insensitive + fuzzy
+      zstyle ':completion:*' format '%F{yellow}-- %d --%f'           # Category headers
+      zstyle ':completion:*' group-name '''                           # Group by category
+      zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+      zstyle ':completion:*:messages' format '%F{cyan}-- %d --%f'
+      zstyle ':completion:*:warnings' format '%F{red}-- no matches --%f'
+      zstyle ':completion:*' verbose yes                              # Show descriptions
+      zstyle ':completion:*' squeeze-slashes true                     # /usr//bin -> /usr/bin
+      zstyle ':completion:*' list-dirs-first true                     # Directories before files
+      zstyle ':completion:*' special-dirs true                        # Complete . and ..
+      zstyle ':completion:*' rehash true                              # Pick up newly installed commands
+      zstyle ':completion:*' use-cache on                             # Cache completions
+      zstyle ':completion:*' cache-path "$HOME/.cache/zsh/compcache"
+      zstyle ':completion:*:*:kill:*' menu yes select                 # kill <Tab> shows PIDs
+      zstyle ':completion:*:kill:*' force-list always
+      zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+      zstyle ':fzf-tab:*' fzf-command fzf
+      zstyle ':fzf-tab:*' fzf-flags --height=40% --layout=reverse --border=rounded
+      zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -la --icons --color=always $realpath 2>/dev/null'
+      zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'eza -la --icons --color=always $realpath 2>/dev/null'
+      zstyle ':fzf-tab:complete:(ls|eza|bat|nvim|vim):*' fzf-preview '[[ -d $realpath ]] && eza -la --icons --color=always $realpath 2>/dev/null || bat --style=numbers --color=always --line-range=:80 $realpath 2>/dev/null'
+
+      autoload -Uz compinit && compinit -C
+      source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
+    '';
+    shellAliases = {
+      clean = "nh clean all --keep 3"; # Match automatic retention policy
+      secrets = "sops \"$(dotfiles-flake-dir)/sops/api-keys.yaml\"";
+
+      # Modern replacements
+      ls = "eza --icons";
+      ll = "eza -l --icons";
+      la = "eza -la --icons";
+      tree = "eza --tree --icons --group-directories-first";
+      lt = "eza --tree --level=2 --icons --group-directories-first";
+      lt3 = "eza --tree --level=3 --icons --group-directories-first";
+      cat = "bat";
+      y = "yazi";
+      lz = "lazygit";
+      # Git
+      g = "git";
+      gs = "git status";
+      ga = "git add";
+      gc = "git commit";
+      gp = "git push";
+      gl = "git pull";
+      gd = "git diff";
+      # Captive portal (hotel/airport WiFi)
+      captive-on = "sudo captive-portal-bypass on";
+      captive-off = "sudo captive-portal-bypass off";
+      # Windows PC on the LAN (RDP). Password comes from sops (RDP_PASSWORD),
+      # $HOME is shared as a drive on Windows for file transfer. sdl-freerdp (Wayland-native)
+      # instead of xfreerdp: 3.31.1 X11 clipboard aborts after a lock/relogon (fixed upstream in a4b4a1f4cc).
+      # No +f: sdl-freerdp 3.31.1 probes each display with a hidden 64x64 window that Hyprland
+      # never sizes, so fullscreen fails preConnect ("virtual desktop width must be 200 <= 64").
+      # Start windowed at the Dell resolution and toggle fullscreen with Ctrl+Alt+Enter.
+      # Password over stdin (/from-stdin), never in argv where ps and /proc expose it.
+      win = "printf '%s\\n' \"$RDP_PASSWORD\" | sdl-freerdp /v:192.168.1.75 /u:pop /from-stdin /cert:tofu /size:1920x1080 +dynamic-resolution +clipboard /drive:home,\"$HOME\" /sound";
+      # Mac mini on the LAN (macOS Screen Sharing over VNC, resolved via mDNS).
+      # Hostname, user and passwords come from sops (MAC_HOST, MAC_USER, VNC_PASSWORD).
+      # vncviewer wants an obfuscated password file, so build it from sops on the fly.
+      # macOS offers Apple DH auth first (needs a username prompt), so force plain VncAuth.
+      # The Mac runs 1920x1080 like the Dell and TigerVNC cannot scale, so only a
+      # fullscreen window fits the desktop without scrollbars (Ctrl+Alt+Enter toggles).
+      mac = "vncviewer -FullScreen -SecurityTypes VncAuth -AlwaysCursor -CursorType System -passwd <(vncpasswd -f <<< \"$VNC_PASSWORD\") \"$MAC_HOST\"";
+      # Mac mini home folder mounted at ~/mac over SSH (Remote Login on the Mac).
+      mac-mount = "mkdir -p \"$HOME/mac\" && sshfs \"$MAC_USER@$MAC_HOST:\" \"$HOME/mac\" -o reconnect,follow_symlinks";
+      mac-umount = "fusermount3 -u \"$HOME/mac\"";
+      # Shell on the Mac mini; mDNS name, so it survives DHCP address changes.
+      mac-ssh = "ssh \"$MAC_USER@$MAC_HOST\"";
+      # Google Cloud (gcloud) - switch between accounts
+      gcp-me = "gcloud config configurations activate default";
+      gcp-work = "gcloud config configurations activate \${GCLOUD_WORK_CONFIG:-work}";
+      gcp-who = "gcloud config list";
+      gcp-list = "gcloud config configurations list";
+      gcp-login = "gcloud auth login";
+      # AI/LLM
+      # llm is a script in development.nix (llama-cli direct)
+      # Claude Code and OpenCode go through the Headroom proxy by default
+      # (token compression; wrappers in development.nix). The proxy sets
+      # ANTHROPIC_BASE_URL, which hides /remote-control (requires
+      # api.anthropic.com): run `\claude` for a direct session without it.
+      # Same escape for `\opencode`. Aliases only apply to interactive
+      # shells, so scripts and hooks still call the binaries.
+      # Codex stays direct: headroom 0.25.0 cannot proxy a ChatGPT-login
+      # Codex 0.172 session (see headroom-codex in development.nix).
+      claude = "headroom-claude";
+      opencode = "headroom-opencode";
+      # GPT-6 (Codex) second opinion: ask-gpt + on-demand review when a prompt
+      # mentions "gpt" (e.g. "check with gpt"), see codex.nix / claude-code.nix
+      claude-gpt = "CLAUDE_GPT=1 headroom-claude";
+      # Claude Code harness on the Mac mini's LM Studio (Anthropic-compatible
+      # /v1/messages on MAC_HOST from sops); nothing goes to Anthropic.
+      # Same binary as plain claude, so it follows the system Claude Code version.
+      # - --bare: naked harness (Bash, Edit, Read; no MCP, hooks, skills list,
+      #   CLAUDE.md or memory). The full harness prompt is ~27k tokens per
+      #   request, and LM Studio rejects the tool_reference blocks that MCP
+      #   tool search relies on. RE and Kali tools are reached through Bash.
+      #   Bare mode does not fetch the gateway model list: pick another Mac
+      #   model with `claude-mac --model <id>` or `/model <id>`.
+      # - The DEFAULT_*_MODEL pins send any haiku/sonnet/opus/fable alias call
+      #   to a model the Mac has.
+      # - "-effort": LM Studio models only know reasoning on/off or their own
+      #   levels and warn on Claude effort levels, so none is sent; thinking
+      #   on/off still maps cleanly per model.
+      # - MAX_CONTEXT_TOKENS is the context the model is loaded with on the Mac
+      #   (unknown model ids default to a 200k window, so compaction came too late).
+      # - disableAutoMode hides auto mode: its model classifier and its
+      #   server-side safety check are asked of whatever ANTHROPIC_BASE_URL
+      #   points at, and LM Studio implements neither, so auto mode only
+      #   printed an ineligibility notice and ran without a safety check.
+      claude-mac = "ANTHROPIC_BASE_URL=\"http://$MAC_HOST:1234\" ANTHROPIC_AUTH_TOKEN=lmstudio CLAUDE_CODE_MODEL_CAPABILITIES=-effort CLAUDE_CODE_MAX_CONTEXT_TOKENS=65536 ANTHROPIC_DEFAULT_HAIKU_MODEL=inkling-2-mini-uncensored ANTHROPIC_DEFAULT_SONNET_MODEL=inkling-2-mini-uncensored ANTHROPIC_DEFAULT_OPUS_MODEL=inkling-2-mini-uncensored ANTHROPIC_DEFAULT_FABLE_MODEL=inkling-2-mini-uncensored $HOME/.local/bin/claude --bare --model inkling-2-mini-uncensored";      # Same harness, but Kali goes through Tor by default. KALI_TOR makes
+      # `kali-run` default to proxychains (--px); use `kali-run --no-px` for a
+      # deliberate clearnet or raw-socket (-sS) call. The env var propagates
+      # from this alias into the agent's Bash tool subprocesses.
+      claude-mac-tor = "KALI_TOR=1 claude-mac --append-system-prompt-file $HOME/.local/share/kali-redteam/CARD.md";
+      # Claude Code harness on Z.AI's GLM Coding Plan (Anthropic-compatible
+      # endpoint); nothing goes to Anthropic. The key is the sops glm_api_key,
+      # exported as GLM_API_KEY by secrets.nix. Full harness (MCP, skills,
+      # CLAUDE.md, hooks): GLM-5.4 has a 1M window, unlike the local models.
+      # - Model ids, the 1M context variables and the long API timeout are the
+      #   ones from Z.AI's Claude Code guide (docs.z.ai/devpack/tool/claude).
+      #   The DEFAULT_*_MODEL pins send every haiku/sonnet/opus/fable alias
+      #   call to a GLM model.
+      # - Auto mode: omit disableAutoMode so the toggle is available.
+      #   "disable" is the only accepted value and it removes the toggle.
+      # - Through the Headroom proxy like plain claude. A proxy has one
+      #   upstream, so GLM has its own unit on port 8788
+      #   (headroom-proxy-8788 in development.nix; 8787 stays Anthropic).
+      #   HEADROOM_WRAP_PORT selects it in headroom-claude.
+      #   ANTHROPIC_TARGET_API_URL is only read by headroom-claude when it
+      #   runs Claude Code directly (piped output, or the unit failed).
+      claude-glm = "ANTHROPIC_TARGET_API_URL=https://api.z.ai/api/anthropic HEADROOM_WRAP_PORT=8788 ANTHROPIC_AUTH_TOKEN=\"$GLM_API_KEY\" API_TIMEOUT_MS=3000000 CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000 CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000 ANTHROPIC_DEFAULT_HAIKU_MODEL='glm-5.3-flash[1m]' ANTHROPIC_DEFAULT_SONNET_MODEL='glm-5.4[1m]' ANTHROPIC_DEFAULT_OPUS_MODEL='glm-5.4[1m]' ANTHROPIC_DEFAULT_FABLE_MODEL='glm-5.4[1m]' headroom-claude --model 'glm-5.4[1m]'";
+      # jailed-agents wrappers (opt-in sandboxed agent sessions)
+      "claude-jail" = "jailed-claude-code";
+      "opencode-jail" = "jailed-opencode";
+      "codex-jail" = "jailed-codex";
+      "forge-jail" = "jailed-forgecode";
+      # Shortcuts
+      v = "nvim";
+      vts = "NVIM_ENABLE_TS_LSP=1 nvim";
+      vim = "nvim";
+      ".." = "cd ..";
+      "..." = "cd ../..";
+    };
+    history = {
+      size = 10000;
+      path = "${config.xdg.dataHome}/zsh/history";
+      append = true;
+      extended = true;
+      expireDuplicatesFirst = true;
+      findNoDups = true;
+      ignoreDups = true;
+      ignoreSpace = true;
+      saveNoDups = true;
+    };
+    initContent = ''
+      # NOTE: local user binaries are added via home.sessionPath in development.nix
+
+      function take() {
+        mkdir -p -- "$1" && cd -- "$1"
+      }
+
+      function croot() {
+        local root
+        root=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
+        cd -- "$root"
+      }
+
+      function yy() {
+        local tmp cwd
+        tmp=$(mktemp -t yazi-cwd.XXXXXX) || return 1
+        yazi "$@" --cwd-file="$tmp"
+        cwd=$(<"$tmp")
+        rm -f -- "$tmp"
+        [[ -n "$cwd" && "$cwd" != "$PWD" ]] && cd -- "$cwd"
+      }
+
+      # Claude Code harness on the local llama.cpp service (Mellum by
+      # default, see llm-switch); nothing goes to Anthropic. Same idea and
+      # flags as claude-mac above, with two differences:
+      # - It starts the llama-cpp service when needed and waits for the model.
+      # - MAX_CONTEXT_TOKENS matches the service ctx-size (llama-cpp.nix) and
+      #   MAX_OUTPUT_TOKENS keeps the output reserve below it; without the
+      #   cap the harness answers "Prompt is too long" before sending anything.
+      function claude-local() {
+        local url="http://127.0.0.1:8080"
+        if ! curl -sf -m 2 "$url/health" >/dev/null 2>&1; then
+          llm-local >/dev/null || return 1
+          printf 'Loading local model'
+          local i
+          for i in {1..120}; do
+            curl -sf -m 2 "$url/health" >/dev/null 2>&1 && break
+            printf '.'
+            sleep 1
+          done
+          printf '\n'
+        fi
+        ANTHROPIC_BASE_URL="$url" ANTHROPIC_AUTH_TOKEN=local \
+          CLAUDE_CODE_MODEL_CAPABILITIES=-effort \
+          CLAUDE_CODE_MAX_CONTEXT_TOKENS=32768 CLAUDE_CODE_MAX_OUTPUT_TOKENS=8192 \
+          ANTHROPIC_DEFAULT_HAIKU_MODEL=local-model ANTHROPIC_DEFAULT_SONNET_MODEL=local-model \
+          ANTHROPIC_DEFAULT_OPUS_MODEL=local-model ANTHROPIC_DEFAULT_FABLE_MODEL=local-model \
+          "$HOME/.local/bin/claude" --bare --model local-model \
+          --settings '{"permissions":{"disableAutoMode":"disable"}}' "$@"
+      }
+
+      # OpenCode on the local llama.cpp service: starts the service when
+      # needed, waits for the model, then opens the "local" agent
+      # (opencode.nix).
+      function opencode-local() {
+        llm-local --wait || return 1
+        command opencode --agent local "$@"
+      }
+
+      function nix() {
+        if [[ "$1" = "build" ]]; then
+          local arg
+          local has_link_flag=0
+
+          for arg in "$@"; do
+            case "$arg" in
+              --no-link|--out-link|--out-link=*|-o)
+                has_link_flag=1
+                break
+                ;;
+            esac
+          done
+
+          if [[ $has_link_flag -eq 0 ]]; then
+            command nix build --no-link "''${@:2}"
+            return $?
+          fi
+        fi
+
+        command nix "$@"
+      }
+
+      function dotfiles-flake-dir() {
+        local dir=""
+        local root=""
+
+        if [[ -n "''${DOTFILES_FLAKE:-}" && -f "$DOTFILES_FLAKE/flake.nix" ]]; then
+          print -r -- "$DOTFILES_FLAKE"
+          return 0
+        fi
+
+        # Only the dotfiles repo counts. Any other repo with a flake.nix
+        # (project flakes) must fall through to ~/dotfiles, otherwise
+        # update/rebuild run against the wrong flake.
+        if root=$(git rev-parse --show-toplevel 2>/dev/null) \
+          && [[ -f "$root/thinkpad-p14s-gen5/flake.nix" ]]; then
+          dir="$root/thinkpad-p14s-gen5"
+        fi
+
+        if [[ -z "$dir" && -f "$HOME/dotfiles/thinkpad-p14s-gen5/flake.nix" ]]; then
+          dir="$HOME/dotfiles/thinkpad-p14s-gen5"
+        fi
+
+        if [[ -z "$dir" ]]; then
+          echo "Could not locate dotfiles flake. Run from the repo or set DOTFILES_FLAKE." >&2
+          return 1
+        fi
+
+        print -r -- "$dir"
+      }
+
+      function clean-dotfiles-result-links() {
+        setopt local_options null_glob
+
+        local flake repo link
+        flake=$(dotfiles-flake-dir 2>/dev/null) || return 0
+        repo=$(dirname "$flake")
+
+        for link in "$repo"/result "$repo"/result-* "$flake"/result "$flake"/result-*; do
+          [[ -L "$link" ]] && unlink "$link"
+        done
+      }
+
+      function __dotfiles_nh() {
+        local action="$1"
+        shift
+
+        local flake
+        flake=$(dotfiles-flake-dir) || return 1
+        (cd "$flake" && __with_nix_github_access_token nh os "$action" . "$@")
+      }
+
+      function rebuild() {
+        __dotfiles_nh switch "$@"
+      }
+
+      function nb() {
+        __dotfiles_nh boot "$@"
+      }
+
+      function ntest() {
+        __dotfiles_nh test "$@"
+      }
+
+      function ndiff() {
+        __dotfiles_nh build "$@"
+      }
+
+      # Launch Hyprland with UWSM on login to TTY1
+      # See: https://wiki.hypr.land/Useful-Utilities/Systemd-start/
+      # NixOS uses hyprland-uwsm.desktop (not hyprland.desktop) when withUWSM=true
+      # tty guard first: uwsm is a Python program and spawning it in every
+      # interactive shell adds startup latency for a check that can only
+      # succeed on tty1.
+      if [[ "$(tty)" == /dev/tty1 ]] && uwsm check may-start; then
+        exec uwsm start hyprland-uwsm.desktop
+      fi
+    '';
+  };
+
+  # Starship prompt - two-line style with Nerd Font icons. Colors are ANSI
+  # names so the prompt follows the terminal palette of the runtime theme.
+  programs.starship = {
+    enable = true;
+    enableZshIntegration = true;
+
+    settings = {
+      format = lib.concatStrings [
+        "[╭](dimmed white) "
+        "$nix_shell$hostname$directory$git_branch$git_status$cmd_duration"
+        "$line_break"
+        "[╰](dimmed white) $character"
+      ];
+      right_format = "$time";
+      add_newline = false;
+      command_timeout = 200;
+
+      character = {
+        success_symbol = "[❯](bold blue)";
+        error_symbol = "[❯](bold red)";
+      };
+
+      directory = {
+        format = "[󰉋 ](blue)[$path]($style)[$read_only]($read_only_style) ";
+        truncation_length = 4;
+        truncation_symbol = ".../";
+        truncate_to_repo = true;
+        home_symbol = "~";
+        style = "bold blue";
+        read_only = " 󰌾";
+        read_only_style = "bold red";
+        before_repo_root_style = "dimmed blue";
+        repo_root_style = "bold yellow";
+        repo_root_format = "[󰉋 ](blue)[$before_root_path]($before_repo_root_style)[$repo_root]($repo_root_style)[$path]($style)[$read_only]($read_only_style) ";
+      };
+
+      git_branch = {
+        format = "[$symbol$branch]($style) ";
+        symbol = " ";
+        style = "purple";
+      };
+
+      # Counted symbols: ?2 untracked, !1 modified, +1 staged, ↑1 ahead
+      git_status = {
+        format = "([$all_status$ahead_behind]($style) )";
+        style = "red";
+        ahead = "↑\${count}";
+        behind = "↓\${count}";
+        diverged = "↑\${ahead_count}↓\${behind_count}";
+        conflicted = "=\${count}";
+        up_to_date = "";
+        untracked = "?\${count}";
+        modified = "!\${count}";
+        stashed = "";
+        staged = "+\${count}";
+        renamed = "";
+        deleted = "";
+      };
+
+      cmd_duration = {
+        min_time = 2000;
+        format = "[󰔟 $duration]($style) ";
+        style = "yellow";
+      };
+
+      hostname = {
+        ssh_only = true;
+        format = "[󰣀 $hostname]($style) ";
+        style = "bold green";
+      };
+
+      nix_shell = {
+        symbol = "󱄅 ";
+        format = "[$symbol$state]($style) ";
+        style = "cyan";
+      };
+
+      time = {
+        disabled = false;
+        format = "[$time]($style)";
+        time_format = "%H:%M";
+        style = "dimmed white";
+      };
+
+      package.disabled = true;
+    };
+  };
+
+  # Direnv for automatic environment switching
+  programs.direnv = {
+    enable = true;
+    enableZshIntegration = true;
+    nix-direnv.enable = true;
+  };
+
+  # Command-not-found suggestions backed by nix-index, plus `comma` / `,` using the
+  # prebuilt database from the nix-index-database flake input (imported in home.nix).
+  programs.nix-index = {
+    enable = true;
+    enableZshIntegration = true;
+  };
+  programs.nix-index-database.comma.enable = true;
+
+  # Zoxide for smarter cd
+  programs.zoxide = {
+    enable = true;
+    enableZshIntegration = true;
+  };
+
+  # Wider completion coverage for CLIs that do not ship good zsh completions
+  programs.carapace = {
+    enable = true;
+    enableZshIntegration = true;
+    environment.CARAPACE_MATCH = true;
+  };
+
+  # Smarter searchable shell history. Ctrl+R opens Atuin; Up remains normal zsh.
+  programs.atuin = {
+    enable = true;
+    enableZshIntegration = true;
+    flags = [ "--disable-up-arrow" ];
+    settings = {
+      auto_sync = false;
+      enter_accept = true;
+      filter_mode = "global";
+      # ForgeCode `: <prompt>` lines are chat input, never record them
+      history_filter = [ "^: " ];
+      inline_height = 18;
+      search_mode = "fuzzy";
+      show_help = false;
+      style = "compact";
+      update_check = false;
+    };
+  };
+
+  # Fix the previous failed command with: please
+  programs.pay-respects = {
+    enable = true;
+    enableZshIntegration = true;
+    options = [ "--alias" "please" ];
+  };
+
+  # FZF for fuzzy finding
+  programs.fzf = {
+    enable = true;
+    enableZshIntegration = true;
+    defaultCommand = "fd --type f --hidden --follow --exclude .git";
+    defaultOptions = [
+      "--height=40%"
+      "--layout=reverse"
+      "--border=rounded"
+      "--inline-info"
+    ];
+    fileWidget = {
+      command = "fd --type f --hidden --follow --exclude .git";
+      options = [
+        "--preview 'bat --style=numbers --color=always --line-range=:120 {} 2>/dev/null || eza -la --icons --color=always {} 2>/dev/null'"
+      ];
+    };
+    changeDirWidget = {
+      command = "fd --type d --hidden --follow --exclude .git";
+      options = [
+        "--preview 'eza -la --icons --color=always {} 2>/dev/null'"
+      ];
+    };
+    # Atuin owns Ctrl-R (see programs.atuin above); disable fzf's history
+    # widget so home-manager stops warning about the double binding.
+    historyWidget.command = "";
+    colors = {
+      bg = theme.colors.background;
+      "bg+" = theme.colors.surface;
+      fg = theme.colors.foreground;
+      "fg+" = theme.colors.foreground;
+      header = theme.colors.yellow;
+      hl = theme.colors.accent;
+      "hl+" = theme.colors.accent;
+      info = theme.colors.comment;
+      marker = theme.colors.green;
+      pointer = theme.colors.accent;
+      prompt = theme.colors.cyan;
+      spinner = theme.colors.magenta;
+    };
+  };
+
+  # Eza (ls replacement)
+  programs.eza = {
+    enable = true;
+    enableZshIntegration = false; # Manual aliases in shellAliases (ls, ll, la, tree) take priority
+    git = true;
+    icons = "auto";
+  };
+}

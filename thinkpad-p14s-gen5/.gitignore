@@ -1,0 +1,43 @@
+# Flake outputs
+result
+result-*
+
+# Hardware configuration (machine-specific)
+# Uncomment if you don't want to commit your hardware config
+# hosts/*/hardware-configuration.nix
+
+# Backup files
+*.bak
+*~
+.*.swp
+.*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+CLAUDE.md
+.claude
+
+# Python bytecode cache
+__pycache__/
+*.py[cod]
+
+# Certificates (keep private)
+certs/
+
+# Node.js / package manager artifacts (created by pnpm dlx, npm view, etc.
+# probing for a project root). This is a NixOS flake, not a Node project.
+.env
+.env.*
+.npmrc
+.yarnrc
+.yarnrc.yml
+bunfig.toml
+package.json
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+node_modules/
+
+# Empty git submodules file (unused in this repo)
+.gitmodules
